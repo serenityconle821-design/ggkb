@@ -2,22 +2,22 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V3.5</title>
+    <title>父ASIN粒度广告分析看板 V6.2</title>
     <style>
         :root { 
-            --bg-color: #F5F5F7; 
+            --bg-color: #F8F9FA; 
             --card-bg: #FFFFFF; 
-            --text-main: #1D1D1F; 
-            --text-muted: #86868B; 
-            --accent: #0071E3; 
-            --accent-hover: #0077ED;
-            --border-color: rgba(0, 0, 0, 0.08); 
+            --text-main: #111115; 
+            --text-muted: #6E6E73; 
+            --accent: #0066CC; 
+            --accent-hover: #0055B3;
+            --border-color: rgba(0, 0, 0, 0.06); 
             --radius: 20px; 
-            --shadow-subtle: 0 4px 24px rgba(0, 0, 0, 0.04);
-            --shadow-hover: 0 12px 48px rgba(0, 0, 0, 0.08);
+            --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.03);
+            --shadow-hover: 0 10px 30px rgba(0, 0, 0, 0.06);
             --font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            --green: #188038;
-            --red: #D93025;
+            --green: #34C759;
+            --red: #FF3B30;
         }
         body { font-family: var(--font-family); background-color: var(--bg-color); margin: 0; padding: 40px 20px; color: var(--text-main); -webkit-font-smoothing: antialiased; }
         .container { max-width: 1440px; margin: 0 auto; }
@@ -25,27 +25,36 @@
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .title { font-size: 34px; font-weight: 700; letter-spacing: -0.015em; color: var(--text-main); }
         
-        .upload-area { border: 1px dashed #C7C7CC; padding: 50px 30px; text-align: center; background: var(--card-bg); border-radius: var(--radius); cursor: pointer; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); margin-bottom: 30px; box-shadow: var(--shadow-subtle); }
+        .upload-area { border: 1px dashed #C7C7CC; padding: 40px 30px; text-align: center; background: var(--card-bg); border-radius: var(--radius); cursor: pointer; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); margin-bottom: 30px; box-shadow: var(--shadow-subtle); }
         .upload-area:hover { border-color: var(--accent); background: #FBFBFD; transform: scale(1.002); box-shadow: var(--shadow-hover); }
-        .upload-area h3 { font-size: 20px; font-weight: 600; margin-bottom: 10px; color: var(--text-main); }
+        .upload-area h3 { font-size: 20px; font-weight: 600; margin-bottom: 0; color: var(--text-main); }
         .hidden-input { display: none; }
         
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-bottom: 30px; display: none; }
-        .kpi-card { background: var(--card-bg); padding: 32px 24px; border-radius: var(--radius); box-shadow: var(--shadow-subtle); text-align: center; position: relative; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); border: 1px solid var(--border-color); }
-        .kpi-card.clickable { cursor: pointer; }
-        .kpi-card.clickable:hover { border-color: rgba(0, 113, 227, 0.3); transform: translateY(-4px); box-shadow: var(--shadow-hover); }
-        .kpi-label { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.04em; }
-        .kpi-value { font-size: 38px; font-weight: 700; color: var(--text-main); letter-spacing: -0.02em; }
-        .click-hint { font-size: 12px; color: var(--accent); margin-top: 12px; opacity: 0; transition: opacity 0.3s; font-weight: 500; }
-        .kpi-card.clickable:hover .click-hint { opacity: 1; }
+        .kpi-card { background: var(--card-bg); padding: 12px 16px; border-radius: 16px; box-shadow: var(--shadow-subtle); text-align: center; position: relative; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: center; min-height: 100px; cursor: pointer; }
+        .kpi-card:hover { border-color: rgba(0, 102, 204, 0.3); transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+        .kpi-label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .kpi-value { font-size: 32px; font-weight: 700; color: var(--text-main); letter-spacing: -0.02em; }
+        .kpi-trend { font-size: 12px; font-weight: 600; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 4px; }
         
-        .charts-grid { display: grid; grid-template-columns: 1.2fr 1.8fr; gap: 24px; margin-bottom: 24px; display: none; height: 420px; }
-        .bottom-grid { grid-template-columns: 1fr; height: 380px; }
-        .chart-container { background: var(--card-bg); padding: 24px; border-radius: var(--radius); box-shadow: var(--shadow-subtle); height: 100%; border: 1px solid var(--border-color); }
+        .trend-up-bad { color: var(--red); }
+        .trend-down-good { color: var(--green); }
+        .trend-up-good { color: var(--green); }
+        .trend-down-bad { color: var(--red); }
+        .trend-neutral { color: var(--text-muted); }
+        
+        .charts-grid { display: grid; gap: 24px; margin-bottom: 24px; display: none; }
+        .top-grid { grid-template-columns: 1.2fr 1.8fr; height: 320px; }
+        .full-grid { grid-template-columns: 1fr; height: 400px; margin-bottom: 24px; }
+        .chart-container { background: var(--card-bg); padding: 20px 24px; border-radius: var(--radius); box-shadow: var(--shadow-subtle); border: 1px solid var(--border-color); display: flex; flex-direction: column; box-sizing: border-box; height: 100%; transition: all 0.3s; }
+        .chart-container:hover { border-color: rgba(0, 102, 204, 0.3); box-shadow: var(--shadow-hover); }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 4px; flex-shrink: 0; position: relative; z-index: 10; }
+        .chart-wrapper { position: relative; flex: 1; min-height: 0; width: 100%; }
+        .absolute-chart { position: absolute; left: 0; top: 0; width: 100%; height: 100%; cursor: pointer; }
         
         .actions { text-align: right; display: none; margin-bottom: 30px; }
-        .btn-export { background-color: var(--accent); color: white; border: none; padding: 14px 32px; font-size: 15px; border-radius: 30px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; letter-spacing: 0.01em; box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3); }
-        .btn-export:hover { background-color: var(--accent-hover); transform: scale(1.02); box-shadow: 0 6px 16px rgba(0, 113, 227, 0.4); }
+        .btn-export { background-color: var(--accent); color: white; border: none; padding: 10px 24px; font-size: 14px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; letter-spacing: 0.01em; box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3); }
+        .btn-export:hover { background-color: var(--accent-hover); transform: scale(1.02); box-shadow: 0 6px 16px rgba(0, 102, 204, 0.4); }
         .btn-export:active { transform: scale(0.98); }
         
         #loading { display: none; color: var(--accent); font-weight: 600; text-align: center; margin: 40px 0; font-size: 16px; letter-spacing: 0.02em; }
@@ -56,22 +65,22 @@
         .modal-title-group { display: flex; align-items: center; gap: 24px; }
         .modal-title { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
         
-        .filter-select { border: 1px solid #E5E5EA; border-radius: 14px; padding: 10px 36px 10px 16px; font-size: 14px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 600; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2210%22%20viewBox%3D%220%200%2014%2010%22%3E%3Cpath%20fill%3D%22%2386868B%22%20d%3D%22M7%2010L0%203l1.4-1.4L7%207.2l5.6-5.6L14%203z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 14px center; background-size: 10px auto; cursor: pointer; }
-        .filter-select:focus { border-color: var(--accent); background: #FFFFFF; box-shadow: 0 0 0 4px rgba(0,113,227,0.15); }
+        .filter-select {  border: 1px solid #E5E5EA; border-radius: 14px; padding: 10px 36px 10px 16px; font-size: 14px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 600; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2210%22%20viewBox%3D%220%200%2014%2010%22%3E%3Cpath%20fill%3D%22%2386868B%22%20d%3D%22M7%2010L0%203l1.4-1.4L7%207.2l5.6-5.6L14%203z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 14px center; background-size: 10px auto; cursor: pointer; }
+        .filter-select:focus { border-color: var(--accent); background: #FFFFFF; box-shadow: 0 0 0 4px rgba(0,102,204,0.15); }
         .filter-select:hover { border-color: #D1D1D6; }
         
-        .search-box { position: relative; }
+        .search-box { position: relative;  }
         .search-input { border: 1px solid #E5E5EA; border-radius: 14px; padding: 10px 16px 10px 38px; font-size: 14px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); width: 280px; font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 500; }
-        .search-input:focus { border-color: var(--accent); background: #FFFFFF; box-shadow: 0 0 0 4px rgba(0,113,227,0.15); width: 340px; }
+        .search-input:focus { border-color: var(--accent); background: #FFFFFF; box-shadow: 0 0 0 4px rgba(0,102,204,0.15); width: 340px; }
         .search-input::placeholder { color: #A1A1A6; font-weight: 400; }
         .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #A1A1A6; font-size: 14px; }
         .clear-search { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #A1A1A6; font-size: 18px; cursor: pointer; display: none; line-height: 1; }
         .clear-search:hover { color: var(--text-main); }
         
-        .close-btn { color: #A1A1A6; font-size: 32px; font-weight: 300; cursor: pointer; line-height: 1; padding: 0 8px; border-radius: 50%; transition: all 0.2s; }
+        .close-btn { color: #A1A1A6; font-size: 32px; font-weight: 300; cursor: pointer; line-height: 1; padding: 0 8px; border-radius: 50%; transition: all 0.2s;  }
         .close-btn:hover { color: var(--text-main); background: #F2F2F7; }
         
-        .table-wrapper { flex: 1; overflow-y: auto; overflow-x: auto; padding: 0 10px; background: #FFFFFF; }
+        .table-wrapper { flex: 1; overflow-y: auto; overflow-x: auto; padding: 0 10px; background: #FFFFFF;  }
         .data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; margin: 0; }
         .data-table th, .data-table td { padding: 16px 14px; text-align: center; border-bottom: 1px solid #F2F2F7; white-space: nowrap; vertical-align: middle; transition: background 0.2s; } 
         .data-table th { color: var(--text-muted); font-weight: 600; font-size: 13px; position: sticky; top: 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 5; box-shadow: 0 1px 0 #E5E5EA; letter-spacing: 0.02em; }
@@ -85,16 +94,11 @@
         .priority-cell { white-space: nowrap; }
         .tag { padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 12px; display: inline-block; letter-spacing: 0.02em; border: 1px solid transparent; }
         .tag-p0 { background-color: #FEF0F0; color: var(--red); border-color: #FCE8E6; }
-        .tag-p1 { background-color: #FFF8E1; color: #D66E00; border-color: #FFE0B2; }
+        .tag-p1 { background-color: #FFF8E1; color: var(--text-main); border-color: #FFE0B2; }
         .tag-p2 { background-color: #E8F0FE; color: #1967D2; border-color: #D2E3FC; }
         .tag-p3 { background-color: #F8F9FA; color: #5F6368; border-color: #E8EAED; }
         
         .sub-metric { font-size:11px; color:var(--text-muted); margin-top:6px; white-space:nowrap; line-height:1.5; font-weight: 500; font-variant-numeric: tabular-nums; }
-        .val-up { color: var(--red); font-weight: 600; }
-        .val-down { color: var(--green); font-weight: 600; }
-        .val-neutral { color: var(--text-muted); font-weight: 600; }
-        .val-up-good { color: var(--green); font-weight: 600; }
-        .val-down-bad { color: var(--red); font-weight: 600; }
         
         .back-btn { background: #F2F2F7; border: none; padding: 6px 16px; border-radius: 14px; cursor: pointer; font-size: 13px; color: var(--text-main); font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px; }
         .back-btn:hover { background: #E5E5EA; }
@@ -118,45 +122,89 @@
 
     <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
         <h3>导入《广告数据报表》</h3>
-        <p style="color: #86868B; font-size: 14px; margin-top:8px;">V3.5 全矩阵布局版 | 支持 GitHub 云端自动更新与线下双模式</p>
         <input type="file" id="file-input" class="hidden-input" accept=".xlsx, .xls">
     </div>
 
     <div id="loading">正在提取特征矩阵... (请保持页面打开)</div>
 
     <div class="kpi-grid" id="kpi-grid">
-        <div class="kpi-card clickable" onclick="openModal('ALL')">
+        <div class="kpi-card" onclick="openModal('ALL')">
             <div class="kpi-label">有效诊断 ASIN</div>
             <div class="kpi-value" id="kpi-asins">0</div>
-            <div class="click-hint">点击查看明细</div>
         </div>
-        <div class="kpi-card clickable" onclick="openModal('P0')">
-            <div class="kpi-label" style="color: #D93025;">P0级 紧急止损款</div>
-            <div class="kpi-value" id="kpi-p0" style="color: #D93025;">0</div>
-            <div class="click-hint">查看高危款式</div>
+        <div class="kpi-card" onclick="openModal('P0')">
+            <div class="kpi-label" style="color: var(--red);">P0级 紧急止损款</div>
+            <div class="kpi-value" id="kpi-p0" style="color: var(--red);">0</div>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card" onclick="openModal('ALL')">
             <div class="kpi-label">近一周自然单占比</div>
             <div class="kpi-value" id="kpi-organic-ratio">0%</div>
+            <div class="kpi-trend" id="trend-organic"></div>
         </div>
-        <div class="kpi-card">
-            <div class="kpi-label">大盘单均成本 (CPS)</div>
+        <div class="kpi-card" onclick="openModal('ALL')">
+            <div class="kpi-label">本组单件成本 (CPS)</div>
             <div class="kpi-value" id="kpi-cps">$0.00</div>
+            <div class="kpi-trend" id="trend-cps"></div>
+        </div>
+        <div class="kpi-card" onclick="openModal('ALL')">
+            <div class="kpi-label">综合 TACOS</div>
+            <div class="kpi-value" id="kpi-tacos">0%</div>
+            <div class="kpi-trend" id="trend-tacos"></div>
         </div>
     </div>
 
     <div class="actions" id="actions">
-        <button class="btn-export" style="background-color: #5F6368; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV3_5()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
+        <button class="btn-export" onclick="exportToExcelV6_2()">导出精研分析报告 (Excel)</button>
     </div>
 
-    <div class="charts-grid" id="charts-grid-1">
-        <div class="chart-container" id="chart-priority"></div>
-        <div class="chart-container" id="chart-owner"></div>
+    <div class="charts-grid top-grid" id="charts-grid-1">
+        <div class="chart-container">
+            <div class="chart-wrapper"><div id="chart-priority" class="absolute-chart"></div></div>
+        </div>
+        <div class="chart-container">
+            <div class="chart-wrapper"><div id="chart-owner" class="absolute-chart"></div></div>
+        </div>
     </div>
     
-    <div class="charts-grid bottom-grid" id="charts-grid-2">
-        <div class="chart-container" id="chart-cps"></div>
+    <div class="charts-grid full-grid" id="charts-grid-sales">
+        <div class="chart-container">
+            <div class="chart-header">
+                <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">日均销量骤降 TOP 10</span></div>
+                <div><select id="ownerFilterSales" class="filter-select" style="padding: 6px 28px 6px 12px; font-size: 12px;" onchange="updateSalesChart()"><option value="ALL">全员</option></select></div>
+            </div>
+            <div class="chart-wrapper"><div id="chart-sales" class="absolute-chart"></div></div>
+        </div>
+    </div>
+    
+    <div class="charts-grid full-grid" id="charts-grid-cps">
+        <div class="chart-container">
+            <div class="chart-header">
+                <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">成本恶化 TOP 10 (单均获客成本抬升)</span></div>
+                <div><select id="ownerFilterCps" class="filter-select" style="padding: 6px 28px 6px 12px; font-size: 12px;" onchange="updateCpsChart()"><option value="ALL">全员</option></select></div>
+            </div>
+            <div class="chart-wrapper"><div id="chart-cps" class="absolute-chart"></div></div>
+        </div>
+    </div>
+
+    <div class="charts-grid full-grid" id="charts-grid-ctr">
+        <div class="chart-container">
+            <div class="chart-header">
+                <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">点击率 (CTR) 骤降 TOP 10</span></div>
+                <div><select id="ownerFilterCtr" class="filter-select" style="padding: 6px 28px 6px 12px; font-size: 12px;" onchange="updateCtrChart()"><option value="ALL">全员</option></select></div>
+            </div>
+            <div class="chart-wrapper"><div id="chart-ctr" class="absolute-chart"></div></div>
+        </div>
+    </div>
+
+    <div class="charts-grid full-grid" id="charts-grid-cvr">
+        <div class="chart-container">
+            <div class="chart-header">
+                <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">转化率 (CVR) 骤降 TOP 10</span></div>
+                <div><select id="ownerFilterCvr" class="filter-select" style="padding: 6px 28px 6px 12px; font-size: 12px;" onchange="updateCvrChart()"><option value="ALL">全员</option></select></div>
+            </div>
+            <div class="chart-wrapper"><div id="chart-cvr" class="absolute-chart"></div></div>
+        </div>
     </div>
 </div>
 
@@ -175,7 +223,7 @@
                 </select>
                 <div class="search-box">
                     <span class="search-icon">🔍</span>
-                    <input type="text" id="searchInput" class="search-input" placeholder="输入 ASIN/货号/负责人触发下钻..." onkeyup="renderModalTable()">
+                    <input type="text" id="searchInput" class="search-input" placeholder="输入 ASIN/货号/负责人触发下钻..." onkeyup="debounceSearch()">
                     <span class="clear-search" id="clearSearch" onclick="drillDown('')">&times;</span>
                 </div>
             </div>
@@ -191,6 +239,40 @@
     let analyticalResults = []; 
     let currentModalType = 'ALL';
 
+    let searchTimeout;
+    function debounceSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(renderModalTable, 250);
+    }
+    window.debounceSearch = debounceSearch;
+
+    function parseNumber(val) {
+        if (val === undefined || val === null) return 0;
+        if (typeof val === 'string') {
+            return parseFloat(val.replace(/,/g, '')) || 0;
+        }
+        return Number(val) || 0;
+    }
+    
+    function parseMetric(val) {
+        if (val === undefined || val === null) return 0;
+        if (typeof val === 'string') {
+            const cleaned = val.trim().replace(/,/g, '');
+            if (cleaned.endsWith('%')) return parseFloat(cleaned.replace('%', '')) / 100;
+            return parseFloat(cleaned) || 0;
+        }
+        return Number(val) || 0;
+    }
+    
+    function getColRaw(row, names) {
+        const keys = Object.keys(row);
+        for (let n of names) {
+            const foundKey = keys.find(k => k.toLowerCase().includes(n.toLowerCase()));
+            if (foundKey && row[foundKey] !== undefined && row[foundKey] !== '') return row[foundKey];
+        }
+        return '';
+    }
+
     const fileInput = document.getElementById('file-input');
     fileInput.addEventListener('change', handleFile);
 
@@ -199,7 +281,7 @@
         if (!file) return;
         
         if(typeof XLSX === 'undefined') {
-            alert('严重错误：网页底层核心库未加载，请检查公司网络是否拦截了外网 JS 文件 !');
+            alert('严重错误：网页底层核心库未加载，请检查网络是否拦截了外网 JS 文件！');
             e.target.value = '';
             return;
         }
@@ -242,7 +324,8 @@
 
     function processData(data) {
         const grouped = {};
-        let totalW2Sales = 0, totalW2AdSales = 0, totalW2Spend = 0;
+        let totalW2Sales = 0, totalW2AdSales = 0, totalW2Spend = 0, totalW2Revenue = 0;
+        let totalW1Sales = 0, totalW1AdSales = 0, totalW1Spend = 0, totalW1Revenue = 0;
         let maxDate = '';
 
         data.forEach(row => {
@@ -281,27 +364,57 @@
             const week2Data = group.slice(-7);
             const week1Data = group.slice(0, -7).slice(-7); 
 
-            let w2_sales = 0, w2_spend = 0, w2_ad_sales = 0, w2_revenue = 0;
+            let w2_sales = 0, w2_spend = 0, w2_ad_sales = 0, w2_revenue = 0, w2_ctr_sum = 0, w2_cvr_sum = 0;
+            let w2_clicks = 0, w2_impressions = 0, w2_ad_orders = 0;
             week2Data.forEach(r => {
-                w2_sales += Number(r['总销量']) || 0;
-                w2_spend += Number(r['广告花费']) || 0;
-                w2_ad_sales += Number(r['广告销售量']) || 0;
-                w2_revenue += Number(r['总销售额(无汇总)']) || 0;
+                w2_sales += parseNumber(r['总销量']);
+                w2_spend += parseNumber(r['广告花费']);
+                w2_ad_sales += parseNumber(r['广告销售量']);
+                w2_revenue += parseNumber(getColRaw(r, ['总销售额', '销售额']));
+                w2_clicks += parseNumber(getColRaw(r, ['点击', 'click']));
+                w2_impressions += parseNumber(getColRaw(r, ['曝光', '展现', 'impression']));
+                w2_ad_orders += parseNumber(getColRaw(r, ['广告订单', '7天总订单', '订单'])) || parseNumber(r['广告销售量']);
+                
+                let r_ctr = parseMetric(getColRaw(r, ['CTR', '点击率']));
+                if(r_ctr > 1) r_ctr = r_ctr / 100;
+                w2_ctr_sum += r_ctr;
+                
+                let r_cvr = parseMetric(getColRaw(r, ['CVR', '转化率', '7天总订单转化率']));
+                if(r_cvr > 10) r_cvr = r_cvr / 100;
+                w2_cvr_sum += r_cvr;
             });
             totalW2Sales += w2_sales;
             totalW2AdSales += w2_ad_sales;
             totalW2Spend += w2_spend;
+            totalW2Revenue += w2_revenue;
 
-            let w1_sales = 0, w1_spend = 0, w1_ad_sales = 0, w1_revenue = 0;
+            let w1_sales = 0, w1_spend = 0, w1_ad_sales = 0, w1_revenue = 0, w1_ctr_sum = 0, w1_cvr_sum = 0;
+            let w1_clicks = 0, w1_impressions = 0, w1_ad_orders = 0;
             week1Data.forEach(r => {
-                w1_sales += Number(r['总销量']) || 0;
-                w1_spend += Number(r['广告花费']) || 0;
-                w1_ad_sales += Number(r['广告销售量']) || 0;
-                w1_revenue += Number(r['总销售额(无汇总)']) || 0;
+                w1_sales += parseNumber(r['总销量']);
+                w1_spend += parseNumber(r['广告花费']);
+                w1_ad_sales += parseNumber(r['广告销售量']);
+                w1_revenue += parseNumber(getColRaw(r, ['总销售额', '销售额']));
+                w1_clicks += parseNumber(getColRaw(r, ['点击', 'click']));
+                w1_impressions += parseNumber(getColRaw(r, ['曝光', '展现', 'impression']));
+                w1_ad_orders += parseNumber(getColRaw(r, ['广告订单', '7天总订单', '订单'])) || parseNumber(r['广告销售量']);
+                
+                let r_ctr = parseMetric(getColRaw(r, ['CTR', '点击率']));
+                if(r_ctr > 1) r_ctr = r_ctr / 100;
+                w1_ctr_sum += r_ctr;
+                
+                let r_cvr = parseMetric(getColRaw(r, ['CVR', '转化率', '7天总订单转化率']));
+                if(r_cvr > 10) r_cvr = r_cvr / 100;
+                w1_cvr_sum += r_cvr;
             });
 
-            const w2_sales_avg = w2_sales / 7;
-            const w1_sales_avg = w1_sales / 7;
+            totalW1Sales += w1_sales;
+            totalW1AdSales += w1_ad_sales;
+            totalW1Spend += w1_spend;
+            totalW1Revenue += w1_revenue;
+
+            const w2_sales_avg = w2_sales / (week2Data.length || 1);
+            const w1_sales_avg = w1_sales / (week1Data.length || 1);
             const sales_avg_diff = w2_sales_avg - w1_sales_avg;
             const sales_rate = w1_sales_avg > 0 ? sales_avg_diff / w1_sales_avg : (w2_sales_avg > 0 ? 1 : 0);
             
@@ -310,8 +423,9 @@
             const ad_ratio_diff = w2_ad_ratio - w1_ad_ratio;
             const ad_ratio_rate = w1_ad_ratio > 0 ? ad_ratio_diff / w1_ad_ratio : (w2_ad_ratio > 0 ? 1 : 0);
 
-            const w2_spend_avg = w2_spend / 7;
-            const w1_spend_avg = w1_spend / 7;
+            // Daily Avg Spend
+            const w2_spend_avg = w2_spend / (week2Data.length || 1);
+            const w1_spend_avg = w1_spend / (week1Data.length || 1);
             const spend_avg_diff = w2_spend_avg - w1_spend_avg;
             const spend_rate = w1_spend_avg > 0 ? spend_avg_diff / w1_spend_avg : (w2_spend_avg > 0 ? 1 : 0);
 
@@ -324,6 +438,9 @@
             const w1_cps = w1_sales > 0 ? w1_spend / w1_sales : 0;
             const cps_diff = w2_cps - w1_cps;
             const cps_rate = w1_cps > 0 ? cps_diff / w1_cps : (w2_cps > 0 ? 1 : 0);
+            
+            const w2_organic_ratio = w2_sales > 0 ? (1 - (w2_ad_sales / w2_sales)) : 0;
+            const organic_status = w2_organic_ratio >= 0.6 ? "自然流量健康" : "高度依赖广告";
 
             let sales_status = sales_rate > 0.05 ? "近期销量攀升" : (sales_rate < -0.05 ? "近期销量下滑" : "近期销量平稳");
             let cost_status = (cps_diff > 1.0 || spend_avg_diff > w1_spend_avg * 0.15) ? "获客成本抬升" : ((cps_diff < -1.0 || spend_avg_diff < -w1_spend_avg * 0.15) ? "获客成本优化" : "成本可控");
@@ -332,9 +449,9 @@
             if (sales_status.includes("攀升") && cost_status.includes("优化")) {
                 action = "建议稳步放量(抢占核心词坑位)"; priority = "P1 - 乘胜追击";
             } else if (sales_status.includes("攀升") && cost_status.includes("抬升")) {
-                action = "建议局部优化(降出价，剥离泛流量)"; priority = "P1 - 降本增效";
+                action = w2_organic_ratio < 0.6 ? "防守自然位(降出价，剥离泛流量)" : "建议局部优化(微调泛流量)"; priority = "P1 - 降本增效";
             } else if (sales_status.includes("下滑") && cost_status.includes("抬升")) {
-                action = "紧急止损！(结合链接评分透视区排查差评/断码，缩减无效预算)"; priority = "P0 - 紧急止损"; p0Count++;
+                action = "排查差评/断码，缩减无效预算"; priority = "P0 - 紧急止损"; p0Count++;
             } else if (sales_status.includes("下滑") && cost_status.includes("优化")) {
                 action = "观望防守(确认自然排位是否被挤占)"; priority = "P3 - 观察防守";
             } else if (sales_status.includes("平稳") && cost_status.includes("抬升")) {
@@ -348,6 +465,9 @@
 
             const lastRow = week2Data[week2Data.length - 1];
             const resultRow = { ...lastRow };
+            
+            // 提取图片链接
+            resultRow['主图'] = getColRaw(lastRow, ['主图', '图片', '商品图片', 'image', 'img', '主图链接']);
             
             resultRow['上周日均销量'] = Number(w1_sales_avg.toFixed(2));
             resultRow['近一周日均销量'] = Number(w2_sales_avg.toFixed(2));
@@ -375,9 +495,40 @@
             resultRow['CPS环比'] = Number(cps_rate.toFixed(4));
 
             resultRow['优化调整优先级'] = priority;
-            resultRow['诊断结论'] = `【特征】${sales_status} | ${cost_status}。
-【建议】${action}`;
             
+            const w2_ctr_avg = w2_impressions > 0 ? w2_clicks / w2_impressions : (w2_ctr_sum / (week2Data.length || 1));
+            const w1_ctr_avg = w1_impressions > 0 ? w1_clicks / w1_impressions : (w1_ctr_sum / (week1Data.length || 1));
+            const ctr_diff = w2_ctr_avg - w1_ctr_avg;
+            const ctr_rate = w1_ctr_avg > 0 ? ctr_diff / w1_ctr_avg : 0;
+            
+            const w2_cvr_avg = w2_clicks > 0 ? w2_ad_orders / w2_clicks : (w2_cvr_sum / (week2Data.length || 1));
+            const w1_cvr_avg = w1_clicks > 0 ? w1_ad_orders / w1_clicks : (w1_cvr_sum / (week1Data.length || 1));
+            const cvr_diff = w2_cvr_avg - w1_cvr_avg;
+            const cvr_rate = w1_cvr_avg > 0 ? cvr_diff / w1_cvr_avg : 0;
+
+            // 格式化输出严格要求的正负符号
+            function getSignStr(val) { return val > 0 ? '+' : (val < 0 ? '-' : ''); }
+            let signSales = getSignStr(sales_avg_diff);
+            let signCps = getSignStr(cps_diff);
+            let signTacos = getSignStr(tacos_diff);
+            let signCtr = getSignStr(ctr_diff);
+            let signCvr = getSignStr(cvr_diff);
+            
+            let dataStr = `【波动】近一周销 ${w2_sales_avg.toFixed(1)} (${signSales}${Math.abs(sales_avg_diff).toFixed(1)}) | CPS $${w2_cps.toFixed(2)} (${signCps}$${Math.abs(cps_diff).toFixed(2)}) | TACOS ${(w2_tacos*100).toFixed(1)}% (${signTacos}${(Math.abs(tacos_diff)*100).toFixed(1)}%) | CTR ${(w2_ctr_avg*100).toFixed(1)}% (${signCtr}${(Math.abs(ctr_diff)*100).toFixed(1)}%) | CVR ${(w2_cvr_avg*100).toFixed(1)}% (${signCvr}${(Math.abs(cvr_diff)*100).toFixed(1)}%)`;
+            
+            resultRow['诊断结论'] = `【特征】${sales_status} | ${cost_status} | ${organic_status}\n【建议】${action}`;
+            resultRow['导出诊断结论'] = `${dataStr}\n${resultRow['诊断结论']}`;
+            
+            resultRow['上周CTR'] = w1_ctr_avg;
+            resultRow['近一周CTR'] = w2_ctr_avg;
+            resultRow['CTR差额'] = ctr_diff;
+            resultRow['CTR环比'] = ctr_rate;
+            
+            resultRow['上周CVR'] = w1_cvr_avg;
+            resultRow['近一周CVR'] = w2_cvr_avg;
+            resultRow['CVR差额'] = cvr_diff;
+            resultRow['CVR环比'] = cvr_rate;
+
             resultRow['_week2_details'] = week2Data;
             analyticalResults.push(resultRow);
         }
@@ -414,14 +565,79 @@
         let organicRatio = totalW2Sales > 0 ? (1 - (totalW2AdSales / totalW2Sales)) * 100 : 0;
         document.getElementById('kpi-organic-ratio').innerText = organicRatio.toFixed(1) + '%';
         document.getElementById('kpi-cps').innerText = totalW2Sales > 0 ? '$' + (totalW2Spend / totalW2Sales).toFixed(2) : '$0.00';
+        
+        let tacos = totalW2Revenue > 0 ? (totalW2Spend / totalW2Revenue) * 100 : 0;
+        document.getElementById('kpi-tacos').innerText = tacos.toFixed(1) + '%';
+
+        let w1OrganicRatio = totalW1Sales > 0 ? (1 - (totalW1AdSales / totalW1Sales)) : 0;
+        let w1Cps = totalW1Sales > 0 ? (totalW1Spend / totalW1Sales) : 0;
+        let w1Tacos = totalW1Revenue > 0 ? (totalW1Spend / totalW1Revenue) : 0;
+        
+        let w2OrganicRatio = totalW2Sales > 0 ? (1 - (totalW2AdSales / totalW2Sales)) : 0;
+        let w2Cps = totalW2Sales > 0 ? (totalW2Spend / totalW2Sales) : 0;
+        let w2Tacos = totalW2Revenue > 0 ? (totalW2Spend / totalW2Revenue) : 0;
+        
+        let diffOrg = w2OrganicRatio - w1OrganicRatio;
+        let diffCps = w2Cps - w1Cps;
+        let diffTacos = w2Tacos - w1Tacos;
+        
+        function renderTrend(elId, diff, isCost, isPercent, baseVal) {
+            const el = document.getElementById(elId);
+            let icon = diff > 0 ? '↑' : (diff < 0 ? '↓' : '-');
+            let colorClass = 'trend-neutral';
+            
+            if (diff > 0) colorClass = isCost ? 'trend-up-bad' : 'trend-up-good';
+            else if (diff < 0) colorClass = isCost ? 'trend-down-good' : 'trend-down-bad';
+            
+            let valStr = isPercent ? (Math.abs(diff) * 100).toFixed(1) + '%' : '$' + Math.abs(diff).toFixed(2);
+            if (diff === 0) valStr = '持平';
+            
+            let baseStr = isPercent ? (baseVal * 100).toFixed(1) + '%' : '$' + baseVal.toFixed(2);
+            
+            el.className = 'kpi-trend'; 
+            el.innerHTML = `<span style="color:#86868b; font-weight:500; margin-right:8px;">上周基准: ${baseStr}</span><span class="${colorClass}">环比 ${icon} ${valStr}</span>`;
+        }
+        
+        renderTrend('trend-organic', diffOrg, false, true, w1OrganicRatio);
+        renderTrend('trend-cps', diffCps, true, false, w1Cps);
+        renderTrend('trend-tacos', diffTacos, true, true, w1Tacos);
 
         document.getElementById('loading').style.display = 'none';
         document.getElementById('kpi-grid').style.display = 'grid';
         document.getElementById('charts-grid-1').style.display = 'grid';
-        document.getElementById('charts-grid-2').style.display = 'grid';
+        document.getElementById('charts-grid-sales').style.display = 'grid';
+        document.getElementById('charts-grid-cps').style.display = 'grid';
+        document.getElementById('charts-grid-ctr').style.display = 'grid';
+        document.getElementById('charts-grid-cvr').style.display = 'grid';
         document.getElementById('actions').style.display = 'block';
 
+        populateOwnerFilter(analyticalResults);
         renderCharts(priorityCounts, analyticalResults);
+    }
+
+    function populateOwnerFilter(results) {
+        const select = document.getElementById('ownerFilterCps');
+        const select2 = document.getElementById('ownerFilterCvr');
+        const select3 = document.getElementById('ownerFilterSales');
+        const select4 = document.getElementById('ownerFilterCtr');
+        const owners = new Set();
+        results.forEach(r => {
+            if (r['营销负责人']) owners.add(r['营销负责人']);
+        });
+        
+        select.innerHTML = '<option value="ALL">全员</option>';
+        select2.innerHTML = '<option value="ALL">全员</option>';
+        select3.innerHTML = '<option value="ALL">全员</option>';
+        select4.innerHTML = '<option value="ALL">全员</option>';
+        Array.from(owners).sort().forEach(owner => {
+            const opt = document.createElement('option');
+            opt.value = owner;
+            opt.innerText = owner;
+            select.appendChild(opt);
+            select2.appendChild(opt.cloneNode(true));
+            select3.appendChild(opt.cloneNode(true));
+            select4.appendChild(opt.cloneNode(true));
+        });
     }
 
     function drillDown(asinOrOwner) {
@@ -437,16 +653,22 @@
     }
     window.changePriorityFilter = changePriorityFilter;
 
-    // 统一颜色字典映射
     function getPriorityColor(name) {
-        if(name.includes('P0')) return '#D93025';
+        if(name.includes('P0')) return '--red';
         if(name.includes('乘胜追击')) return '#F29900';
         if(name.includes('降本增效')) return '#E67C00';
-        if(name.includes('尝试扩量')) return '#1A73E8';
+        if(name.includes('尝试扩量')) return 'var(--accent)';
         if(name.includes('预算调控')) return '#1967D2';
         if(name.includes('P3')) return '#9AA0A6';
-        if(name.includes('P4')) return '#5F6368';
+        if(name.includes('P4')) return 'var(--text-muted)';
         return '#E5E5EA';
+    }
+
+    function triggerResize() {
+        ['chart-priority', 'chart-owner', 'chart-sales', 'chart-cps', 'chart-ctr', 'chart-cvr'].forEach(id => {
+            const inst = echarts.getInstanceByDom(document.getElementById(id));
+            if (inst) inst.resize();
+        });
     }
 
     function renderCharts(priorityCounts, results) {
@@ -454,33 +676,23 @@
         const pieData = Object.keys(priorityCounts).map(k => ({name: k, value: priorityCounts[k]})).filter(d => d.value > 0);
         
         chartPriority.setOption({
-            title: { text: '诊断分布视图', textStyle: { fontWeight: 700, fontSize: 18, color: '#1d1d1f' }, subtext: '交互热区：点击扇形穿透查看明细', left: 'center' },
-            tooltip: { trigger: 'item', backgroundColor: 'rgba(255,255,255,0.92)', borderColor: '#E5E5EA', textStyle: {color: '#1d1d1f'}, padding: 12, borderRadius: 12, extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.08);' },
+            title: { text: '诊断分布视图', textStyle: { fontWeight: 700, fontSize: 16, color: '#111115' }, left: 'center', top: '2%' },
+            tooltip: { trigger: 'item', backgroundColor: 'rgba(255,255,255,0.92)', borderColor: '#E5E5EA', textStyle: {color: '#111115'}, padding: 12, borderRadius: 12, extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.08);' },
             series: [{
                 type: 'pie', 
                 radius: ['35%', '55%'],
                 center: ['50%', '55%'],
                 itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 3 }, 
-                label: { 
-                    show: true, 
-                    formatter: '{b}\n{c} 款',
-                    lineHeight: 18,
-                    color: '#5F6368',
-                    fontSize: 12
-                },
-                data: pieData.map(item => ({
-                    value: item.value,
-                    name: item.name,
-                    itemStyle: { color: getPriorityColor(item.name) }
-                }))
+                label: { show: true, formatter: '{b}\n{c} 款', lineHeight: 18, color: '#6E6E73', fontSize: 12 },
+                data: pieData.map(item => ({ value: item.value, name: item.name, itemStyle: { color: getPriorityColor(item.name).replace('var(--red)', '#FF3B30').replace('var(--accent)', '#0066CC').replace('var(--text-muted)', '#6E6E73') } }))
             }]
         });
 
         chartPriority.off('click');
         chartPriority.on('click', function(params) {
-            const typeMatch = params.name.match(/P[0-4]/);
-            if(typeMatch) {
-                openModal(typeMatch[0]);
+            if (params.name) {
+                const typeMatch = params.name.match(/P[0-4]/);
+                if(typeMatch) { openModalWithSearch(typeMatch[0], ''); }
             }
         });
 
@@ -507,58 +719,234 @@
                 type: 'bar',
                 stack: 'total',
                 barMaxWidth: 60,
-                itemStyle: { color: getPriorityColor(prio) },
+                itemStyle: { color: getPriorityColor(prio).replace('var(--red)', '#FF3B30').replace('var(--accent)', '#0066CC').replace('var(--text-muted)', '#6E6E73') },
                 emphasis: { focus: 'series' },
                 data: owners.map(o => ownerData[o][prio] || 0)
             };
         });
 
         chartOwner.setOption({
-            title: { text: '责任人管辖款型健康度', textStyle: { fontWeight: 700, fontSize: 18, color: '#1d1d1f' }, subtext: '交互热区：点击柱状体穿透下钻', left: 'center' },
+            title: { text: '责任人管辖健康度', textStyle: { fontWeight: 700, fontSize: 16, color: '#111115' }, left: 'center', top: '2%' },
             tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: 'rgba(255,255,255,0.92)', borderColor: '#E5E5EA', padding: 12, borderRadius: 12, extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.08);' },
-            legend: { top: 'bottom', type: 'scroll', itemWidth: 14, itemHeight: 14, textStyle: {fontSize: 11, color: '#5F6368'} },
-            grid: { left: '3%', right: '4%', bottom: '15%', top: '15%', containLabel: true },
-            xAxis: { type: 'category', data: owners, axisLine: { lineStyle: { color: '#E5E5EA' } }, axisLabel: { color: '#86868B', fontWeight: 500 } },
-            yAxis: { type: 'value', name: 'ASIN 款数', nameTextStyle: {color: '#86868B'}, splitLine: { lineStyle: { type: 'dashed', color: '#F2F2F7' } } },
+            legend: { top: 'bottom', type: 'scroll', itemWidth: 14, itemHeight: 14, textStyle: {fontSize: 11, color: '#6E6E73'} },
+            grid: { left: '3%', right: '4%', bottom: '20%', top: '15%', containLabel: true },
+            xAxis: { type: 'category', data: owners, axisLine: { lineStyle: { color: '#E5E5EA' } }, axisLabel: { color: '#6E6E73', fontWeight: 500 } },
+            yAxis: { type: 'value', name: 'ASIN 款数', nameTextStyle: {color: '#6E6E73'}, splitLine: { lineStyle: { type: 'dashed', color: '#F2F2F7' } } },
             series: seriesOwnerData
         });
 
         chartOwner.off('click');
-        chartOwner.on('click', function(params) {
-            let ownerName = params.name;
-            openModal('ALL');
-            drillDown(ownerName);
+        chartOwner.on('click', function(params) { 
+            if (params.name) openModalWithSearch('ALL', params.name); 
         });
 
-        const chartCps = echarts.init(document.getElementById('chart-cps'));
-        let badAsins = [...results].sort((a, b) => b['CPS差额'] - a['CPS差额']).slice(0, 10);
+        updateSalesChart();
+        updateCpsChart();
+        updateCtrChart();
+        updateCvrChart();
+
+        window.addEventListener('resize', triggerResize);
+    }
+
+    function updateSalesChart() {
+        const ownerFilter = document.getElementById('ownerFilterSales').value;
+        let filtered = analyticalResults;
+        if (ownerFilter !== 'ALL') {
+            filtered = analyticalResults.filter(r => (r['营销负责人'] || '未知') === ownerFilter);
+        }
+
+        const chartSales = echarts.init(document.getElementById('chart-sales'));
+        let badAsins = [...filtered].filter(a => a['日均销量差额'] < 0 && a['上周日均花费'] > 0).sort((a, b) => a['日均销量差额'] - b['日均销量差额']).slice(0, 10);
         
-        chartCps.setOption({
-            title: { text: '成本恶化 TOP 10 (需强干预)', subtext: '交互热区：点击柱状体穿透下钻', textStyle: { fontWeight: 700, fontSize: 18, color: '#1d1d1f' }, left: 'center' },
-            tooltip: { trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.92)', borderColor: '#E5E5EA', padding: 12, borderRadius: 12, extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.08);' },
-            grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+        chartSales.setOption({
+            tooltip: { 
+                trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.92)', borderColor: '#E5E5EA', padding: 12, borderRadius: 12, extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.08);',
+                formatter: function(params) {
+                    const item = badAsins[params[0].dataIndex];
+                    return `<b>父ASIN:</b> ${item['父asin']}<br/><b>货号:</b> ${item['货号'] || '-'}<br/><b>营销负责人:</b> ${item['营销负责人'] || '-'}<br/><br/>
+                            <span style="color:#AF52DE; font-weight:bold;">日均销量跌幅:</span> ${Math.abs(item['日均销量差额']).toFixed(2)}`;
+                }
+            },
+            grid: { left: '3%', right: '4%', bottom: '28%', top: '12%', containLabel: true },
             xAxis: { 
                 type: 'category', 
-                data: badAsins.map(i => i['父asin'] + '\n' + (i['营销负责人'] || '-')), 
-                axisLabel: { interval: 0, formatter: (val) => val, fontSize: 11, color: '#86868B', fontWeight: 500, lineHeight: 14 },
+                data: badAsins.map(i => `${i['父asin']}\n(${i['货号'] || '-'})\n${i['营销负责人'] || '-'}`), 
+                axisLabel: { interval: 0, rotate: 15, margin: 20, formatter: (val) => val, fontSize: 11, color: '#6E6E73', fontWeight: 500, lineHeight: 15 },
                 axisLine: { lineStyle: { color: '#E5E5EA' } }
             },
-            yAxis: { type: 'value', name: '单均获客成本抬升 ($)', nameTextStyle: {color: '#86868B'}, splitLine: { lineStyle: { type: 'dashed', color: '#F2F2F7' } } },
+            yAxis: { type: 'value', name: '日均销量滑落', nameTextStyle: {color: '#6E6E73'}, splitLine: { lineStyle: { type: 'dashed', color: '#F2F2F7' } } },
             series: [{
-                data: badAsins.map(i => i['CPS差额']), type: 'bar', barMaxWidth: 60,
-                itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: '#FF6B6B'}, {offset: 1, color: '#FFB8B8'}]), borderRadius: [6, 6, 0, 0] },
-                cursor: 'pointer'
+                data: badAsins.map(i => i['日均销量差额']), type: 'bar', barMaxWidth: 60,
+                itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: '#5E5CE6'}, {offset: 1, color: '#AF52DE'}]), borderRadius: [0, 0, 6, 6] },
             }]
         });
 
-        chartCps.off('click');
-        chartCps.on('click', function(params) {
-            let asin = params.name.split('\n')[0];
-            openModal('ALL');
-            drillDown(asin);
+        chartSales.off('click');
+        chartSales.on('click', function(params) { 
+            if (params.name) openModalWithSearch('ALL', params.name.split(/[\n\s\(]+/)[0]); 
         });
+    }
+
+    function updateCtrChart() {
+        const ownerFilter = document.getElementById('ownerFilterCtr').value;
+        let filtered = analyticalResults;
+        if (ownerFilter !== 'ALL') {
+            filtered = analyticalResults.filter(r => (r['营销负责人'] || '未知') === ownerFilter);
+        }
+
+        const chartCtr = echarts.init(document.getElementById('chart-ctr'));
+        let badAsins = [...filtered].filter(a => a['CTR差额'] < 0 && a['上周日均花费'] > 0).sort((a, b) => a['CTR差额'] - b['CTR差额']).slice(0, 10);
         
-        window.addEventListener('resize', function() { chartPriority.resize(); chartOwner.resize(); chartCps.resize(); });
+        chartCtr.setOption({
+            tooltip: { 
+                trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.92)', borderColor: '#E5E5EA', padding: 12, borderRadius: 12, extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.08);',
+                formatter: function(params) {
+                    const item = badAsins[params[0].dataIndex];
+                    return `<b>父ASIN:</b> ${item['父asin']}<br/><b>货号:</b> ${item['货号'] || '-'}<br/><b>营销负责人:</b> ${item['营销负责人'] || '-'}<br/><br/>
+                            <span style="color:#0066CC; font-weight:bold;">近一周 CTR:</span> ${(item['近一周CTR'] * 100).toFixed(2)}%<br/>
+                            <span style="color:#86868B; font-weight:bold;">上周 CTR:</span> ${(item['上周CTR'] * 100).toFixed(2)}%<br/>
+                            <span style="color:#FF3B30;">跌幅: ${(Math.abs(item['CTR差额'])*100).toFixed(2)}%</span>`;
+                }
+            },
+            legend: { top: 'bottom', data: ['上周 CTR', '近一周 CTR'], textStyle: { fontSize: 11, color: '#6E6E73' } },
+            grid: { left: '3%', right: '4%', bottom: '28%', top: '12%', containLabel: true },
+            xAxis: { 
+                type: 'category', 
+                data: badAsins.map(i => `${i['父asin']}\n(${i['货号'] || '-'})\n${i['营销负责人'] || '-'}`), 
+                axisLabel: { interval: 0, rotate: 15, margin: 20, formatter: (val) => val, fontSize: 11, color: '#6E6E73', fontWeight: 500, lineHeight: 14 },
+                axisLine: { lineStyle: { color: '#E5E5EA' } }
+            },
+            yAxis: { type: 'value', name: '点击率 CTR (%)', nameTextStyle: {color: '#6E6E73'}, splitLine: { lineStyle: { type: 'dashed', color: '#F2F2F7' } },
+                     axisLabel: { formatter: val => (val * 100).toFixed(1) + '%' }
+            },
+            series: [
+                {
+                    name: '上周 CTR',
+                    data: badAsins.map(i => i['上周CTR']), type: 'bar', barGap: '0%', barMaxWidth: 40,
+                    itemStyle: { color: '#D1D1D6', borderRadius: [4, 4, 0, 0] }
+                },
+                {
+                    name: '近一周 CTR',
+                    data: badAsins.map(i => i['近一周CTR']), type: 'bar', barMaxWidth: 40,
+                    itemStyle: { color: '#0066CC', borderRadius: [4, 4, 0, 0] }
+                }
+            ]
+        });
+
+        chartCtr.off('click');
+        chartCtr.on('click', function(params) { 
+            if (params.name) openModalWithSearch('ALL', params.name.split(/[\n\s\(]+/)[0]); 
+        });
+    }
+
+    function updateCpsChart() {
+        const ownerFilter = document.getElementById('ownerFilterCps').value;
+        let filtered = analyticalResults;
+        if (ownerFilter !== 'ALL') {
+            filtered = analyticalResults.filter(r => (r['营销负责人'] || '未知') === ownerFilter);
+        }
+
+        const chartCps = echarts.init(document.getElementById('chart-cps'));
+        let badAsins = [...filtered].filter(a => a['CPS差额'] > 0 && a['上周日均花费'] > 0).sort((a, b) => b['CPS差额'] - a['CPS差额']).slice(0, 10);
+        
+        chartCps.setOption({
+            tooltip: { 
+                trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.92)', borderColor: '#E5E5EA', padding: 12, borderRadius: 12, extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.08);',
+                formatter: function(params) {
+                    const item = badAsins[params[0].dataIndex];
+                    return `<b>父ASIN:</b> ${item['父asin']}<br/><b>货号:</b> ${item['货号'] || '-'}<br/><b>营销负责人:</b> ${item['营销负责人'] || '-'}<br/><br/>
+                            <span style="color:#FF3B30; font-weight:bold;">CPS抬升:</span> $${item['CPS差额'].toFixed(2)}<br/>
+                            <span style="color:#0066CC; font-weight:bold;">近一周 TACOS:</span> ${(item['近一周TACOS'] * 100).toFixed(2)}%<br/>
+                            <span style="color:#86868B; font-weight:bold;">上周 TACOS:</span> ${(item['上周TACOS'] * 100).toFixed(2)}%`;
+                }
+            },
+            legend: { top: 'bottom', data: ['CPS 抬升幅度', '近一周 TACOS', '上周 TACOS'], textStyle: { fontSize: 11, color: '#6E6E73' } },
+            grid: { left: '3%', right: '4%', bottom: '28%', top: '12%', containLabel: true },
+            xAxis: { 
+                type: 'category', 
+                data: badAsins.map(i => `${i['父asin']}\n(${i['货号'] || '-'})\n${i['营销负责人'] || '-'}`), 
+                axisLabel: { interval: 0, rotate: 15, margin: 20, formatter: (val) => val, fontSize: 11, color: '#6E6E73', fontWeight: 500, lineHeight: 15 },
+                axisLine: { lineStyle: { color: '#E5E5EA' } }
+            },
+            yAxis: [
+                { type: 'value', name: '单均获客成本抬升 ($)', nameTextStyle: {color: '#6E6E73'}, splitLine: { lineStyle: { type: 'dashed', color: '#F2F2F7' } }, alignTicks: true },
+                { type: 'value', name: 'TACOS (%)', nameTextStyle: {color: '#6E6E73'}, splitLine: { show: false }, axisLabel: { formatter: val => (val * 100).toFixed(0) + '%' }, alignTicks: true }
+            ],
+            series: [
+                {
+                    name: 'CPS 抬升幅度',
+                    data: badAsins.map(i => i['CPS差额']), type: 'bar', barMaxWidth: 60,
+                    itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: '#FF3B30'}, {offset: 1, color: '#FF6961'}]), borderRadius: [6, 6, 0, 0] }
+                },
+                {
+                    name: '近一周 TACOS',
+                    data: badAsins.map(i => i['近一周TACOS']), type: 'line', yAxisIndex: 1,
+                    itemStyle: { color: '#0066CC' }, lineStyle: { width: 3, type: 'solid' }, symbolSize: 8, smooth: true
+                },
+                {
+                    name: '上周 TACOS',
+                    data: badAsins.map(i => i['上周TACOS']), type: 'line', yAxisIndex: 1,
+                    itemStyle: { color: '#86868B' }, lineStyle: { width: 2, type: 'dashed' }, symbolSize: 6, smooth: true
+                }
+            ]
+        });
+
+        chartCps.off('click');
+        chartCps.on('click', function(params) { 
+            if (params.name) openModalWithSearch('ALL', params.name.split(/[\n\s\(]+/)[0]); 
+        });
+    }
+
+    function updateCvrChart() {
+        const ownerFilter = document.getElementById('ownerFilterCvr').value;
+        let filtered = analyticalResults;
+        if (ownerFilter !== 'ALL') {
+            filtered = analyticalResults.filter(r => (r['营销负责人'] || '未知') === ownerFilter);
+        }
+
+        const chartCvr = echarts.init(document.getElementById('chart-cvr'));
+        let badAsins = [...filtered].filter(a => a['CVR差额'] < 0 && a['上周日均花费'] > 0).sort((a, b) => a['CVR差额'] - b['CVR差额']).slice(0, 10);
+        
+        chartCvr.setOption({
+            tooltip: { 
+                trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.92)', borderColor: '#E5E5EA', padding: 12, borderRadius: 12, extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.08);',
+                formatter: function(params) {
+                    const item = badAsins[params[0].dataIndex];
+                    return `<b>父ASIN:</b> ${item['父asin']}<br/><b>货号:</b> ${item['货号'] || '-'}<br/><b>营销负责人:</b> ${item['营销负责人'] || '-'}<br/><br/>
+                            <span style="color:#FF9500; font-weight:bold;">近一周 CVR:</span> ${(item['近一周CVR'] * 100).toFixed(2)}%<br/>
+                            <span style="color:#86868B; font-weight:bold;">上周 CVR:</span> ${(item['上周CVR'] * 100).toFixed(2)}%<br/>
+                            <span style="color:#FF3B30;">跌幅: ${(Math.abs(item['CVR差额'])*100).toFixed(2)}%</span>`;
+                }
+            },
+            legend: { top: 'bottom', data: ['上周 CVR', '近一周 CVR'], textStyle: { fontSize: 11, color: '#6E6E73' } },
+            grid: { left: '3%', right: '4%', bottom: '28%', top: '12%', containLabel: true },
+            xAxis: { 
+                type: 'category', 
+                data: badAsins.map(i => `${i['父asin']}\n(${i['货号'] || '-'})\n${i['营销负责人'] || '-'}`), 
+                axisLabel: { interval: 0, rotate: 15, margin: 20, formatter: (val) => val, fontSize: 11, color: '#86868B', fontWeight: 500, lineHeight: 14 },
+                axisLine: { lineStyle: { color: '#E5E5EA' } }
+            },
+            yAxis: { type: 'value', name: '转化率 CVR (%)', nameTextStyle: {color: '#86868B'}, splitLine: { lineStyle: { type: 'dashed', color: '#F2F2F7' } },
+                     axisLabel: { formatter: val => (val * 100).toFixed(1) + '%' }
+            },
+            series: [
+                {
+                    name: '上周 CVR',
+                    data: badAsins.map(i => i['上周CVR']), type: 'bar', barGap: '0%', barMaxWidth: 40,
+                    itemStyle: { color: '#D1D1D6', borderRadius: [4, 4, 0, 0] }
+                },
+                {
+                    name: '近一周 CVR',
+                    data: badAsins.map(i => i['近一周CVR']), type: 'bar', barMaxWidth: 40,
+                    itemStyle: { color: '#FF9500', borderRadius: [4, 4, 0, 0] }
+                }
+            ]
+        });
+
+        chartCvr.off('click');
+        chartCvr.on('click', function(params) { 
+            if (params.name) openModalWithSearch('ALL', params.name.split(/[\n\s\(]+/)[0]); 
+        });
     }
 
     window.onclick = function(event) {
@@ -569,31 +957,35 @@
                 drillDown('');
             } else {
                 modal.style.display = "none";
+                setTimeout(() => triggerResize(), 100);
             }
         }
     }
 
+    function closeModal() {
+        document.getElementById('detailModal').style.display = "none";
+        setTimeout(() => triggerResize(), 100);
+    }
+
+    // 重构底层的加减符号判定逻辑，确保 + / - 绝对规范显示
     function getSubtextHtml(w1, diff, rate, isCost=false, isPercentFormat=false, isCurrency=false) {
         let prefix = isCurrency ? '$' : '';
-        let diffValStr = isPercentFormat ? (diff * 100).toFixed(2) + '%' : diff.toFixed(2);
-        let rateValStr = (rate * 100).toFixed(1) + '%';
+        let absDiff = Math.abs(diff);
+        let diffVal = isPercentFormat ? (absDiff * 100).toFixed(2) + '%' : absDiff.toFixed(2);
+        let diffSign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
+        let diffValStr = diffSign + prefix + diffVal;
+
+        let absRate = Math.abs(rate);
+        let rateVal = (absRate * 100).toFixed(1) + '%';
+        let rateSign = rate > 0 ? '+' : (rate < 0 ? '-' : '');
+        let rateValStr = rateSign + rateVal;
+
         let w1ValStr = isPercentFormat ? (w1 * 100).toFixed(2) + '%' : w1.toFixed(2);
-        
-        if(!isPercentFormat) {
-            diffValStr = prefix + diffValStr.replace('$-', '-$');
-            w1ValStr = prefix + w1ValStr;
-        }
-        
-        if(diff > 0 && !diffValStr.includes('+')) diffValStr = '+' + diffValStr;
-        if(rate > 0) rateValStr = '+' + rateValStr;
-        
-        let colorClass = 'val-neutral';
-        if(diff > 0) colorClass = isCost ? 'val-up-bad' : 'val-up-good';
-        else if(diff < 0) colorClass = isCost ? 'val-down-good' : 'val-down-bad';
+        if(!isPercentFormat) w1ValStr = prefix + w1ValStr;
         
         let colorHex = '#86868b';
-        if(colorClass === 'val-up-bad' || colorClass === 'val-down-bad') colorHex = 'var(--red)';
-        else if (colorClass === 'val-up-good' || colorClass === 'val-down-good') colorHex = 'var(--green)';
+        if (diff > 0) colorHex = isCost ? 'var(--red)' : 'var(--green)';
+        else if (diff < 0) colorHex = isCost ? 'var(--green)' : 'var(--red)';
 
         return `<div class="sub-metric">
             上周基准: ${w1ValStr} <br>
@@ -602,11 +994,16 @@
     }
 
     function openModal(type) {
+        openModalWithSearch(type, '');
+    }
+
+    function openModalWithSearch(type, searchStr) {
         currentModalType = type;
         document.getElementById('priorityFilter').value = type;
-        document.getElementById('searchInput').value = '';
+        document.getElementById('searchInput').value = searchStr;
         renderModalTable();
         document.getElementById('detailModal').style.display = "block";
+        setTimeout(() => triggerResize(), 100);
     }
 
     function renderModalTable() {
@@ -630,6 +1027,10 @@
             );
         }
 
+        const allOwners = Array.from(new Set(analyticalResults.map(r => String(r['营销负责人'] || '未知').toLowerCase())));
+        const isOwnerSearch = allOwners.includes(searchVal);
+        const isExpanded = searchVal.length > 0 && !isOwnerSearch;
+
         let html = '';
 
         if(filteredData.length === 0) {
@@ -637,8 +1038,6 @@
             return;
         }
 
-        const isExpanded = searchVal.length > 0;
-        
         if(isExpanded) {
             html += `<div style="padding: 16px 14px 6px 14px; display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-size:15px; font-weight:600; color: var(--text-main);">🔍 下钻详情视图: <span style="color:var(--accent);">${searchVal.toUpperCase()}</span></span>
@@ -649,7 +1048,7 @@
         html += `<table class="data-table"><thead><tr>`;
 
         if (isExpanded) {
-            const cols = ['日期', '产品信息', '诊断判定', '当日销量', '当日花费', '日均销量分析', '广告单占比', '日均花费分析', 'TACOS分析', 'CPS分析', '趋势洞察'];
+            const cols = ['日期', '产品信息', '判定', '当日销', '当日花费', '当日CTR', '当日CVR', '日均销', '日均花费', '广告单占比', 'CPS分析', 'TACOS分析', 'CTR分析', 'CVR分析', '趋势洞察'];
             cols.forEach(col => html += `<th>${col}</th>`);
             html += `</tr></thead><tbody>`;
 
@@ -657,13 +1056,20 @@
                 let priorityTag = getTagHtml(row['优化调整优先级']);
                 const details = row['_week2_details'];
                 const rowSpan = details.length;
-                let conclusionHtml = row['诊断结论'] ? row['诊断结论'].replace(/\n/g, '<br>') : '-';
+                let conclusionHtml = row['诊断结论'] ? row['诊断结论'].replace(/\n/g, '<br>').replace(/\\n/g, '<br>') : '-';
                 
+                // 拼接图片骨架布局
+                let imgHtml = row['主图'] 
+                    ? `<img src="${row['主图']}" onerror="this.style.display='none'" style="width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: #F2F2F7; flex-shrink:0; border: 1px solid #E5E5EA;">` 
+                    : `<div style="width: 44px; height: 44px; border-radius: 6px; background: #F2F2F7; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#A1A1A6; font-size:10px; border: 1px solid #E5E5EA;">暂无</div>`;
+
                 let salesHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, false);
-                let adRatioHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周广告占比']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周广告占比'], row['广告占比差额'], row['广告占比环比'], true, true, false);
                 let spendHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">$${row['近一周日均花费']}</div>` + getSubtextHtml(row['上周日均花费'], row['日均花费差额'], row['花费环比'], true, false, true);
-                let tacosHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周TACOS']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, false);
+                let adRatioHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周广告占比']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周广告占比'], row['广告占比差额'], row['广告占比环比'], true, true, false);
                 let cpsHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">$${row['近一周CPS']}</div>` + getSubtextHtml(row['上周CPS'], row['CPS差额'], row['CPS环比'], true, false, true);
+                let tacosHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周TACOS']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, false);
+                let ctrHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周CTR']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周CTR'], row['CTR差额'], row['CTR环比'], false, true, false);
+                let cvrHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周CVR']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周CVR'], row['CVR差额'], row['CVR环比'], false, true, false);
 
                 details.forEach((dayRow, idx) => {
                     html += `<tr>`;
@@ -671,52 +1077,86 @@
                     
                     if (idx === 0) {
                         html += `<td class="merged-cell" rowspan="${rowSpan}">
-                            <strong style="font-size:14px;color:var(--text-main);">${row['父asin']}</strong><br>
-                            <span style="color:var(--text-muted);font-size:11px;font-weight:500;">${row['货号'] || '-'} / ${row['营销负责人'] || '-'}</span>
+                            <div style="display:flex; align-items:center; gap:12px; text-align:left;">
+                                ${imgHtml}
+                                <div>
+                                    <strong style="font-size:14px;color:var(--text-main);">${row['父asin']}</strong><br>
+                                    <span style="color:var(--text-muted);font-size:11px;font-weight:500;">${row['货号'] || '-'} / ${row['营销负责人'] || '-'}</span>
+                                </div>
+                            </div>
                         </td>`;
                         html += `<td class="merged-cell priority-cell" rowspan="${rowSpan}">${priorityTag}</td>`;
                     }
                     
+                    let dayClicks = parseNumber(getColRaw(dayRow, ['点击', 'click']));
+                    let dayImps = parseNumber(getColRaw(dayRow, ['曝光', '展现', 'impression']));
+                    let dayOrders = parseNumber(getColRaw(dayRow, ['广告订单', '7天总订单', '订单'])) || parseNumber(dayRow['广告销售量']);
+                    
+                    let fbCtr = parseMetric(getColRaw(dayRow, ['CTR', '点击率']));
+                    if (fbCtr > 1) fbCtr = fbCtr / 100;
+                    let fbCvr = parseMetric(getColRaw(dayRow, ['CVR', '转化率', '7天总订单转化率']));
+                    if (fbCvr > 10) fbCvr = fbCvr / 100;
+                    
+                    let dayCtr = dayImps > 0 ? dayClicks / dayImps : fbCtr;
+                    let dayCvr = dayClicks > 0 ? dayOrders / dayClicks : fbCvr;
+
                     html += `<td>${dayRow['总销量'] || 0}</td>`;
                     html += `<td style="color:var(--text-muted); font-variant-numeric: tabular-nums;">$${Number(dayRow['广告花费'] || 0).toFixed(2)}</td>`;
+                    html += `<td style="color:var(--text-muted); font-variant-numeric: tabular-nums;">${(dayCtr*100).toFixed(2)}%</td>`;
+                    html += `<td style="color:var(--text-muted); font-variant-numeric: tabular-nums;">${(dayCvr*100).toFixed(2)}%</td>`;
                     
                     if (idx === 0) {
                         html += `<td class="merged-cell" rowspan="${rowSpan}">${salesHtml}</td>`;
-                        html += `<td class="merged-cell" rowspan="${rowSpan}">${adRatioHtml}</td>`;
                         html += `<td class="merged-cell" rowspan="${rowSpan}">${spendHtml}</td>`;
-                        html += `<td class="merged-cell" rowspan="${rowSpan}">${tacosHtml}</td>`;
+                        html += `<td class="merged-cell" rowspan="${rowSpan}">${adRatioHtml}</td>`;
                         html += `<td class="merged-cell" rowspan="${rowSpan}">${cpsHtml}</td>`;
+                        html += `<td class="merged-cell" rowspan="${rowSpan}">${tacosHtml}</td>`;
+                        html += `<td class="merged-cell" rowspan="${rowSpan}">${ctrHtml}</td>`;
+                        html += `<td class="merged-cell" rowspan="${rowSpan}">${cvrHtml}</td>`;
                         html += `<td class="merged-cell wrap-cell" rowspan="${rowSpan}">${conclusionHtml}</td>`;
                     }
                     html += `</tr>`;
                 });
             });
         } else {
-            const cols = ['产品信息', '诊断判定', '日均销量分析', '广告单占比', '日均花费分析', 'TACOS分析', 'CPS分析', '诊断洞察'];
+            const cols = ['产品信息', '判定', '日均销', '日均花费', '广告单占比', 'CPS分析', 'TACOS分析', 'CTR分析', 'CVR分析', '诊断洞察'];
             cols.forEach(col => html += `<th>${col}</th>`);
             html += `</tr></thead><tbody>`;
 
             filteredData.forEach(row => {
                 let priorityTag = getTagHtml(row['优化调整优先级']);
-                let conclusionHtml = row['诊断结论'] ? row['诊断结论'].replace(/\n/g, '<br>') : '-';
+                let conclusionHtml = row['诊断结论'] ? row['诊断结论'].replace(/\n/g, '<br>').replace(/\\n/g, '<br>') : '-';
+
+                let imgHtml = row['主图'] 
+                    ? `<img src="${row['主图']}" onerror="this.style.display='none'" style="width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: #F2F2F7; flex-shrink:0; border: 1px solid #E5E5EA;">` 
+                    : `<div style="width: 44px; height: 44px; border-radius: 6px; background: #F2F2F7; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#A1A1A6; font-size:10px; border: 1px solid #E5E5EA;">暂无</div>`;
 
                 let salesHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, false);
-                let adRatioHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周广告占比']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周广告占比'], row['广告占比差额'], row['广告占比环比'], true, true, false);
                 let spendHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">$${row['近一周日均花费']}</div>` + getSubtextHtml(row['上周日均花费'], row['日均花费差额'], row['花费环比'], true, false, true);
-                let tacosHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周TACOS']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, false);
+                let adRatioHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周广告占比']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周广告占比'], row['广告占比差额'], row['广告占比环比'], true, true, false);
                 let cpsHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">$${row['近一周CPS']}</div>` + getSubtextHtml(row['上周CPS'], row['CPS差额'], row['CPS环比'], true, false, true);
+                let tacosHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周TACOS']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, false);
+                let ctrHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周CTR']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周CTR'], row['CTR差额'], row['CTR环比'], false, true, false);
+                let cvrHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周CVR']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周CVR'], row['CVR差额'], row['CVR环比'], false, true, false);
 
                 html += `<tr style="cursor: pointer;" title="点击当前行可直接下钻查看 7 日流水" onclick="drillDown('${row['父asin']}')">
                     <td>
-                        <strong style="font-size:14px;color:var(--text-main);">${row['父asin'] || '-'}</strong><br>
-                        <span style="color:var(--text-muted);font-size:11px;font-weight:500;">${row['货号'] || '-'} / ${row['营销负责人'] || '-'}</span>
+                        <div style="display:flex; align-items:center; gap:12px; text-align:left; justify-content:left; padding-left: 10px;">
+                            ${imgHtml}
+                            <div style="text-align:left;">
+                                <strong style="font-size:14px;color:var(--text-main);">${row['父asin'] || '-'}</strong><br>
+                                <span style="color:var(--text-muted);font-size:11px;font-weight:500;">${row['货号'] || '-'} / ${row['营销负责人'] || '-'}</span>
+                            </div>
+                        </div>
                     </td>
                     <td class="priority-cell">${priorityTag}</td>
                     <td>${salesHtml}</td>
-                    <td>${adRatioHtml}</td>
                     <td>${spendHtml}</td>
-                    <td>${tacosHtml}</td>
+                    <td>${adRatioHtml}</td>
                     <td>${cpsHtml}</td>
+                    <td>${tacosHtml}</td>
+                    <td>${ctrHtml}</td>
+                    <td>${cvrHtml}</td>
                     <td class="wrap-cell">${conclusionHtml}</td>
                 </tr>`;
             });
@@ -733,11 +1173,7 @@
         return `<span class="tag tag-p3">${priority}</span>`;
     }
 
-    function closeModal() {
-        document.getElementById('detailModal').style.display = "none";
-    }
-
-    async function exportToExcelV3_5() {
+    async function exportToExcelV6_2() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -745,15 +1181,18 @@
             const ws = wb.addWorksheet('全矩阵洞察报表');
 
             const newCols = [
+                '主图',
                 '上周日均销量', '近一周日均销量', '日均销量差额', '销量环比',
                 '上周广告占比', '近一周广告占比', '广告占比差额', '广告占比环比',
                 '上周日均花费', '近一周日均花费', '日均花费差额', '花费环比',
                 '上周TACOS', '近一周TACOS', 'TACOS差额', 'TACOS环比',
                 '上周CPS', '近一周CPS', 'CPS差额', 'CPS环比',
+                '上周CTR', '近一周CTR', 'CTR差额', 'CTR环比',
+                '上周CVR', '近一周CVR', 'CVR差额', 'CVR环比',
                 '优化调整优先级', '诊断结论'
             ];
             
-            const originalColsNoDups = globalOriginalColumns.filter(c => c !== 'undefined' && c !== '');
+            const originalColsNoDups = globalOriginalColumns.filter(c => c !== 'undefined' && c !== '' && !['主图', '图片', '商品图片'].includes(c));
             const allCols = [...originalColsNoDups, ...newCols];
             
             const headerRow = ws.addRow(allCols);
@@ -768,6 +1207,7 @@
 
             globalProcessedData.forEach((rowData, index) => {
                 const rowValues = allCols.map(colName => {
+                    if (colName === '诊断结论') return rowData['导出诊断结论'] || '';
                     return rowData[colName] !== undefined ? rowData[colName] : '';
                 });
                 
@@ -835,6 +1275,7 @@
             ws.columns.forEach((col, i) => {
                 let colName = allCols[i];
                 if (colName.includes('结论')) col.width = 45; 
+                else if (colName.includes('主图')) col.width = 25; 
                 else if (colName.includes('优先级')) col.width = 16;
                 else if (colName.includes('asin') || colName.includes('货号') || colName.includes('日期')) col.width = 14; 
                 else col.width = 13; 
@@ -847,15 +1288,32 @@
 
             const buffer = await wb.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-            saveAs(blob, "广告数据报表_全矩阵深度分析_V3.5.xlsx");
+            saveAs(blob, "广告数据报表_全矩阵深度分析_V6.2.xlsx");
 
         } catch (error) {
             alert("导出异常: " + error.message);
         }
     }
 
-    // --- 新增：GitHub 云端自动拉取逻辑 ---
-    window.addEventListener('DOMContentLoaded', () => {
+    // --- 全局版块级点击穿透 ---
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.kpi-card').forEach(el => {
+            el.addEventListener('click', function(e) {
+                let type = 'ALL';
+                if (this.querySelector('.kpi-label') && this.querySelector('.kpi-label').innerText.includes('P0')) {
+                    type = 'P0';
+                }
+                openModalWithSearch(type, '');
+            });
+        });
+
+        document.querySelectorAll('.chart-container').forEach(el => {
+            el.addEventListener('click', function(e) {
+                if (e.target.tagName === 'SELECT' || e.target.tagName === 'OPTION' || e.target.tagName === 'CANVAS') return;
+                openModalWithSearch('ALL', '');
+            });
+        });
+        
         autoFetchCloudData();
     });
 
@@ -868,7 +1326,6 @@
             loadingEl.style.display = 'block';
             uploadArea.style.display = 'none';
 
-            // 加一个时间戳防止 GitHub Pages 强缓存
             const timestamp = new Date().getTime();
             const response = await fetch(`./广告数据.xlsx?t=${timestamp}`, { cache: 'no-store' });
             
@@ -896,7 +1353,6 @@
             uploadArea.querySelector('h3').innerText = '未检测到云端更新，请手动导入《广告数据报表》';
         }
     }
-
 </script>
 </body>
 </html>
