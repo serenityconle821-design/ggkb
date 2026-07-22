@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V6.2</title>
+    <title>父ASIN粒度广告分析看板 V6.5</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -102,6 +102,11 @@
         
         .back-btn { background: #F2F2F7; border: none; padding: 6px 16px; border-radius: 14px; cursor: pointer; font-size: 13px; color: var(--text-main); font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px; }
         .back-btn:hover { background: #E5E5EA; }
+
+        .img-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: opacity 0.3s; align-items: center; justify-content: center; }
+        .img-modal-content { max-width: 90%; max-height: 90%; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); object-fit: contain; }
+        .img-close-btn { position: absolute; top: 30px; right: 40px; color: #FFFFFF; font-size: 40px; font-weight: 300; cursor: pointer; transition: all 0.2s; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .img-close-btn:hover { color: #E5E5EA; transform: scale(1.1); }
     </style>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -155,7 +160,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV6_2()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV6_5()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -233,11 +238,29 @@
     </div>
 </div>
 
+<div id="imgModal" class="img-modal" onclick="closeImgModal()">
+    <span class="img-close-btn" onclick="closeImgModal()">&times;</span>
+    <img class="img-modal-content" id="fullImage" onclick="event.stopPropagation()">
+</div>
+
 <script>
     let globalProcessedData = [];
     let globalOriginalColumns = [];
     let analyticalResults = []; 
     let currentModalType = 'ALL';
+
+    function openImgModal(src, event) {
+        if(event) event.stopPropagation(); 
+        document.getElementById('fullImage').src = src;
+        document.getElementById('imgModal').style.display = "flex";
+    }
+
+    function closeImgModal() {
+        document.getElementById('imgModal').style.display = "none";
+        document.getElementById('fullImage').src = "";
+    }
+    window.openImgModal = openImgModal;
+    window.closeImgModal = closeImgModal;
 
     let searchTimeout;
     function debounceSearch() {
@@ -365,7 +388,7 @@
             const week1Data = group.slice(0, -7).slice(-7); 
 
             let w2_sales = 0, w2_spend = 0, w2_ad_sales = 0, w2_revenue = 0, w2_ctr_sum = 0, w2_cvr_sum = 0;
-            let w2_clicks = 0, w2_impressions = 0, w2_ad_orders = 0;
+            let w2_clicks = 0, w2_impressions = 0;
             week2Data.forEach(r => {
                 w2_sales += parseNumber(r['总销量']);
                 w2_spend += parseNumber(r['广告花费']);
@@ -373,14 +396,13 @@
                 w2_revenue += parseNumber(getColRaw(r, ['总销售额', '销售额']));
                 w2_clicks += parseNumber(getColRaw(r, ['点击', 'click']));
                 w2_impressions += parseNumber(getColRaw(r, ['曝光', '展现', 'impression']));
-                w2_ad_orders += parseNumber(getColRaw(r, ['广告订单', '7天总订单', '订单'])) || parseNumber(r['广告销售量']);
                 
                 let r_ctr = parseMetric(getColRaw(r, ['CTR', '点击率']));
                 if(r_ctr > 1) r_ctr = r_ctr / 100;
                 w2_ctr_sum += r_ctr;
                 
                 let r_cvr = parseMetric(getColRaw(r, ['CVR', '转化率', '7天总订单转化率']));
-                if(r_cvr > 10) r_cvr = r_cvr / 100;
+                if(r_cvr > 1) r_cvr = r_cvr / 100;
                 w2_cvr_sum += r_cvr;
             });
             totalW2Sales += w2_sales;
@@ -389,7 +411,7 @@
             totalW2Revenue += w2_revenue;
 
             let w1_sales = 0, w1_spend = 0, w1_ad_sales = 0, w1_revenue = 0, w1_ctr_sum = 0, w1_cvr_sum = 0;
-            let w1_clicks = 0, w1_impressions = 0, w1_ad_orders = 0;
+            let w1_clicks = 0, w1_impressions = 0;
             week1Data.forEach(r => {
                 w1_sales += parseNumber(r['总销量']);
                 w1_spend += parseNumber(r['广告花费']);
@@ -397,14 +419,13 @@
                 w1_revenue += parseNumber(getColRaw(r, ['总销售额', '销售额']));
                 w1_clicks += parseNumber(getColRaw(r, ['点击', 'click']));
                 w1_impressions += parseNumber(getColRaw(r, ['曝光', '展现', 'impression']));
-                w1_ad_orders += parseNumber(getColRaw(r, ['广告订单', '7天总订单', '订单'])) || parseNumber(r['广告销售量']);
                 
                 let r_ctr = parseMetric(getColRaw(r, ['CTR', '点击率']));
                 if(r_ctr > 1) r_ctr = r_ctr / 100;
                 w1_ctr_sum += r_ctr;
                 
                 let r_cvr = parseMetric(getColRaw(r, ['CVR', '转化率', '7天总订单转化率']));
-                if(r_cvr > 10) r_cvr = r_cvr / 100;
+                if(r_cvr > 1) r_cvr = r_cvr / 100;
                 w1_cvr_sum += r_cvr;
             });
 
@@ -423,7 +444,6 @@
             const ad_ratio_diff = w2_ad_ratio - w1_ad_ratio;
             const ad_ratio_rate = w1_ad_ratio > 0 ? ad_ratio_diff / w1_ad_ratio : (w2_ad_ratio > 0 ? 1 : 0);
 
-            // Daily Avg Spend
             const w2_spend_avg = w2_spend / (week2Data.length || 1);
             const w1_spend_avg = w1_spend / (week1Data.length || 1);
             const spend_avg_diff = w2_spend_avg - w1_spend_avg;
@@ -466,7 +486,6 @@
             const lastRow = week2Data[week2Data.length - 1];
             const resultRow = { ...lastRow };
             
-            // 提取图片链接
             resultRow['主图'] = getColRaw(lastRow, ['主图', '图片', '商品图片', 'image', 'img', '主图链接']);
             
             resultRow['上周日均销量'] = Number(w1_sales_avg.toFixed(2));
@@ -496,17 +515,17 @@
 
             resultRow['优化调整优先级'] = priority;
             
-            const w2_ctr_avg = w2_impressions > 0 ? w2_clicks / w2_impressions : (w2_ctr_sum / (week2Data.length || 1));
-            const w1_ctr_avg = w1_impressions > 0 ? w1_clicks / w1_impressions : (w1_ctr_sum / (week1Data.length || 1));
+            const w2_ctr_avg = w2_impressions > 0 ? w2_clicks / w2_impressions : (week2Data.length ? w2_ctr_sum / week2Data.length : 0);
+            const w1_ctr_avg = w1_impressions > 0 ? w1_clicks / w1_impressions : (week1Data.length ? w1_ctr_sum / week1Data.length : 0);
             const ctr_diff = w2_ctr_avg - w1_ctr_avg;
             const ctr_rate = w1_ctr_avg > 0 ? ctr_diff / w1_ctr_avg : 0;
             
-            const w2_cvr_avg = w2_clicks > 0 ? w2_ad_orders / w2_clicks : (w2_cvr_sum / (week2Data.length || 1));
-            const w1_cvr_avg = w1_clicks > 0 ? w1_ad_orders / w1_clicks : (w1_cvr_sum / (week1Data.length || 1));
+            // 核心修改：转化率 = 广告销售量 / 点击量
+            const w2_cvr_avg = w2_clicks > 0 ? w2_ad_sales / w2_clicks : (week2Data.length ? w2_cvr_sum / week2Data.length : 0);
+            const w1_cvr_avg = w1_clicks > 0 ? w1_ad_sales / w1_clicks : (week1Data.length ? w1_cvr_sum / week1Data.length : 0);
             const cvr_diff = w2_cvr_avg - w1_cvr_avg;
             const cvr_rate = w1_cvr_avg > 0 ? cvr_diff / w1_cvr_avg : 0;
 
-            // 格式化输出严格要求的正负符号
             function getSignStr(val) { return val > 0 ? '+' : (val < 0 ? '-' : ''); }
             let signSales = getSignStr(sales_avg_diff);
             let signCps = getSignStr(cps_diff);
@@ -764,7 +783,9 @@
                 formatter: function(params) {
                     const item = badAsins[params[0].dataIndex];
                     return `<b>父ASIN:</b> ${item['父asin']}<br/><b>货号:</b> ${item['货号'] || '-'}<br/><b>营销负责人:</b> ${item['营销负责人'] || '-'}<br/><br/>
-                            <span style="color:#AF52DE; font-weight:bold;">日均销量跌幅:</span> ${Math.abs(item['日均销量差额']).toFixed(2)}`;
+                            <span style="color:#0066CC; font-weight:bold;">近一周日均销量:</span> ${item['近一周日均销量'].toFixed(2)}<br/>
+                            <span style="color:#86868B; font-weight:bold;">上周日均销量:</span> ${item['上周日均销量'].toFixed(2)}<br/>
+                            <span style="color:#FF3B30;">日均销量跌幅: -${Math.abs(item['日均销量差额']).toFixed(2)}</span>`;
                 }
             },
             grid: { left: '3%', right: '4%', bottom: '28%', top: '12%', containLabel: true },
@@ -805,7 +826,7 @@
                     return `<b>父ASIN:</b> ${item['父asin']}<br/><b>货号:</b> ${item['货号'] || '-'}<br/><b>营销负责人:</b> ${item['营销负责人'] || '-'}<br/><br/>
                             <span style="color:#0066CC; font-weight:bold;">近一周 CTR:</span> ${(item['近一周CTR'] * 100).toFixed(2)}%<br/>
                             <span style="color:#86868B; font-weight:bold;">上周 CTR:</span> ${(item['上周CTR'] * 100).toFixed(2)}%<br/>
-                            <span style="color:#FF3B30;">跌幅: ${(Math.abs(item['CTR差额'])*100).toFixed(2)}%</span>`;
+                            <span style="color:#FF3B30;">跌幅: -${(Math.abs(item['CTR差额'])*100).toFixed(2)}%</span>`;
                 }
             },
             legend: { top: 'bottom', data: ['上周 CTR', '近一周 CTR'], textStyle: { fontSize: 11, color: '#6E6E73' } },
@@ -855,7 +876,7 @@
                 formatter: function(params) {
                     const item = badAsins[params[0].dataIndex];
                     return `<b>父ASIN:</b> ${item['父asin']}<br/><b>货号:</b> ${item['货号'] || '-'}<br/><b>营销负责人:</b> ${item['营销负责人'] || '-'}<br/><br/>
-                            <span style="color:#FF3B30; font-weight:bold;">CPS抬升:</span> $${item['CPS差额'].toFixed(2)}<br/>
+                            <span style="color:#FF3B30; font-weight:bold;">CPS抬升:</span> +$${item['CPS差额'].toFixed(2)}<br/>
                             <span style="color:#0066CC; font-weight:bold;">近一周 TACOS:</span> ${(item['近一周TACOS'] * 100).toFixed(2)}%<br/>
                             <span style="color:#86868B; font-weight:bold;">上周 TACOS:</span> ${(item['上周TACOS'] * 100).toFixed(2)}%`;
                 }
@@ -915,7 +936,7 @@
                     return `<b>父ASIN:</b> ${item['父asin']}<br/><b>货号:</b> ${item['货号'] || '-'}<br/><b>营销负责人:</b> ${item['营销负责人'] || '-'}<br/><br/>
                             <span style="color:#FF9500; font-weight:bold;">近一周 CVR:</span> ${(item['近一周CVR'] * 100).toFixed(2)}%<br/>
                             <span style="color:#86868B; font-weight:bold;">上周 CVR:</span> ${(item['上周CVR'] * 100).toFixed(2)}%<br/>
-                            <span style="color:#FF3B30;">跌幅: ${(Math.abs(item['CVR差额'])*100).toFixed(2)}%</span>`;
+                            <span style="color:#FF3B30;">跌幅: -${(Math.abs(item['CVR差额'])*100).toFixed(2)}%</span>`;
                 }
             },
             legend: { top: 'bottom', data: ['上周 CVR', '近一周 CVR'], textStyle: { fontSize: 11, color: '#6E6E73' } },
@@ -967,7 +988,6 @@
         setTimeout(() => triggerResize(), 100);
     }
 
-    // 重构底层的加减符号判定逻辑，确保 + / - 绝对规范显示
     function getSubtextHtml(w1, diff, rate, isCost=false, isPercentFormat=false, isCurrency=false) {
         let prefix = isCurrency ? '$' : '';
         let absDiff = Math.abs(diff);
@@ -1058,9 +1078,8 @@
                 const rowSpan = details.length;
                 let conclusionHtml = row['诊断结论'] ? row['诊断结论'].replace(/\n/g, '<br>').replace(/\\n/g, '<br>') : '-';
                 
-                // 拼接图片骨架布局
                 let imgHtml = row['主图'] 
-                    ? `<img src="${row['主图']}" onerror="this.style.display='none'" style="width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: #F2F2F7; flex-shrink:0; border: 1px solid #E5E5EA;">` 
+                    ? `<img src="${row['主图']}" onclick="openImgModal('${row['主图']}', event)" onerror="this.style.display='none'" style="width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: #F2F2F7; flex-shrink:0; border: 1px solid #E5E5EA; cursor: zoom-in;" title="点击放大图片">` 
                     : `<div style="width: 44px; height: 44px; border-radius: 6px; background: #F2F2F7; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#A1A1A6; font-size:10px; border: 1px solid #E5E5EA;">暂无</div>`;
 
                 let salesHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, false);
@@ -1090,15 +1109,16 @@
                     
                     let dayClicks = parseNumber(getColRaw(dayRow, ['点击', 'click']));
                     let dayImps = parseNumber(getColRaw(dayRow, ['曝光', '展现', 'impression']));
-                    let dayOrders = parseNumber(getColRaw(dayRow, ['广告订单', '7天总订单', '订单'])) || parseNumber(dayRow['广告销售量']);
+                    let dayAdSales = parseNumber(dayRow['广告销售量']);
                     
                     let fbCtr = parseMetric(getColRaw(dayRow, ['CTR', '点击率']));
                     if (fbCtr > 1) fbCtr = fbCtr / 100;
                     let fbCvr = parseMetric(getColRaw(dayRow, ['CVR', '转化率', '7天总订单转化率']));
-                    if (fbCvr > 10) fbCvr = fbCvr / 100;
+                    if (fbCvr > 1) fbCvr = fbCvr / 100;
                     
                     let dayCtr = dayImps > 0 ? dayClicks / dayImps : fbCtr;
-                    let dayCvr = dayClicks > 0 ? dayOrders / dayClicks : fbCvr;
+                    // 明细单日 CVR = 广告销售量 / 点击量
+                    let dayCvr = dayClicks > 0 ? dayAdSales / dayClicks : fbCvr;
 
                     html += `<td>${dayRow['总销量'] || 0}</td>`;
                     html += `<td style="color:var(--text-muted); font-variant-numeric: tabular-nums;">$${Number(dayRow['广告花费'] || 0).toFixed(2)}</td>`;
@@ -1128,7 +1148,7 @@
                 let conclusionHtml = row['诊断结论'] ? row['诊断结论'].replace(/\n/g, '<br>').replace(/\\n/g, '<br>') : '-';
 
                 let imgHtml = row['主图'] 
-                    ? `<img src="${row['主图']}" onerror="this.style.display='none'" style="width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: #F2F2F7; flex-shrink:0; border: 1px solid #E5E5EA;">` 
+                    ? `<img src="${row['主图']}" onclick="openImgModal('${row['主图']}', event)" onerror="this.style.display='none'" style="width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: #F2F2F7; flex-shrink:0; border: 1px solid #E5E5EA; cursor: zoom-in;" title="点击放大图片">` 
                     : `<div style="width: 44px; height: 44px; border-radius: 6px; background: #F2F2F7; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#A1A1A6; font-size:10px; border: 1px solid #E5E5EA;">暂无</div>`;
 
                 let salesHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, false);
@@ -1173,7 +1193,7 @@
         return `<span class="tag tag-p3">${priority}</span>`;
     }
 
-    async function exportToExcelV6_2() {
+    async function exportToExcelV6_5() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -1288,7 +1308,7 @@
 
             const buffer = await wb.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-            saveAs(blob, "广告数据报表_全矩阵深度分析_V6.2.xlsx");
+            saveAs(blob, "广告数据报表_全矩阵深度分析_V6.5.xlsx");
 
         } catch (error) {
             alert("导出异常: " + error.message);
