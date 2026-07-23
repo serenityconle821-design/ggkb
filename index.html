@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V6.5</title>
+    <title>父ASIN粒度广告分析看板 V6.6</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -93,10 +93,12 @@
         
         .priority-cell { white-space: nowrap; }
         .tag { padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 12px; display: inline-block; letter-spacing: 0.02em; border: 1px solid transparent; }
-        .tag-p0 { background-color: #FEF0F0; color: var(--red); border-color: #FCE8E6; }
-        .tag-p1 { background-color: #FFF8E1; color: var(--text-main); border-color: #FFE0B2; }
-        .tag-p2 { background-color: #E8F0FE; color: #1967D2; border-color: #D2E3FC; }
-        .tag-p3 { background-color: #F8F9FA; color: #5F6368; border-color: #E8EAED; }
+        /* 色彩分级更新 */
+        .tag-p0 { background-color: #FFECEB; color: #FF3B30; border-color: #FFD1CF; }
+        .tag-p1 { background-color: #FFF4E5; color: #FF9500; border-color: #FFE0B2; }
+        .tag-p2 { background-color: #E5F1FF; color: #007AFF; border-color: #B2D7FF; }
+        .tag-p3 { background-color: #EBF9EE; color: #34C759; border-color: #C3EBCF; }
+        .tag-p4 { background-color: #F2F2F7; color: #8E8E93; border-color: #E5E5EA; }
         
         .sub-metric { font-size:11px; color:var(--text-muted); margin-top:6px; white-space:nowrap; line-height:1.5; font-weight: 500; font-variant-numeric: tabular-nums; }
         
@@ -160,7 +162,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV6_5()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV6_6()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -520,7 +522,6 @@
             const ctr_diff = w2_ctr_avg - w1_ctr_avg;
             const ctr_rate = w1_ctr_avg > 0 ? ctr_diff / w1_ctr_avg : 0;
             
-            // 核心修改：转化率 = 广告销售量 / 点击量
             const w2_cvr_avg = w2_clicks > 0 ? w2_ad_sales / w2_clicks : (week2Data.length ? w2_cvr_sum / week2Data.length : 0);
             const w1_cvr_avg = w1_clicks > 0 ? w1_ad_sales / w1_clicks : (week1Data.length ? w1_cvr_sum / week1Data.length : 0);
             const cvr_diff = w2_cvr_avg - w1_cvr_avg;
@@ -672,14 +673,13 @@
     }
     window.changePriorityFilter = changePriorityFilter;
 
+    // 色彩分级更新：图表颜色映射
     function getPriorityColor(name) {
-        if(name.includes('P0')) return '--red';
-        if(name.includes('乘胜追击')) return '#F29900';
-        if(name.includes('降本增效')) return '#E67C00';
-        if(name.includes('尝试扩量')) return 'var(--accent)';
-        if(name.includes('预算调控')) return '#1967D2';
-        if(name.includes('P3')) return '#9AA0A6';
-        if(name.includes('P4')) return 'var(--text-muted)';
+        if(name.includes('P0')) return '#FF3B30';
+        if(name.includes('P1')) return '#FF9500';
+        if(name.includes('P2')) return '#007AFF';
+        if(name.includes('P3')) return '#34C759';
+        if(name.includes('P4')) return '#8E8E93';
         return '#E5E5EA';
     }
 
@@ -703,7 +703,7 @@
                 center: ['50%', '55%'],
                 itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 3 }, 
                 label: { show: true, formatter: '{b}\n{c} 款', lineHeight: 18, color: '#6E6E73', fontSize: 12 },
-                data: pieData.map(item => ({ value: item.value, name: item.name, itemStyle: { color: getPriorityColor(item.name).replace('var(--red)', '#FF3B30').replace('var(--accent)', '#0066CC').replace('var(--text-muted)', '#6E6E73') } }))
+                data: pieData.map(item => ({ value: item.value, name: item.name, itemStyle: { color: getPriorityColor(item.name) } }))
             }]
         });
 
@@ -738,7 +738,7 @@
                 type: 'bar',
                 stack: 'total',
                 barMaxWidth: 60,
-                itemStyle: { color: getPriorityColor(prio).replace('var(--red)', '#FF3B30').replace('var(--accent)', '#0066CC').replace('var(--text-muted)', '#6E6E73') },
+                itemStyle: { color: getPriorityColor(prio) },
                 emphasis: { focus: 'series' },
                 data: owners.map(o => ownerData[o][prio] || 0)
             };
@@ -1117,7 +1117,6 @@
                     if (fbCvr > 1) fbCvr = fbCvr / 100;
                     
                     let dayCtr = dayImps > 0 ? dayClicks / dayImps : fbCtr;
-                    // 明细单日 CVR = 广告销售量 / 点击量
                     let dayCvr = dayClicks > 0 ? dayAdSales / dayClicks : fbCvr;
 
                     html += `<td>${dayRow['总销量'] || 0}</td>`;
@@ -1190,10 +1189,11 @@
         if(priority.includes('P0')) return `<span class="tag tag-p0">${priority}</span>`;
         if(priority.includes('P1')) return `<span class="tag tag-p1">${priority}</span>`;
         if(priority.includes('P2')) return `<span class="tag tag-p2">${priority}</span>`;
-        return `<span class="tag tag-p3">${priority}</span>`;
+        if(priority.includes('P3')) return `<span class="tag tag-p3">${priority}</span>`;
+        return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV6_5() {
+    async function exportToExcelV6_6() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -1271,17 +1271,24 @@
                         if (cell.value > 0.5) applyStyle(cell, 'FFE6F4EA', 'FF137333');
                         else if (cell.value < -0.5) applyStyle(cell, 'FFFCE8E6', 'FFC5221F');
                     }
+                    // 色彩分级更新：Excel 导出底色匹配
                     else if (colName === '优化调整优先级' && cell.value) {
                         const valStr = String(cell.value);
                         if (valStr.includes('P0')) {
-                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF0F0' } };
-                            cell.font = { color: { argb: 'FFD93025' }, bold: true };
+                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFECEB' } };
+                            cell.font = { color: { argb: 'FFFF3B30' }, bold: true };
                         } else if (valStr.includes('P1')) {
-                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF8E1' } };
-                            cell.font = { color: { argb: 'FFE67C00' }, bold: true };
+                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF4E5' } };
+                            cell.font = { color: { argb: 'FFFF9500' }, bold: true };
                         } else if (valStr.includes('P2')) {
-                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F0FE' } };
-                            cell.font = { color: { argb: 'FF1967D2' }, bold: true };
+                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE5F1FF' } };
+                            cell.font = { color: { argb: 'FF007AFF' }, bold: true };
+                        } else if (valStr.includes('P3')) {
+                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEBF9EE' } };
+                            cell.font = { color: { argb: 'FF34C759' }, bold: true };
+                        } else if (valStr.includes('P4')) {
+                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F7' } };
+                            cell.font = { color: { argb: 'FF8E8E93' }, bold: true };
                         }
                     }
                 });
@@ -1308,7 +1315,7 @@
 
             const buffer = await wb.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-            saveAs(blob, "广告数据报表_全矩阵深度分析_V6.5.xlsx");
+            saveAs(blob, "广告数据报表_全矩阵深度分析_V6.6.xlsx");
 
         } catch (error) {
             alert("导出异常: " + error.message);
