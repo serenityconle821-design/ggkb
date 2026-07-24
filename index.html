@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V6.6</title>
+    <title>父ASIN粒度广告分析看板 V6.7</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -93,7 +93,6 @@
         
         .priority-cell { white-space: nowrap; }
         .tag { padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 12px; display: inline-block; letter-spacing: 0.02em; border: 1px solid transparent; }
-        /* 色彩分级更新 */
         .tag-p0 { background-color: #FFECEB; color: #FF3B30; border-color: #FFD1CF; }
         .tag-p1 { background-color: #FFF4E5; color: #FF9500; border-color: #FFE0B2; }
         .tag-p2 { background-color: #E5F1FF; color: #007AFF; border-color: #B2D7FF; }
@@ -162,7 +161,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV6_6()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV6_7()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -460,6 +459,16 @@
             const w1_cps = w1_sales > 0 ? w1_spend / w1_sales : 0;
             const cps_diff = w2_cps - w1_cps;
             const cps_rate = w1_cps > 0 ? cps_diff / w1_cps : (w2_cps > 0 ? 1 : 0);
+
+            const w2_cpc = w2_clicks > 0 ? w2_spend / w2_clicks : 0;
+            const w1_cpc = w1_clicks > 0 ? w1_spend / w1_clicks : 0;
+            const cpc_diff = w2_cpc - w1_cpc;
+            const cpc_rate = w1_cpc > 0 ? cpc_diff / w1_cpc : 0;
+
+            const w2_asp = w2_sales > 0 ? w2_revenue / w2_sales : 0;
+            const w1_asp = w1_sales > 0 ? w1_revenue / w1_sales : 0;
+            const asp_diff = w2_asp - w1_asp;
+            const asp_rate = w1_asp > 0 ? asp_diff / w1_asp : 0;
             
             const w2_organic_ratio = w2_sales > 0 ? (1 - (w2_ad_sales / w2_sales)) : 0;
             const organic_status = w2_organic_ratio >= 0.6 ? "自然流量健康" : "高度依赖广告";
@@ -494,6 +503,11 @@
             resultRow['近一周日均销量'] = Number(w2_sales_avg.toFixed(2));
             resultRow['日均销量差额'] = Number(sales_avg_diff.toFixed(2));
             resultRow['销量环比'] = Number(sales_rate.toFixed(4));
+
+            resultRow['上周ASP'] = Number(w1_asp.toFixed(2));
+            resultRow['近一周ASP'] = Number(w2_asp.toFixed(2));
+            resultRow['ASP差额'] = Number(asp_diff.toFixed(2));
+            resultRow['ASP环比'] = Number(asp_rate.toFixed(4));
             
             resultRow['上周广告占比'] = Number(w1_ad_ratio.toFixed(4));
             resultRow['近一周广告占比'] = Number(w2_ad_ratio.toFixed(4));
@@ -515,6 +529,11 @@
             resultRow['CPS差额'] = Number(cps_diff.toFixed(2));
             resultRow['CPS环比'] = Number(cps_rate.toFixed(4));
 
+            resultRow['上周CPC'] = Number(w1_cpc.toFixed(2));
+            resultRow['近一周CPC'] = Number(w2_cpc.toFixed(2));
+            resultRow['CPC差额'] = Number(cpc_diff.toFixed(2));
+            resultRow['CPC环比'] = Number(cpc_rate.toFixed(4));
+
             resultRow['优化调整优先级'] = priority;
             
             const w2_ctr_avg = w2_impressions > 0 ? w2_clicks / w2_impressions : (week2Data.length ? w2_ctr_sum / week2Data.length : 0);
@@ -533,8 +552,10 @@
             let signTacos = getSignStr(tacos_diff);
             let signCtr = getSignStr(ctr_diff);
             let signCvr = getSignStr(cvr_diff);
+            let signAsp = getSignStr(asp_diff);
+            let signCpc = getSignStr(cpc_diff);
             
-            let dataStr = `【波动】近一周销 ${w2_sales_avg.toFixed(1)} (${signSales}${Math.abs(sales_avg_diff).toFixed(1)}) | CPS $${w2_cps.toFixed(2)} (${signCps}$${Math.abs(cps_diff).toFixed(2)}) | TACOS ${(w2_tacos*100).toFixed(1)}% (${signTacos}${(Math.abs(tacos_diff)*100).toFixed(1)}%) | CTR ${(w2_ctr_avg*100).toFixed(1)}% (${signCtr}${(Math.abs(ctr_diff)*100).toFixed(1)}%) | CVR ${(w2_cvr_avg*100).toFixed(1)}% (${signCvr}${(Math.abs(cvr_diff)*100).toFixed(1)}%)`;
+            let dataStr = `【波动】销 ${w2_sales_avg.toFixed(1)} (${signSales}${Math.abs(sales_avg_diff).toFixed(1)}) | ASP $${w2_asp.toFixed(2)} (${signAsp}$${Math.abs(asp_diff).toFixed(2)}) | CPS $${w2_cps.toFixed(2)} (${signCps}$${Math.abs(cps_diff).toFixed(2)}) | TACOS ${(w2_tacos*100).toFixed(1)}% (${signTacos}${(Math.abs(tacos_diff)*100).toFixed(1)}%) | CPC $${w2_cpc.toFixed(2)} (${signCpc}$${Math.abs(cpc_diff).toFixed(2)}) | CTR ${(w2_ctr_avg*100).toFixed(1)}% (${signCtr}${(Math.abs(ctr_diff)*100).toFixed(1)}%)`;
             
             resultRow['诊断结论'] = `【特征】${sales_status} | ${cost_status} | ${organic_status}\n【建议】${action}`;
             resultRow['导出诊断结论'] = `${dataStr}\n${resultRow['诊断结论']}`;
@@ -673,7 +694,6 @@
     }
     window.changePriorityFilter = changePriorityFilter;
 
-    // 色彩分级更新：图表颜色映射
     function getPriorityColor(name) {
         if(name.includes('P0')) return '#FF3B30';
         if(name.includes('P1')) return '#FF9500';
@@ -1068,7 +1088,7 @@
         html += `<table class="data-table"><thead><tr>`;
 
         if (isExpanded) {
-            const cols = ['日期', '产品信息', '判定', '当日销', '当日花费', '当日CTR', '当日CVR', '日均销', '日均花费', '广告单占比', 'CPS分析', 'TACOS分析', 'CTR分析', 'CVR分析', '趋势洞察'];
+            const cols = ['日期', '产品信息', '判定', '当日销', '当日花费', '当日CTR', '当日CVR', '日均销', '日均花费', '广告单占比', 'ASP分析', 'CPS分析', 'TACOS分析', 'CPC分析', 'CTR分析', 'CVR分析', '趋势洞察'];
             cols.forEach(col => html += `<th>${col}</th>`);
             html += `</tr></thead><tbody>`;
 
@@ -1085,8 +1105,10 @@
                 let salesHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, false);
                 let spendHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">$${row['近一周日均花费']}</div>` + getSubtextHtml(row['上周日均花费'], row['日均花费差额'], row['花费环比'], true, false, true);
                 let adRatioHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周广告占比']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周广告占比'], row['广告占比差额'], row['广告占比环比'], true, true, false);
+                let aspHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">$${row['近一周ASP'].toFixed(2)}</div>` + getSubtextHtml(row['上周ASP'], row['ASP差额'], row['ASP环比'], false, false, true);
                 let cpsHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">$${row['近一周CPS']}</div>` + getSubtextHtml(row['上周CPS'], row['CPS差额'], row['CPS环比'], true, false, true);
                 let tacosHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周TACOS']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, false);
+                let cpcHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">$${row['近一周CPC'].toFixed(2)}</div>` + getSubtextHtml(row['上周CPC'], row['CPC差额'], row['CPC环比'], true, false, true);
                 let ctrHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周CTR']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周CTR'], row['CTR差额'], row['CTR环比'], false, true, false);
                 let cvrHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周CVR']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周CVR'], row['CVR差额'], row['CVR环比'], false, true, false);
 
@@ -1128,8 +1150,10 @@
                         html += `<td class="merged-cell" rowspan="${rowSpan}">${salesHtml}</td>`;
                         html += `<td class="merged-cell" rowspan="${rowSpan}">${spendHtml}</td>`;
                         html += `<td class="merged-cell" rowspan="${rowSpan}">${adRatioHtml}</td>`;
+                        html += `<td class="merged-cell" rowspan="${rowSpan}">${aspHtml}</td>`;
                         html += `<td class="merged-cell" rowspan="${rowSpan}">${cpsHtml}</td>`;
                         html += `<td class="merged-cell" rowspan="${rowSpan}">${tacosHtml}</td>`;
+                        html += `<td class="merged-cell" rowspan="${rowSpan}">${cpcHtml}</td>`;
                         html += `<td class="merged-cell" rowspan="${rowSpan}">${ctrHtml}</td>`;
                         html += `<td class="merged-cell" rowspan="${rowSpan}">${cvrHtml}</td>`;
                         html += `<td class="merged-cell wrap-cell" rowspan="${rowSpan}">${conclusionHtml}</td>`;
@@ -1138,7 +1162,7 @@
                 });
             });
         } else {
-            const cols = ['产品信息', '判定', '日均销', '日均花费', '广告单占比', 'CPS分析', 'TACOS分析', 'CTR分析', 'CVR分析', '诊断洞察'];
+            const cols = ['产品信息', '判定', '日均销', '日均花费', '广告单占比', 'ASP分析', 'CPS分析', 'TACOS分析', 'CPC分析', 'CTR分析', 'CVR分析', '诊断洞察'];
             cols.forEach(col => html += `<th>${col}</th>`);
             html += `</tr></thead><tbody>`;
 
@@ -1153,8 +1177,10 @@
                 let salesHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, false);
                 let spendHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">$${row['近一周日均花费']}</div>` + getSubtextHtml(row['上周日均花费'], row['日均花费差额'], row['花费环比'], true, false, true);
                 let adRatioHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周广告占比']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周广告占比'], row['广告占比差额'], row['广告占比环比'], true, true, false);
+                let aspHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">$${row['近一周ASP'].toFixed(2)}</div>` + getSubtextHtml(row['上周ASP'], row['ASP差额'], row['ASP环比'], false, false, true);
                 let cpsHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">$${row['近一周CPS']}</div>` + getSubtextHtml(row['上周CPS'], row['CPS差额'], row['CPS环比'], true, false, true);
                 let tacosHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周TACOS']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, false);
+                let cpcHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">$${row['近一周CPC'].toFixed(2)}</div>` + getSubtextHtml(row['上周CPC'], row['CPC差额'], row['CPC环比'], true, false, true);
                 let ctrHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周CTR']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周CTR'], row['CTR差额'], row['CTR环比'], false, true, false);
                 let cvrHtml = `<div style="font-weight:700;font-size:16px;color:var(--text-main);">${(row['近一周CVR']*100).toFixed(2)}%</div>` + getSubtextHtml(row['上周CVR'], row['CVR差额'], row['CVR环比'], false, true, false);
 
@@ -1172,8 +1198,10 @@
                     <td>${salesHtml}</td>
                     <td>${spendHtml}</td>
                     <td>${adRatioHtml}</td>
+                    <td>${aspHtml}</td>
                     <td>${cpsHtml}</td>
                     <td>${tacosHtml}</td>
+                    <td>${cpcHtml}</td>
                     <td>${ctrHtml}</td>
                     <td>${cvrHtml}</td>
                     <td class="wrap-cell">${conclusionHtml}</td>
@@ -1193,7 +1221,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV6_6() {
+    async function exportToExcelV6_7() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -1203,10 +1231,12 @@
             const newCols = [
                 '主图',
                 '上周日均销量', '近一周日均销量', '日均销量差额', '销量环比',
+                '上周ASP', '近一周ASP', 'ASP差额', 'ASP环比',
                 '上周广告占比', '近一周广告占比', '广告占比差额', '广告占比环比',
                 '上周日均花费', '近一周日均花费', '日均花费差额', '花费环比',
                 '上周TACOS', '近一周TACOS', 'TACOS差额', 'TACOS环比',
                 '上周CPS', '近一周CPS', 'CPS差额', 'CPS环比',
+                '上周CPC', '近一周CPC', 'CPC差额', 'CPC环比',
                 '上周CTR', '近一周CTR', 'CTR差额', 'CTR环比',
                 '上周CVR', '近一周CVR', 'CVR差额', 'CVR环比',
                 '优化调整优先级', '诊断结论'
@@ -1252,7 +1282,7 @@
                     if (isPercentage && typeof cell.value === 'number') {
                         cell.numFmt = '0.00%';
                         if (colName.includes('差额') || colName.includes('环比')) {
-                            if (colName.includes('销量')) {
+                            if (colName.includes('销量') || colName.includes('ASP')) {
                                 if (cell.value > 0.01) applyStyle(cell, 'FFE6F4EA', 'FF137333');
                                 else if (cell.value < -0.01) applyStyle(cell, 'FFFCE8E6', 'FFC5221F');
                             } else {
@@ -1261,7 +1291,7 @@
                             }
                         }
                     }
-                    else if ((colName.includes('花费差额') || colName.includes('CPS差额')) && typeof cell.value === 'number') {
+                    else if ((colName.includes('花费差额') || colName.includes('CPS差额') || colName.includes('CPC差额')) && typeof cell.value === 'number') {
                         cell.numFmt = '0.00';
                         if (cell.value < -0.1) applyStyle(cell, 'FFE6F4EA', 'FF137333');
                         else if (cell.value > 0.1) applyStyle(cell, 'FFFCE8E6', 'FFC5221F');
@@ -1271,7 +1301,14 @@
                         if (cell.value > 0.5) applyStyle(cell, 'FFE6F4EA', 'FF137333');
                         else if (cell.value < -0.5) applyStyle(cell, 'FFFCE8E6', 'FFC5221F');
                     }
-                    // 色彩分级更新：Excel 导出底色匹配
+                    else if (colName.includes('ASP差额') && typeof cell.value === 'number') {
+                        cell.numFmt = '0.00';
+                        if (cell.value > 0.1) applyStyle(cell, 'FFE6F4EA', 'FF137333');
+                        else if (cell.value < -0.1) applyStyle(cell, 'FFFCE8E6', 'FFC5221F');
+                    }
+                    else if ((colName.includes('ASP') || colName.includes('CPC') || colName.includes('CPS') || colName.includes('花费')) && !colName.includes('差额') && typeof cell.value === 'number') {
+                        cell.numFmt = '0.00';
+                    }
                     else if (colName === '优化调整优先级' && cell.value) {
                         const valStr = String(cell.value);
                         if (valStr.includes('P0')) {
@@ -1315,14 +1352,13 @@
 
             const buffer = await wb.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-            saveAs(blob, "广告数据报表_全矩阵深度分析_V6.6.xlsx");
+            saveAs(blob, "广告数据报表_全矩阵深度分析_V6.7.xlsx");
 
         } catch (error) {
             alert("导出异常: " + error.message);
         }
     }
 
-    // --- 全局版块级点击穿透 ---
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.kpi-card').forEach(el => {
             el.addEventListener('click', function(e) {
