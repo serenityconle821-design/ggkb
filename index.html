@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.10</title>
+    <title>父ASIN粒度广告分析看板 V7.12</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -62,17 +62,17 @@
 
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.3); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: opacity 0.3s; }
         .modal-content { background-color: var(--card-bg); margin: 1.5% auto; padding: 0; border-radius: 24px; width: 98%; max-width: 1760px; height: 95vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.2); }
-        .modal-header { padding: 20px 32px; border-bottom: 1px solid #E5E5EA; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.92); z-index: 10; }
-        .modal-title-group { display: flex; align-items: center; gap: 24px; }
+        .modal-header { padding: 20px 32px; border-bottom: 1px solid #E5E5EA; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.92); z-index: 10; flex-wrap: wrap; gap: 12px; }
+        .modal-title-group { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
         .modal-title { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
         
-        .filter-select {  border: 1px solid #E5E5EA; border-radius: 14px; padding: 10px 36px 10px 16px; font-size: 14px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 600; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2210%22%20viewBox%3D%220%200%2014%2010%22%3E%3Cpath%20fill%3D%22%2386868B%22%20d%3D%22M7%2010L0%203l1.4-1.4L7%207.2l5.6-5.6L14%203z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 14px center; background-size: 10px auto; cursor: pointer; }
+        .filter-select {  border: 1px solid #E5E5EA; border-radius: 14px; padding: 8px 32px 8px 14px; font-size: 13px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 600; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2210%22%20viewBox%3D%220%200%2014%2010%22%3E%3Cpath%20fill%3D%22%2386868B%22%20d%3D%22M7%2010L0%203l1.4-1.4L7%207.2l5.6-5.6L14%203z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 10px auto; cursor: pointer; }
         .filter-select:focus { border-color: var(--accent); background: #FFFFFF; box-shadow: 0 0 0 4px rgba(0,102,204,0.15); }
         .filter-select:hover { border-color: #D1D1D6; }
         
         .search-box { position: relative;  }
-        .search-input { border: 1px solid #E5E5EA; border-radius: 14px; padding: 10px 16px 10px 38px; font-size: 14px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); width: 280px; font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 500; }
-        .search-input:focus { border-color: var(--accent); background: #FFFFFF; box-shadow: 0 0 0 4px rgba(0,102,204,0.15); width: 340px; }
+        .search-input { border: 1px solid #E5E5EA; border-radius: 14px; padding: 8px 16px 8px 36px; font-size: 13px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); width: 220px; font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 500; }
+        .search-input:focus { border-color: var(--accent); background: #FFFFFF; box-shadow: 0 0 0 4px rgba(0,102,204,0.15); width: 280px; }
         .search-input::placeholder { color: #A1A1A6; font-weight: 400; }
         .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #A1A1A6; font-size: 14px; }
         .clear-search { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #A1A1A6; font-size: 18px; cursor: pointer; display: none; line-height: 1; }
@@ -81,12 +81,20 @@
         .close-btn { color: #A1A1A6; font-size: 32px; font-weight: 300; cursor: pointer; line-height: 1; padding: 0 8px; border-radius: 50%; transition: all 0.2s;  }
         .close-btn:hover { color: var(--text-main); background: #F2F2F7; }
         
+        /* V7.12 Adv Filters UI */
+        .adv-filters-panel { display: none; padding: 12px 32px; background: #F9FAFB; border-bottom: 1px solid #E5E5EA; gap: 12px; align-items: center; flex-wrap: wrap; width: 100%; box-sizing: border-box; }
+        .btn-adv-toggle { background: #FFFFFF; border: 1px solid #D1D1D6; color: var(--text-main); padding: 8px 16px; border-radius: 14px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-adv-toggle:hover { border-color: var(--accent); color: var(--accent); background: #F0F8FF; }
+
         .table-wrapper { flex: 1; overflow-y: auto; overflow-x: auto; padding: 0; background: #FFFFFF;  }
         .data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; margin: 0; table-layout: auto; }
         .data-table th, .data-table td { padding: 10px 4px; text-align: center; border-bottom: 1px solid #F2F2F7; white-space: nowrap; vertical-align: middle; transition: background 0.2s; } 
         .data-table th { color: var(--text-muted); font-weight: 600; font-size: 12px; position: sticky; top: 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 5; box-shadow: 0 1px 0 #E5E5EA; letter-spacing: 0.02em; }
         .data-table tr:hover td { background-color: #F9FAFB; }
         
+        .sortable-th { cursor: pointer; user-select: none; transition: background 0.2s, color 0.2s; }
+        .sortable-th:hover { background-color: #F2F2F7 !important; color: var(--text-main) !important; }
+
         .main-val { font-weight: 700; font-size: 14px; color: var(--text-main); line-height: 1.2; }
         .wrap-cell { white-space: normal !important; min-width: 140px; text-align: left !important; line-height: 1.5; color: #444; font-size: 12px; }
         
@@ -178,7 +186,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_10()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_12()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid full-grid" id="owner-summary-grid">
@@ -244,24 +252,54 @@
 <div id="detailModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <div class="modal-title-group">
-                <h2 id="modal-title" class="modal-title">深度洞察中心</h2>
-                <select id="priorityFilter" class="filter-select" onchange="changePriorityFilter()">
-                    <option value="ALL">全部分级过滤</option>
-                    <option value="P0">P0 级 (紧急止损)</option>
-                    <option value="P1">P1 级 (降本增效/乘胜追击)</option>
-                    <option value="P2">P2 级 (预算调控/尝试扩量)</option>
-                    <option value="P3">P3 级 (观察防守)</option>
-                    <option value="P4">P4 级 (维持现状)</option>
-                </select>
-                <div class="search-box">
-                    <span class="search-icon">🔍</span>
-                    <input type="text" id="searchInput" class="search-input" placeholder="输入 ASIN/货号/负责人触发下钻..." onkeyup="debounceSearch()">
-                    <span class="clear-search" id="clearSearch" onclick="clearSearch()">&times;</span>
+            <div class="modal-title-group" style="width: 100%;">
+                <div style="display:flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                    <h2 id="modal-title" class="modal-title">深度洞察中心</h2>
+                    <select id="priorityFilter" class="filter-select" onchange="changePriorityFilter()">
+                        <option value="ALL">全部分级过滤</option>
+                        <option value="P0">P0 级 (紧急止损)</option>
+                        <option value="P1">P1 级 (降本增效/乘胜追击)</option>
+                        <option value="P2">P2 级 (预算调控/尝试扩量)</option>
+                        <option value="P3">P3 级 (观察防守)</option>
+                        <option value="P4">P4 级 (维持现状)</option>
+                    </select>
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchInput" class="search-input" placeholder="输入 ASIN/货号/负责人触发下钻..." onkeyup="debounceSearch()">
+                        <span class="clear-search" id="clearSearch" onclick="clearSearch()">&times;</span>
+                    </div>
+                    <button class="btn-adv-toggle" onclick="toggleAdvFilters()">
+                        <span style="font-size:14px;">⚡</span> 多维筛选
+                    </button>
                 </div>
             </div>
-            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <span class="close-btn" style="position: absolute; right: 32px; top: 24px;" onclick="closeModal()">&times;</span>
         </div>
+        
+        <!-- V7.12 多维条件过滤面板 -->
+        <div id="adv-filters-panel" class="adv-filters-panel">
+            <select id="adv-col" class="filter-select" style="padding: 6px 24px 6px 12px; font-size:13px; background-color: #FFFFFF;">
+                <option value="近一周日均销量">日均销</option>
+                <option value="近一周TACOS">TACOS (%)</option>
+                <option value="近一周边际利润额(¥)">利润额 (¥)</option>
+                <option value="近一周边际利润率">利润率 (%)</option>
+                <option value="近一周广告占比">广告占比 (%)</option>
+                <option value="近一周CPS($)">CPS ($)</option>
+                <option value="近一周CPC($)">CPC ($)</option>
+                <option value="近一周CTR">CTR (%)</option>
+                <option value="近一周CVR">CVR (%)</option>
+            </select>
+            <select id="adv-op" class="filter-select" style="padding: 6px 24px 6px 12px; font-size:13px; background-color: #FFFFFF;">
+                <option value=">">大于</option>
+                <option value="<">小于</option>
+                <option value="=">等于</option>
+            </select>
+            <input type="number" id="adv-val" class="search-input" placeholder="输入数值..." style="width: 100px; padding: 6px 12px; background-color: #FFFFFF;">
+            <button class="btn-export" style="padding: 6px 16px; font-size: 13px;" onclick="addAdvFilter()">添加条件</button>
+            <div style="width: 1px; height: 24px; background: #D1D1D6; margin: 0 8px;"></div>
+            <div id="active-filters-container" style="display:flex; gap: 8px; flex-wrap: wrap; flex: 1;"></div>
+        </div>
+
         <div class="table-wrapper" id="modal-table-container"></div>
     </div>
 </div>
@@ -278,6 +316,10 @@
     let currentModalType = 'ALL';
     let globalProfitMap = {}; 
     let modalHistoryStack = []; 
+
+    let currentSortCol = '近一周日均销量';
+    let currentSortDir = 'desc';
+    let activeFilters = []; // V7.12
 
     function openImgModal(src, event) {
         if(event) event.stopPropagation(); 
@@ -304,10 +346,64 @@
 
     function clearSearch() {
         modalHistoryStack = [];
+        activeFilters = []; 
         document.getElementById('searchInput').value = '';
+        renderAdvFilters();
         renderModalTable();
     }
     window.clearSearch = clearSearch;
+
+    // V7.12 Advanced Filters Logic
+    function toggleAdvFilters() {
+        const panel = document.getElementById('adv-filters-panel');
+        panel.style.display = panel.style.display === 'none' || panel.style.display === '' ? 'flex' : 'none';
+    }
+    window.toggleAdvFilters = toggleAdvFilters;
+
+    function addAdvFilter() {
+        const colSelect = document.getElementById('adv-col');
+        const col = colSelect.value;
+        const colName = colSelect.options[colSelect.selectedIndex].text;
+        const op = document.getElementById('adv-op').value;
+        const valStr = document.getElementById('adv-val').value;
+        
+        if(valStr === '') return;
+        
+        let val = parseFloat(valStr);
+        if (colName.includes('%')) {
+            val = val / 100;
+        }
+        
+        activeFilters.push({ col, colName, op, val, rawVal: valStr });
+        document.getElementById('adv-val').value = '';
+        renderAdvFilters();
+        renderModalTable();
+    }
+    window.addAdvFilter = addAdvFilter;
+
+    function removeAdvFilter(index) {
+        activeFilters.splice(index, 1);
+        renderAdvFilters();
+        renderModalTable();
+    }
+    window.removeAdvFilter = removeAdvFilter;
+
+    function renderAdvFilters() {
+        const container = document.getElementById('active-filters-container');
+        container.innerHTML = '';
+        activeFilters.forEach((f, i) => {
+            const tag = document.createElement('span');
+            tag.className = 'tag tag-p2'; 
+            tag.style.display = 'inline-flex';
+            tag.style.alignItems = 'center';
+            tag.style.gap = '6px';
+            tag.style.background = '#E5F1FF';
+            tag.style.color = '#0066CC';
+            tag.style.border = '1px solid #B2D7FF';
+            tag.innerHTML = `${f.colName} ${f.op} ${f.rawVal} <span style="cursor:pointer; color: #FF3B30; font-weight:bold; font-size:14px; line-height:1;" onclick="removeAdvFilter(${i})" title="移除条件">×</span>`;
+            container.appendChild(tag);
+        });
+    }
 
     function parseNumber(val) {
         if (val === undefined || val === null) return 0;
@@ -596,9 +692,11 @@
             totalW1Spend += w1_spend;
             totalW1Revenue += w1_revenue;
 
+            // V7.12 Bug Fix: Ensuring explicitly all diagnosis vars are declared
             const w2_sales_avg = w2_sales / (week2Data.length || 1);
             const w1_sales_avg = w1_sales / (week1Data.length || 1);
             const sales_avg_diff = w2_sales_avg - w1_sales_avg;
+            const sales_rate = w1_sales_avg > 0 ? sales_avg_diff / w1_sales_avg : (w2_sales_avg > 0 ? 1 : 0);
             
             const w2_ad_ratio = w2_sales > 0 ? w2_ad_sales / w2_sales : 0;
             const w1_ad_ratio = w1_sales > 0 ? w1_ad_sales / w1_sales : 0;
@@ -641,13 +739,13 @@
             const w2_organic_ratio = w2_sales > 0 ? (1 - (w2_ad_sales / w2_sales)) : 0;
             const organic_status = w2_organic_ratio >= 0.6 ? "自然流量健康" : "高度依赖广告";
 
-            // V7.10 利润动态与广告效能联合驱动诊断逻辑
-            let profit_status = margin_diff > 0 ? "利润增长" : (margin_diff < -5 ? "利润缩水" : "利润平稳");
+            let sales_status = sales_rate > 0.05 ? "销量攀升" : (sales_rate < -0.05 ? "销量下滑" : "销量平稳");
+            let cost_status = (cps_diff > 1.0 || spend_avg_diff > w1_spend_avg * 0.15) ? "成本抬升" : ((cps_diff < -1.0 || spend_avg_diff < -w1_spend_avg * 0.15) ? "成本优化" : "成本可控");
+            let profit_status = margin_diff > 0 ? "利润增长" : (margin_diff < -2 ? "利润缩水" : "利润平稳"); 
             let tacos_status = tacos_diff < -0.01 ? "TACOS优化" : (tacos_diff > 0.02 ? "TACOS恶化" : "TACOS平稳");
             let organic_health = w2_organic_ratio >= 0.6;
 
             let action = "", priority = "";
-
             if (profit_status === "利润增长" && tacos_status === "TACOS优化") {
                 action = "建议稳步放量(利润与效能双优，抢占核心词)"; 
                 priority = "P1 - 乘胜追击";
@@ -683,7 +781,7 @@
             resultRow['上周日均销量'] = Number(w1_sales_avg.toFixed(2));
             resultRow['近一周日均销量'] = Number(w2_sales_avg.toFixed(2));
             resultRow['日均销量差额'] = Number(sales_avg_diff.toFixed(2));
-            resultRow['销量环比'] = Number((w1_sales_avg > 0 ? sales_avg_diff / w1_sales_avg : (w2_sales_avg > 0 ? 1 : 0)).toFixed(4));
+            resultRow['销量环比'] = Number(sales_rate.toFixed(4));
 
             resultRow['上周ASP($)'] = Number(w1_asp.toFixed(2));
             resultRow['近一周ASP($)'] = Number(w2_asp.toFixed(2));
@@ -1201,6 +1299,18 @@
         window.addEventListener('resize', triggerResize);
     }
 
+    // V7.12 新增动态排序核心逻辑
+    function sortTable(col) {
+        if (currentSortCol === col) {
+            currentSortDir = currentSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSortCol = col;
+            currentSortDir = 'desc'; 
+        }
+        renderModalTable();
+    }
+    window.sortTable = sortTable;
+
     function updateSalesChart() {
         const ownerFilter = document.getElementById('ownerFilterSales').value;
         let filtered = analyticalResults;
@@ -1453,9 +1563,11 @@
 
     function openModalWithSearch(type, searchStr) {
         modalHistoryStack = []; 
+        activeFilters = []; // V7.12 Reset filters on new drilldown
         currentModalType = type;
         document.getElementById('priorityFilter').value = type;
         document.getElementById('searchInput').value = searchStr;
+        renderAdvFilters();
         renderModalTable();
         document.getElementById('detailModal').style.display = "block";
         setTimeout(() => triggerResize(), 100);
@@ -1468,7 +1580,7 @@
         
         clearBtn.style.display = searchVal ? 'block' : 'none';
         
-        let filteredData = analyticalResults;
+        let filteredData = [...analyticalResults];
         
         if (currentModalType !== 'ALL') {
             filteredData = filteredData.filter(d => String(d['优化调整优先级']).includes(currentModalType));
@@ -1482,6 +1594,31 @@
             );
         }
 
+        // V7.12 执行高级多维过滤
+        activeFilters.forEach(f => {
+            filteredData = filteredData.filter(d => {
+                let cellVal = d[f.col] || 0;
+                if (f.op === '>') return cellVal > f.val;
+                if (f.op === '<') return cellVal < f.val;
+                if (f.op === '=') return Math.abs(cellVal - f.val) < 0.0001; 
+                return true;
+            });
+        });
+
+        filteredData.sort((a, b) => {
+            let valA = a[currentSortCol];
+            let valB = b[currentSortCol];
+            
+            if (valA === undefined) valA = 0;
+            if (valB === undefined) valB = 0;
+
+            if (typeof valA === 'string' && typeof valB === 'string') {
+                return currentSortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            } else {
+                return currentSortDir === 'asc' ? (valA - valB) : (valB - valA);
+            }
+        });
+
         const allOwners = Array.from(new Set(analyticalResults.map(r => String(r['营销负责人'] || '未知').toLowerCase())));
         const isOwnerSearch = allOwners.includes(searchVal);
         const isExpanded = searchVal.length > 0 && !isOwnerSearch;
@@ -1489,7 +1626,7 @@
         let html = '';
 
         if(filteredData.length === 0) {
-            container.innerHTML = "<div style='text-align:center; padding: 80px; color: #86868B; font-size:16px; font-weight:500;'>未能匹配到相关数据，请更换检索条件</div>";
+            container.innerHTML = "<div style='text-align:center; padding: 80px; color: #86868B; font-size:16px; font-weight:500;'>未能匹配到相关数据，请尝试放宽筛选条件</div>";
             return;
         }
 
@@ -1502,35 +1639,68 @@
 
         html += `<table class="data-table"><thead><tr>`;
 
-        if (isExpanded) {
-            const cols = ['日期', '产品信息', '判定', '当日销', '当日花费($)', '当日利润(¥)', '当日利润率', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'];
-            cols.forEach(col => html += `<th>${col}</th>`);
-            html += `</tr></thead><tbody>`;
+        const colMap = {
+            '产品信息': '父asin',
+            '判定': '优化调整优先级',
+            '日均销': '近一周日均销量',
+            '日均花费($)': '近一周日均花费($)',
+            '利润额(¥)': '近一周边际利润额(¥)',
+            '利润率': '近一周边际利润率',
+            '广告占比': '近一周广告占比',
+            'ASP($)': '近一周ASP($)',
+            'CPS($)': '近一周CPS($)',
+            'TACOS': '近一周TACOS',
+            'CPC($)': '近一周CPC($)',
+            'CTR': '近一周CTR',
+            'CVR': '近一周CVR'
+        };
 
-            filteredData.forEach(row => {
-                let priorityTag = getTagHtml(row['优化调整优先级']);
-                const details = row['_week2_details'];
-                const rowSpan = details.length;
-                let conclusionHtml = row['诊断结论'] ? row['诊断结论'].replace(/\n/g, '<br>').replace(/\\n/g, '<br>') : '-';
-                
-                let imgHtml = row['主图'] 
-                    ? `<img src="${row['主图']}" onclick="openImgModal('${row['主图']}', event)" onerror="this.style.display='none'" style="width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: #F2F2F7; flex-shrink:0; border: 1px solid #E5E5EA; cursor: zoom-in;" title="点击放大图片">` 
-                    : `<div style="width: 44px; height: 44px; border-radius: 6px; background: #F2F2F7; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#A1A1A6; font-size:10px; border: 1px solid #E5E5EA;">暂无</div>`;
+        const cols = isExpanded ? 
+            ['日期', '产品信息', '判定', '当日销', '当日花费($)', '当日利润(¥)', '当日利润率', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'] : 
+            ['产品信息', '判定', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'];
 
-                let salesHtml = `<div class="main-val">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, '');
-                let spendHtml = `<div class="main-val">$${row['近一周日均花费($)']}</div>` + getSubtextHtml(row['上周日均花费($)'], row['日均花费差额($)'], row['花费环比'], true, false, 'USD');
+        cols.forEach(col => {
+            if(colMap[col]) {
+                let sortIcon = currentSortCol === colMap[col] ? (currentSortDir === 'asc' ? '▲' : '▼') : '↕';
+                let iconColor = currentSortCol === colMap[col] ? 'var(--accent)' : '#D1D1D6';
+                let iconWeight = currentSortCol === colMap[col] ? 'bold' : 'normal';
                 
-                let marginHtml = `<div class="main-val">¥${row['近一周边际利润额(¥)'].toFixed(0)}</div>` + getSubtextHtml(row['上周边际利润额(¥)'], row['利润额差额(¥)'], row['利润额环比'], false, false, 'RMB');
-                
-                let marginPctHtml = `<div class="main-val">${(row['近一周边际利润率']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周边际利润率'], row['利润率差额'], row['利润率环比'], false, true, '');
-                let adRatioHtml = `<div class="main-val">${(row['近一周广告占比']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周广告占比'], row['广告占比差额'], row['广告占比环比'], true, true, '');
-                let aspHtml = `<div class="main-val">$${row['近一周ASP($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周ASP($)'], row['ASP差额($)'], row['ASP环比'], false, false, 'USD');
-                let cpsHtml = `<div class="main-val">$${row['近一周CPS($)']}</div>` + getSubtextHtml(row['上周CPS($)'], row['CPS差额($)'], row['CPS环比'], true, false, 'USD');
-                let tacosHtml = `<div class="main-val">${(row['近一周TACOS']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, '');
-                let cpcHtml = `<div class="main-val">$${row['近一周CPC($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周CPC($)'], row['CPC差额($)'], row['CPC环比'], true, false, 'USD');
-                let ctrHtml = `<div class="main-val">${(row['近一周CTR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CTR'], row['CTR差额'], row['CTR环比'], false, true, '');
-                let cvrHtml = `<div class="main-val">${(row['近一周CVR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CVR'], row['CVR差额'], row['CVR环比'], false, true, '');
+                html += `<th class="sortable-th" onclick="sortTable('${colMap[col]}')" title="点击按此列排序">
+                    <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
+                        ${col} <span style="font-size:10px; color:${iconColor}; font-weight:${iconWeight};">${sortIcon}</span>
+                    </div>
+                </th>`;
+            } else {
+                html += `<th>${col}</th>`;
+            }
+        });
+        html += `</tr></thead><tbody>`;
 
+        filteredData.forEach(row => {
+            let priorityTag = getTagHtml(row['优化调整优先级']);
+            const details = row['_week2_details'];
+            const rowSpan = details.length;
+            let conclusionHtml = row['诊断结论'] ? row['诊断结论'].replace(/\n/g, '<br>').replace(/\\n/g, '<br>') : '-';
+            
+            let imgHtml = row['主图'] 
+                ? `<img src="${row['主图']}" onclick="openImgModal('${row['主图']}', event)" onerror="this.style.display='none'" style="width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: #F2F2F7; flex-shrink:0; border: 1px solid #E5E5EA; cursor: zoom-in;" title="点击放大图片">` 
+                : `<div style="width: 44px; height: 44px; border-radius: 6px; background: #F2F2F7; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#A1A1A6; font-size:10px; border: 1px solid #E5E5EA;">暂无</div>`;
+
+            let salesHtml = `<div class="main-val">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, '');
+            let spendHtml = `<div class="main-val">$${row['近一周日均花费($)']}</div>` + getSubtextHtml(row['上周日均花费($)'], row['日均花费差额($)'], row['花费环比'], true, false, 'USD');
+            
+            let marginHtml = `<div class="main-val">¥${row['近一周边际利润额(¥)'].toFixed(0)}</div>` + getSubtextHtml(row['上周边际利润额(¥)'], row['利润额差额(¥)'], row['利润额环比'], false, false, 'RMB');
+            
+            let marginPctHtml = `<div class="main-val">${(row['近一周边际利润率']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周边际利润率'], row['利润率差额'], row['利润率环比'], false, true, '');
+            let adRatioHtml = `<div class="main-val">${(row['近一周广告占比']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周广告占比'], row['广告占比差额'], row['广告占比环比'], true, true, '');
+            let aspHtml = `<div class="main-val">$${row['近一周ASP($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周ASP($)'], row['ASP差额($)'], row['ASP环比'], false, false, 'USD');
+            let cpsHtml = `<div class="main-val">$${row['近一周CPS($)']}</div>` + getSubtextHtml(row['上周CPS($)'], row['CPS差额($)'], row['CPS环比'], true, false, 'USD');
+            let tacosHtml = `<div class="main-val">${(row['近一周TACOS']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, '');
+            let cpcHtml = `<div class="main-val">$${row['近一周CPC($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周CPC($)'], row['CPC差额($)'], row['CPC环比'], true, false, 'USD');
+            let ctrHtml = `<div class="main-val">${(row['近一周CTR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CTR'], row['CTR差额'], row['CTR环比'], false, true, '');
+            let cvrHtml = `<div class="main-val">${(row['近一周CVR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CVR'], row['CVR差额'], row['CVR环比'], false, true, '');
+
+            if(isExpanded) {
                 details.forEach((dayRow, idx) => {
                     html += `<tr>`;
                     html += `<td class="daily-cell">${dayRow['广告日期']}</td>`;
@@ -1575,34 +1745,7 @@
                     }
                     html += `</tr>`;
                 });
-            });
-        } else {
-            const cols = ['产品信息', '判定', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'];
-            cols.forEach(col => html += `<th>${col}</th>`);
-            html += `</tr></thead><tbody>`;
-
-            filteredData.forEach(row => {
-                let priorityTag = getTagHtml(row['优化调整优先级']);
-                let conclusionHtml = row['诊断结论'] ? row['诊断结论'].replace(/\n/g, '<br>').replace(/\\n/g, '<br>') : '-';
-
-                let imgHtml = row['主图'] 
-                    ? `<img src="${row['主图']}" onclick="openImgModal('${row['主图']}', event)" onerror="this.style.display='none'" style="width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: #F2F2F7; flex-shrink:0; border: 1px solid #E5E5EA; cursor: zoom-in;" title="点击放大图片">` 
-                    : `<div style="width: 44px; height: 44px; border-radius: 6px; background: #F2F2F7; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#A1A1A6; font-size:10px; border: 1px solid #E5E5EA;">暂无</div>`;
-
-                let salesHtml = `<div class="main-val">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, '');
-                let spendHtml = `<div class="main-val">$${row['近一周日均花费($)']}</div>` + getSubtextHtml(row['上周日均花费($)'], row['日均花费差额($)'], row['花费环比'], true, false, 'USD');
-                
-                let marginHtml = `<div class="main-val">¥${row['近一周边际利润额(¥)'].toFixed(0)}</div>` + getSubtextHtml(row['上周边际利润额(¥)'], row['利润额差额(¥)'], row['利润额环比'], false, false, 'RMB');
-                
-                let marginPctHtml = `<div class="main-val">${(row['近一周边际利润率']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周边际利润率'], row['利润率差额'], row['利润率环比'], false, true, '');
-                let adRatioHtml = `<div class="main-val">${(row['近一周广告占比']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周广告占比'], row['广告占比差额'], row['广告占比环比'], true, true, '');
-                let aspHtml = `<div class="main-val">$${row['近一周ASP($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周ASP($)'], row['ASP差额($)'], row['ASP环比'], false, false, 'USD');
-                let cpsHtml = `<div class="main-val">$${row['近一周CPS($)']}</div>` + getSubtextHtml(row['上周CPS($)'], row['CPS差额($)'], row['CPS环比'], true, false, 'USD');
-                let tacosHtml = `<div class="main-val">${(row['近一周TACOS']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, '');
-                let cpcHtml = `<div class="main-val">$${row['近一周CPC($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周CPC($)'], row['CPC差额($)'], row['CPC环比'], true, false, 'USD');
-                let ctrHtml = `<div class="main-val">${(row['近一周CTR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CTR'], row['CTR差额'], row['CTR环比'], false, true, '');
-                let cvrHtml = `<div class="main-val">${(row['近一周CVR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CVR'], row['CVR差额'], row['CVR环比'], false, true, '');
-
+            } else {
                 html += `<tr style="cursor: pointer;" title="点击当前行可直接下钻查看 7 日流水" onclick="drillDown('${row['父asin']}')">
                     <td>
                         <div style="display:flex; align-items:center; gap:8px; text-align:left; justify-content:left; padding-left: 4px;">
@@ -1627,8 +1770,8 @@
                     <td>${cvrHtml}</td>
                     <td class="wrap-cell">${conclusionHtml}</td>
                 </tr>`;
-            });
-        }
+            }
+        });
         
         html += `</tbody></table>`;
         container.innerHTML = html;
@@ -1642,7 +1785,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_10() {
+    async function exportToExcelV7_12() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -1782,7 +1925,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.10_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.12_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
