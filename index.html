@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.9</title>
+    <title>父ASIN粒度广告分析看板 V7.10</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -178,7 +178,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_9()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_10()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid full-grid" id="owner-summary-grid">
@@ -599,7 +599,6 @@
             const w2_sales_avg = w2_sales / (week2Data.length || 1);
             const w1_sales_avg = w1_sales / (week1Data.length || 1);
             const sales_avg_diff = w2_sales_avg - w1_sales_avg;
-            const sales_rate = w1_sales_avg > 0 ? sales_avg_diff / w1_sales_avg : (w2_sales_avg > 0 ? 1 : 0);
             
             const w2_ad_ratio = w2_sales > 0 ? w2_ad_sales / w2_sales : 0;
             const w1_ad_ratio = w1_sales > 0 ? w1_ad_sales / w1_sales : 0;
@@ -642,26 +641,37 @@
             const w2_organic_ratio = w2_sales > 0 ? (1 - (w2_ad_sales / w2_sales)) : 0;
             const organic_status = w2_organic_ratio >= 0.6 ? "自然流量健康" : "高度依赖广告";
 
-            let sales_status = sales_rate > 0.05 ? "销量攀升" : (sales_rate < -0.05 ? "销量下滑" : "销量平稳");
-            let cost_status = (cps_diff > 1.0 || spend_avg_diff > w1_spend_avg * 0.15) ? "成本抬升" : ((cps_diff < -1.0 || spend_avg_diff < -w1_spend_avg * 0.15) ? "成本优化" : "成本可控");
-            let profit_status = margin_diff > 0 ? "利润增长" : (margin_diff < -2 ? "利润缩水" : "利润平稳"); 
+            // V7.10 利润动态与广告效能联合驱动诊断逻辑
+            let profit_status = margin_diff > 0 ? "利润增长" : (margin_diff < -5 ? "利润缩水" : "利润平稳");
+            let tacos_status = tacos_diff < -0.01 ? "TACOS优化" : (tacos_diff > 0.02 ? "TACOS恶化" : "TACOS平稳");
+            let organic_health = w2_organic_ratio >= 0.6;
 
             let action = "", priority = "";
-            if (sales_status.includes("攀升") && profit_status.includes("增长")) {
-                action = "建议稳步放量(销量与利润双增长)"; priority = "P1 - 乘胜追击";
-            } else if (sales_status.includes("下滑") && cost_status.includes("抬升") && profit_status.includes("缩水")) {
-                action = "排查差评/断码，缩减无效预算"; priority = "P0 - 紧急止损"; p0Count++;
-            } else if (profit_status.includes("缩水") && cost_status.includes("抬升")) {
-                action = "防守利润(降出价，剥离泛流量)"; priority = "P1 - 降本增效";
-            } else if (sales_status.includes("下滑") && profit_status.includes("增长")) {
-                action = "观望防守(确认自然排位是否被挤占)"; priority = "P3 - 观察防守";
-            } else if (sales_status.includes("平稳") && cost_status.includes("抬升")) {
-                action = "控制预算(排查恶意点击或同行提价)"; priority = "P2 - 预算调控";
-            } else if (sales_status.includes("攀升") || profit_status.includes("增长")) {
-                action = "适度放量(尝试拓宽长尾词)"; priority = "P2 - 尝试扩量";
+
+            if (profit_status === "利润增长" && tacos_status === "TACOS优化") {
+                action = "建议稳步放量(利润与效能双优，抢占核心词)"; 
+                priority = "P1 - 乘胜追击";
+            } else if (profit_status === "利润缩水" && tacos_status === "TACOS恶化") {
+                action = "立即排查转化断层，缩减泛流量预算"; 
+                priority = "P0 - 紧急止损"; 
+                p0Count++;
+            } else if (profit_status === "利润缩水" && organic_health) {
+                action = "观望防守(自然流盘稳固，排查市场或客单价因素)"; 
+                priority = "P3 - 观察防守";
+            } else if (profit_status === "利润缩水") {
+                action = "防守利润底线(精准降出价，剥离低转化词)"; 
+                priority = "P1 - 降本增效";
+            } else if (profit_status === "利润增长" && tacos_status === "TACOS恶化") {
+                action = "控制点击成本(增收不增效，排查无效曝光)"; 
+                priority = "P2 - 预算调控";
+            } else if (profit_status === "利润增长") {
+                action = "适度放量(基本面向好，尝试拓宽长尾词)"; 
+                priority = "P2 - 尝试扩量";
             } else {
-                action = "维持现状，定期复盘"; priority = "P4 - 维持现状";
+                action = "维持现状，定期复盘"; 
+                priority = "P4 - 维持现状";
             }
+
             if(priorityCounts[priority] !== undefined) priorityCounts[priority]++;
 
             const lastRow = week2Data[week2Data.length - 1];
@@ -673,7 +683,7 @@
             resultRow['上周日均销量'] = Number(w1_sales_avg.toFixed(2));
             resultRow['近一周日均销量'] = Number(w2_sales_avg.toFixed(2));
             resultRow['日均销量差额'] = Number(sales_avg_diff.toFixed(2));
-            resultRow['销量环比'] = Number(sales_rate.toFixed(4));
+            resultRow['销量环比'] = Number((w1_sales_avg > 0 ? sales_avg_diff / w1_sales_avg : (w2_sales_avg > 0 ? 1 : 0)).toFixed(4));
 
             resultRow['上周ASP($)'] = Number(w1_asp.toFixed(2));
             resultRow['近一周ASP($)'] = Number(w2_asp.toFixed(2));
@@ -735,7 +745,7 @@
             
             let dataStr = `【波动】销 ${w2_sales_avg.toFixed(1)} (${signSales}${Math.abs(sales_avg_diff).toFixed(1)}) | 利润率 ${(w2_margin_pct*100).toFixed(1)}% (${signMarginPct}${(Math.abs(margin_pct_diff)*100).toFixed(1)}%) | CPS $${w2_cps.toFixed(2)} (${signCps}$${Math.abs(cps_diff).toFixed(2)}) | TACOS ${(w2_tacos*100).toFixed(1)}% (${signTacos}${(Math.abs(tacos_diff)*100).toFixed(1)}%)`;
             
-            resultRow['诊断结论'] = `【特征】${sales_status} | ${cost_status} | ${profit_status} | ${organic_status}\n【建议】${action}`;
+            resultRow['诊断结论'] = `【特征】${profit_status} | ${tacos_status} | ${organic_status}\n【建议】${action}`;
             resultRow['导出诊断结论'] = `${dataStr}\n${resultRow['诊断结论']}`;
             
             resultRow['上周CTR'] = w1_ctr_avg;
@@ -792,13 +802,9 @@
         let w1Cps = totalW1Sales > 0 ? (totalW1Spend / totalW1Sales) : 0;
         let w1Tacos = totalW1Revenue > 0 ? (totalW1Spend / totalW1Revenue) : 0;
         
-        let w2OrganicRatio = totalW2Sales > 0 ? (1 - (totalW2AdSales / totalW2Sales)) : 0;
-        let w2Cps = totalW2Sales > 0 ? (totalW2Spend / totalW2Sales) : 0;
-        let w2Tacos = totalW2Revenue > 0 ? (totalW2Spend / totalW2Revenue) : 0;
-        
-        let diffOrg = w2OrganicRatio - w1OrganicRatio;
-        let diffCps = w2Cps - w1Cps;
-        let diffTacos = w2Tacos - w1Tacos;
+        let diffOrg = (totalW2Sales > 0 ? (1 - (totalW2AdSales / totalW2Sales)) : 0) - w1OrganicRatio;
+        let diffCps = (totalW2Sales > 0 ? (totalW2Spend / totalW2Sales) : 0) - w1Cps;
+        let diffTacos = (totalW2Revenue > 0 ? (totalW2Spend / totalW2Revenue) : 0) - w1Tacos;
 
         let global_w2_margin_sum = 0, global_w1_margin_sum = 0;
         let global_w2_margin_rev = 0, global_w1_margin_rev = 0;
@@ -811,7 +817,6 @@
         let global_w2_margin_pct = global_w2_margin_rev > 0 ? global_w2_margin_sum / global_w2_margin_rev : 0;
         let global_w1_margin_pct = global_w1_margin_rev > 0 ? global_w1_margin_sum / global_w1_margin_rev : 0;
         
-        // V7.9 强化绝对值的百分比增幅追踪能力
         function renderTrend(elId, diff, isCost, isPercent, baseVal, currencyType='USD') {
             const el = document.getElementById(elId);
             let icon = diff > 0 ? '↑' : (diff < 0 ? '↓' : '-');
@@ -905,7 +910,6 @@
         const mktgPctW2Data = ownerArr.map(d => (d.w2_mktg_pct * 100).toFixed(1));
         const mktgPctW1Data = ownerArr.map(d => (d.w1_mktg_pct * 100).toFixed(1));
         
-        // V7.9 追加增幅百分比提示
         const option = {
             tooltip: {
                 trigger: 'axis',
@@ -1638,7 +1642,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_9() {
+    async function exportToExcelV7_10() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -1778,7 +1782,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.9_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.10_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
