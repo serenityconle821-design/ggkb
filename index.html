@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.6</title>
+    <title>父ASIN粒度广告分析看板 V7.8</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -30,7 +30,6 @@
         .upload-area h3 { font-size: 20px; font-weight: 600; margin-bottom: 0; color: var(--text-main); }
         .hidden-input { display: none; }
         
-        /* V7.6 强制 7 列等比网格，拒绝折行 */
         .kpi-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 16px; margin-bottom: 30px; display: none; }
         .kpi-card { min-width: 0; background: var(--card-bg); padding: 14px 10px; border-radius: 16px; box-shadow: var(--shadow-subtle); text-align: center; position: relative; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: center; min-height: 100px; cursor: pointer; }
         .kpi-card:hover { border-color: rgba(0, 102, 204, 0.3); transform: translateY(-4px); box-shadow: var(--shadow-hover); }
@@ -128,7 +127,11 @@
 
 <div class="container">
     <div class="header">
-        <div class="title">父ASIN粒度广告分析看板</div>
+        <div>
+            <div class="title">父ASIN粒度广告分析看板</div>
+            <!-- V7.8 新增数据截止日期占位符 -->
+            <div id="data-cutoff-date" style="font-size: 14px; color: var(--text-muted); font-weight: 500; margin-top: 8px; display: none; letter-spacing: 0.02em;">数据截止日期：-</div>
+        </div>
     </div>
 
     <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
@@ -176,7 +179,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_6()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_8()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid full-grid" id="owner-summary-grid">
@@ -478,6 +481,20 @@
 
         if (maxDate === '') {
             throw new Error("无法在【广告日期】列提取到有效日期。请检查表格内是否存在奇怪的占位符。");
+        }
+
+        // V7.8 新增数据截止日期展示
+        const dateEl = document.getElementById('data-cutoff-date');
+        if (dateEl) {
+            let displayDate = maxDate;
+            if (/^\d{8}$/.test(maxDate)) {
+                const y = maxDate.substring(0, 4);
+                const m = parseInt(maxDate.substring(4, 6), 10);
+                const d = parseInt(maxDate.substring(6, 8), 10);
+                displayDate = `${y}.${m}.${d}`;
+            }
+            dateEl.innerText = `数据截止日期：${displayDate}`;
+            dateEl.style.display = 'block';
         }
 
         analyticalResults = [];
@@ -796,7 +813,6 @@
         let global_w2_margin_pct = global_w2_margin_rev > 0 ? global_w2_margin_sum / global_w2_margin_rev : 0;
         let global_w1_margin_pct = global_w1_margin_rev > 0 ? global_w1_margin_sum / global_w1_margin_rev : 0;
         
-        // V7.6 JS text tweak for spacing: changed '上周基准:' to '上周:'
         function renderTrend(elId, diff, isCost, isPercent, baseVal, currencyType='USD') {
             const el = document.getElementById(elId);
             let icon = diff > 0 ? '↑' : (diff < 0 ? '↓' : '-');
@@ -827,7 +843,7 @@
         renderTrend('trend-margin-pct', global_w2_margin_pct - global_w1_margin_pct, false, true, global_w1_margin_pct, '');
 
         document.getElementById('loading').style.display = 'none';
-        document.getElementById('kpi-grid').style.display = 'grid'; // V7.6 forced grid
+        document.getElementById('kpi-grid').style.display = 'grid'; 
         document.getElementById('charts-grid-1').style.display = 'grid';
         document.getElementById('owner-summary-grid').style.display = 'grid'; 
         document.getElementById('charts-grid-sales').style.display = 'grid';
@@ -1598,7 +1614,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_6() {
+    async function exportToExcelV7_8() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -1731,7 +1747,14 @@
 
             const buffer = await wb.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-            saveAs(blob, "广告数据报表_全矩阵深度分析_V7.6.xlsx");
+            
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const dateSuffix = `${yyyy}${mm}${dd}`;
+            
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.8_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
