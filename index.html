@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.8</title>
+    <title>父ASIN粒度广告分析看板 V7.9</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -129,7 +129,6 @@
     <div class="header">
         <div>
             <div class="title">父ASIN粒度广告分析看板</div>
-            <!-- V7.8 新增数据截止日期占位符 -->
             <div id="data-cutoff-date" style="font-size: 14px; color: var(--text-muted); font-weight: 500; margin-top: 8px; display: none; letter-spacing: 0.02em;">数据截止日期：-</div>
         </div>
     </div>
@@ -179,7 +178,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_8()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_9()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid full-grid" id="owner-summary-grid">
@@ -483,7 +482,6 @@
             throw new Error("无法在【广告日期】列提取到有效日期。请检查表格内是否存在奇怪的占位符。");
         }
 
-        // V7.8 新增数据截止日期展示
         const dateEl = document.getElementById('data-cutoff-date');
         if (dateEl) {
             let displayDate = maxDate;
@@ -813,6 +811,7 @@
         let global_w2_margin_pct = global_w2_margin_rev > 0 ? global_w2_margin_sum / global_w2_margin_rev : 0;
         let global_w1_margin_pct = global_w1_margin_rev > 0 ? global_w1_margin_sum / global_w1_margin_rev : 0;
         
+        // V7.9 强化绝对值的百分比增幅追踪能力
         function renderTrend(elId, diff, isCost, isPercent, baseVal, currencyType='USD') {
             const el = document.getElementById(elId);
             let icon = diff > 0 ? '↑' : (diff < 0 ? '↓' : '-');
@@ -822,9 +821,17 @@
             else if (diff < 0) colorClass = isCost ? 'trend-down-good' : 'trend-down-bad';
             
             let prefix = currencyType === 'RMB' ? '¥' : (currencyType === 'USD' ? '$' : '');
-            if (isPercent) prefix = '';
+            
+            let valStr = '';
+            if (isPercent) {
+                valStr = (Math.abs(diff) * 100).toFixed(1) + '%';
+            } else {
+                let pct = baseVal !== 0 ? (diff / Math.abs(baseVal)) * 100 : 0;
+                let pctSign = pct > 0 ? '+' : (pct < 0 ? '-' : '');
+                let pctStr = baseVal !== 0 ? ` (${pctSign}${Math.abs(pct).toFixed(1)}%)` : '';
+                valStr = prefix + Math.abs(diff).toFixed(currencyType === 'RMB' ? 0 : 2) + pctStr;
+            }
 
-            let valStr = isPercent ? (Math.abs(diff) * 100).toFixed(1) + '%' : prefix + Math.abs(diff).toFixed(currencyType === 'RMB' ? 0 : 2);
             if (diff === 0) valStr = '持平';
             
             let baseStr = isPercent ? (baseVal * 100).toFixed(1) + '%' : prefix + baseVal.toFixed(currencyType === 'RMB' ? 0 : 2);
@@ -877,7 +884,10 @@
                 w2_mktg_pct: w2_mktg_pct,
                 w1_mktg_pct: w1_mktg_pct,
                 w2_margin_pct: w2_margin_pct,
-                w1_margin_pct: w1_margin_pct
+                w1_margin_pct: w1_margin_pct,
+                margin_diff: w2_margin - w1_margin,
+                mktg_pct_diff: w2_mktg_pct - w1_mktg_pct,
+                margin_pct_diff: w2_margin_pct - w1_margin_pct
             });
         }
         
@@ -895,6 +905,7 @@
         const mktgPctW2Data = ownerArr.map(d => (d.w2_mktg_pct * 100).toFixed(1));
         const mktgPctW1Data = ownerArr.map(d => (d.w1_mktg_pct * 100).toFixed(1));
         
+        // V7.9 追加增幅百分比提示
         const option = {
             tooltip: {
                 trigger: 'axis',
@@ -908,18 +919,31 @@
                 formatter: function(params) {
                     let index = params[0].dataIndex;
                     let d = ownerArr[index];
+                    
+                    let marginSign = d.margin_diff > 0 ? '+' : (d.margin_diff < 0 ? '-' : '');
+                    let mktgSign = d.mktg_pct_diff > 0 ? '+' : (d.mktg_pct_diff < 0 ? '-' : '');
+                    let pctSign = d.margin_pct_diff > 0 ? '+' : (d.margin_pct_diff < 0 ? '-' : '');
+                    
+                    let marginColor = d.margin_diff > 0 ? '#137333' : '#C5221F';
+                    let mktgColor = d.mktg_pct_diff <= 0 ? '#137333' : '#C5221F'; 
+                    let pctColor = d.margin_pct_diff > 0 ? '#137333' : '#C5221F';
+                    
+                    let marginGrowthPct = d.w1_margin !== 0 ? (d.margin_diff / Math.abs(d.w1_margin)) * 100 : 0;
+                    let marginGrowthSign = marginGrowthPct > 0 ? '+' : (marginGrowthPct < 0 ? '-' : '');
+                    let marginGrowthStr = d.w1_margin !== 0 ? ` (${marginGrowthSign}${Math.abs(marginGrowthPct).toFixed(1)}%)` : '';
+
                     return `<div style="font-weight:700; font-size:15px; margin-bottom:12px; border-bottom:1px solid #E5E5EA; padding-bottom:8px;">🧑‍💼 ${d.owner}</div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                                 <span style="color:#6E6E73; margin-right:24px;">边际利润额</span>
-                                <span style="font-weight:700;">本周 ¥${d.w2_margin.toFixed(0)} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ¥${d.w1_margin.toFixed(0)})</span></span>
+                                <span style="font-weight:700;">本周 ¥${d.w2_margin.toFixed(0)} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ¥${d.w1_margin.toFixed(0)})</span> <span style="font-size:12px; color:${marginColor}; font-weight:600; margin-left:4px;">变动: ${marginSign}¥${Math.abs(d.margin_diff).toFixed(0)}${marginGrowthStr}</span></span>
                             </div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                                 <span style="color:#6E6E73; margin-right:24px;">边际利润率</span>
-                                <span style="font-weight:700; color:#007AFF;">本周 ${(d.w2_margin_pct * 100).toFixed(1)}% <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ${(d.w1_margin_pct * 100).toFixed(1)}%)</span></span>
+                                <span style="font-weight:700; color:#007AFF;">本周 ${(d.w2_margin_pct * 100).toFixed(1)}% <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ${(d.w1_margin_pct * 100).toFixed(1)}%)</span> <span style="font-size:12px; color:${pctColor}; font-weight:600; margin-left:4px;">变动: ${pctSign}${(Math.abs(d.margin_pct_diff) * 100).toFixed(1)}%</span></span>
                             </div>
                             <div style="display:flex; justify-content:space-between;">
                                 <span style="color:#6E6E73; margin-right:24px;">营销成本占比</span>
-                                <span style="font-weight:700; color:#FF9500;">本周 ${(d.w2_mktg_pct * 100).toFixed(1)}% <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ${(d.w1_mktg_pct * 100).toFixed(1)}%)</span></span>
+                                <span style="font-weight:700; color:#FF9500;">本周 ${(d.w2_mktg_pct * 100).toFixed(1)}% <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ${(d.w1_mktg_pct * 100).toFixed(1)}%)</span> <span style="font-size:12px; color:${mktgColor}; font-weight:600; margin-left:4px;">变动: ${mktgSign}${(Math.abs(d.mktg_pct_diff) * 100).toFixed(1)}%</span></span>
                             </div>
                             <div style="margin-top: 12px; font-size:11px; color:#A1A1A6; text-align:right;">👉 点击进入该负责人下钻视图</div>`;
                 }
@@ -1614,7 +1638,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_8() {
+    async function exportToExcelV7_9() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -1754,7 +1778,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.8_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.9_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
