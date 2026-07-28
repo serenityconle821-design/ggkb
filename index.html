@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.15</title>
+    <title>父ASIN粒度广告分析看板 V7.16</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -185,7 +185,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_15()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_16()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid full-grid" id="owner-summary-grid">
@@ -270,6 +270,10 @@
                     <button class="btn-adv-toggle" onclick="toggleAdvFilters()">
                         <span style="font-size:14px;">⚡</span> 多维筛选
                     </button>
+                    <!-- V7.16 新增批量输入入口 -->
+                    <button class="btn-adv-toggle" onclick="openBulkInputModal()">
+                        <span style="font-size:14px;">📋</span> 批量输入
+                    </button>
                 </div>
             </div>
             <span class="close-btn" style="position: absolute; right: 32px; top: 24px;" onclick="closeModal()">&times;</span>
@@ -308,7 +312,6 @@
                 <option value="<">小于</option>
                 <option value="=">等于</option>
             </select>
-            <!-- V7.15 增加回车键触发事件 onkeypress -->
             <input type="number" id="adv-val" class="search-input" placeholder="输入数值..." style="width: 100px; padding: 6px 12px; background-color: #FFFFFF;" onkeypress="if(event.key === 'Enter') addAdvFilter()">
             <button class="btn-export" style="padding: 6px 16px; font-size: 13px;" onclick="addAdvFilter()">添加/更新条件</button>
             <div style="width: 1px; height: 24px; background: #D1D1D6; margin: 0 8px;"></div>
@@ -316,6 +319,27 @@
         </div>
 
         <div class="table-wrapper" id="modal-table-container"></div>
+    </div>
+</div>
+
+<!-- V7.16 新增批量输入弹窗 -->
+<div id="bulkModal" class="modal" style="z-index: 1100;">
+    <div class="modal-content" style="max-width: 560px; height: auto; max-height: 85vh; margin: 6% auto; padding: 24px; border-radius: 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+            <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main);">📋 批量输入 ASIN / 货号</h3>
+            <span class="close-btn" onclick="closeBulkInputModal()">&times;</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
+            支持从 Excel 整列复制粘贴，自动识别空格、换行、逗号或分号分隔的多个查询项。
+        </div>
+        <textarea id="bulkTextarea" placeholder="在此粘贴 ASIN 或货号列表，例如：&#10;B07MY3RS4J&#10;B0CP5DRYQF&#10;C9H882" style="width:100%; height:200px; border:1px solid #E5E5EA; border-radius:14px; padding:12px; font-family:var(--font-family); font-size:13px; outline:none; resize:vertical; box-sizing:border-box; background:#F5F5F7; color:var(--text-main);" oninput="updateBulkCount()"></textarea>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+            <span id="bulkCountTag" style="font-size:12px; color:var(--accent); font-weight:600;">已识别 0 个有效项</span>
+            <div style="display:flex; gap:10px;">
+                <button class="back-btn" onclick="clearBulkTextarea()">清空</button>
+                <button class="btn-export" style="padding: 8px 20px; font-size:13px;" onclick="applyBulkInput()">确认查询</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -373,6 +397,54 @@
         panel.style.display = panel.style.display === 'none' || panel.style.display === '' ? 'flex' : 'none';
     }
     window.toggleAdvFilters = toggleAdvFilters;
+
+    // V7.16 批量输入弹窗交互逻辑
+    function openBulkInputModal() {
+        const modal = document.getElementById('bulkModal');
+        const textarea = document.getElementById('bulkTextarea');
+        const currentVal = document.getElementById('searchInput').value.trim();
+        
+        const tokens = getSearchTokens(currentVal);
+        if (tokens.length > 1) {
+            textarea.value = tokens.join('\n');
+        } else {
+            textarea.value = currentVal;
+        }
+        
+        modal.style.display = 'block';
+        updateBulkCount();
+        textarea.focus();
+    }
+    window.openBulkInputModal = openBulkInputModal;
+
+    function closeBulkInputModal() {
+        document.getElementById('bulkModal').style.display = 'none';
+    }
+    window.closeBulkInputModal = closeBulkInputModal;
+
+    function updateBulkCount() {
+        const text = document.getElementById('bulkTextarea').value;
+        const tokens = getSearchTokens(text);
+        document.getElementById('bulkCountTag').innerText = `已识别 ${tokens.length} 个有效项`;
+    }
+    window.updateBulkCount = updateBulkCount;
+
+    function clearBulkTextarea() {
+        document.getElementById('bulkTextarea').value = '';
+        updateBulkCount();
+    }
+    window.clearBulkTextarea = clearBulkTextarea;
+
+    function applyBulkInput() {
+        const text = document.getElementById('bulkTextarea').value;
+        const tokens = getSearchTokens(text);
+        
+        document.getElementById('searchInput').value = tokens.join(' ');
+        modalHistoryStack = [];
+        renderModalTable();
+        closeBulkInputModal();
+    }
+    window.applyBulkInput = applyBulkInput;
 
     function addAdvFilter() {
         const colSelect = document.getElementById('adv-col');
@@ -459,6 +531,12 @@
             if (foundKey && row[foundKey] !== undefined && row[foundKey] !== '') return row[foundKey];
         }
         return '';
+    }
+
+    // V7.16 通用 Token 正则解析函数（支持空格、换行、逗号、分号、TAB）
+    function getSearchTokens(val) {
+        if (!val) return [];
+        return String(val).split(/[\s,;\t\n]+/).map(t => t.trim().toLowerCase()).filter(t => t.length > 0);
     }
 
     const fileInput = document.getElementById('file-input');
@@ -767,7 +845,7 @@
             const w2_organic_ratio = w2_sales > 0 ? (1 - (w2_ad_sales / w2_sales)) : 0;
             const organic_status = w2_organic_ratio >= 0.6 ? "自然流量健康" : "高度依赖广告";
 
-            let sales_status = sales_rate > 0.05 ? "销量攀升" : (sales_rate < -0.05 ? "销量下滑" : "销量平稳");
+            let sales_status = (w1_sales_avg > 0 ? sales_avg_diff / w1_sales_avg : (w2_sales_avg > 0 ? 1 : 0)) > 0.05 ? "销量攀升" : ((w1_sales_avg > 0 ? sales_avg_diff / w1_sales_avg : (w2_sales_avg > 0 ? 1 : 0)) < -0.05 ? "销量下滑" : "销量平稳");
             let cost_status = (cps_diff > 1.0 || spend_avg_diff > w1_spend_avg * 0.15) ? "成本抬升" : ((cps_diff < -1.0 || spend_avg_diff < -w1_spend_avg * 0.15) ? "成本优化" : "成本可控");
             let profit_status = margin_diff > 0 ? "利润增长" : (margin_diff < -2 ? "利润缩水" : "利润平稳"); 
             let tacos_status = tacos_diff < -0.01 ? "TACOS优化" : (tacos_diff > 0.02 ? "TACOS恶化" : "TACOS平稳");
@@ -1543,7 +1621,10 @@
 
     window.onclick = function(event) {
         const modal = document.getElementById('detailModal');
-        if (event.target == modal) {
+        const bulkModal = document.getElementById('bulkModal');
+        if (event.target == bulkModal) {
+            closeBulkInputModal();
+        } else if (event.target == modal) {
             const searchInput = document.getElementById('searchInput');
             if (searchInput.value.trim() !== '') {
                 goBack();
@@ -1602,10 +1683,11 @@
 
     function renderModalTable() {
         const container = document.getElementById('modal-table-container');
-        const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
+        const searchVal = document.getElementById('searchInput').value.trim();
+        const searchTokens = getSearchTokens(searchVal);
         const clearBtn = document.getElementById('clearSearch');
         
-        clearBtn.style.display = searchVal ? 'block' : 'none';
+        clearBtn.style.display = searchTokens.length > 0 ? 'block' : 'none';
         
         let filteredData = [...analyticalResults];
         
@@ -1613,12 +1695,14 @@
             filteredData = filteredData.filter(d => String(d['优化调整优先级']).includes(currentModalType));
         }
 
-        if (searchVal) {
-            filteredData = filteredData.filter(d => 
-                (d['父asin'] && d['父asin'].toLowerCase().includes(searchVal)) || 
-                (d['货号'] && String(d['货号']).toLowerCase().includes(searchVal)) ||
-                (d['营销负责人'] && String(d['营销负责人']).toLowerCase().includes(searchVal))
-            );
+        // V7.16 支持多 Token 批量关联匹配
+        if (searchTokens.length > 0) {
+            filteredData = filteredData.filter(d => {
+                const asin = (d['父asin'] || '').toLowerCase();
+                const huohao = String(d['货号'] || '').toLowerCase();
+                const owner = String(d['营销负责人'] || '').toLowerCase();
+                return searchTokens.some(token => asin.includes(token) || huohao.includes(token) || owner.includes(token));
+            });
         }
 
         activeFilters.forEach(f => {
@@ -1646,8 +1730,9 @@
         });
 
         const allOwners = Array.from(new Set(analyticalResults.map(r => String(r['营销负责人'] || '未知').toLowerCase())));
-        const isOwnerSearch = allOwners.includes(searchVal);
-        const isExpanded = searchVal.length > 0 && !isOwnerSearch;
+        const isOwnerSearch = searchTokens.length === 1 && allOwners.includes(searchTokens[0]);
+        // V7.16 逻辑：当且仅当精准搜索单个 ASIN/货号 时，展开放大 7日流水视图；批量搜索或负责人搜索时保持对比总览视图
+        const isExpanded = searchTokens.length === 1 && !isOwnerSearch;
 
         let html = '';
 
@@ -1811,7 +1896,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_15() {
+    async function exportToExcelV7_16() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -1951,7 +2036,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.15_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.16_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
