@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.16</title>
+    <title>父ASIN粒度广告分析看板 V7.17</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -185,7 +185,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_16()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_17()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid full-grid" id="owner-summary-grid">
@@ -270,10 +270,6 @@
                     <button class="btn-adv-toggle" onclick="toggleAdvFilters()">
                         <span style="font-size:14px;">⚡</span> 多维筛选
                     </button>
-                    <!-- V7.16 新增批量输入入口 -->
-                    <button class="btn-adv-toggle" onclick="openBulkInputModal()">
-                        <span style="font-size:14px;">📋</span> 批量输入
-                    </button>
                 </div>
             </div>
             <span class="close-btn" style="position: absolute; right: 32px; top: 24px;" onclick="closeModal()">&times;</span>
@@ -286,7 +282,7 @@
                     <option value="近一周边际利润额(¥)">利润额 (¥)</option>
                     <option value="近一周边际利润率">利润率 (%)</option>
                     <option value="近一周TACOS">TACOS (%)</option>
-                    <option value="近一周广告占比">广告占比 (%)</option>
+                    <option value="近一周广告单占比">广告单占比 (%)</option>
                     <option value="近一周ASP($)">ASP ($)</option>
                     <option value="近一周CPS($)">CPS ($)</option>
                     <option value="近一周CPC($)">CPC ($)</option>
@@ -298,7 +294,7 @@
                     <option value="利润额环比">利润额环比 (%)</option>
                     <option value="利润率差额">利润率变动 (%)</option>
                     <option value="TACOS差额">TACOS变动 (%)</option>
-                    <option value="广告占比差额">广告占比变动 (%)</option>
+                    <option value="广告单占比差额">广告单占比变动 (%)</option>
                     <option value="花费环比">花费环比 (%)</option>
                     <option value="CPS环比">CPS环比 (%)</option>
                     <option value="CPC环比">CPC环比 (%)</option>
@@ -319,27 +315,6 @@
         </div>
 
         <div class="table-wrapper" id="modal-table-container"></div>
-    </div>
-</div>
-
-<!-- V7.16 新增批量输入弹窗 -->
-<div id="bulkModal" class="modal" style="z-index: 1100;">
-    <div class="modal-content" style="max-width: 560px; height: auto; max-height: 85vh; margin: 6% auto; padding: 24px; border-radius: 20px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-            <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main);">📋 批量输入 ASIN / 货号</h3>
-            <span class="close-btn" onclick="closeBulkInputModal()">&times;</span>
-        </div>
-        <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
-            支持从 Excel 整列复制粘贴，自动识别空格、换行、逗号或分号分隔的多个查询项。
-        </div>
-        <textarea id="bulkTextarea" placeholder="在此粘贴 ASIN 或货号列表，例如：&#10;B07MY3RS4J&#10;B0CP5DRYQF&#10;C9H882" style="width:100%; height:200px; border:1px solid #E5E5EA; border-radius:14px; padding:12px; font-family:var(--font-family); font-size:13px; outline:none; resize:vertical; box-sizing:border-box; background:#F5F5F7; color:var(--text-main);" oninput="updateBulkCount()"></textarea>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
-            <span id="bulkCountTag" style="font-size:12px; color:var(--accent); font-weight:600;">已识别 0 个有效项</span>
-            <div style="display:flex; gap:10px;">
-                <button class="back-btn" onclick="clearBulkTextarea()">清空</button>
-                <button class="btn-export" style="padding: 8px 20px; font-size:13px;" onclick="applyBulkInput()">确认查询</button>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -397,54 +372,6 @@
         panel.style.display = panel.style.display === 'none' || panel.style.display === '' ? 'flex' : 'none';
     }
     window.toggleAdvFilters = toggleAdvFilters;
-
-    // V7.16 批量输入弹窗交互逻辑
-    function openBulkInputModal() {
-        const modal = document.getElementById('bulkModal');
-        const textarea = document.getElementById('bulkTextarea');
-        const currentVal = document.getElementById('searchInput').value.trim();
-        
-        const tokens = getSearchTokens(currentVal);
-        if (tokens.length > 1) {
-            textarea.value = tokens.join('\n');
-        } else {
-            textarea.value = currentVal;
-        }
-        
-        modal.style.display = 'block';
-        updateBulkCount();
-        textarea.focus();
-    }
-    window.openBulkInputModal = openBulkInputModal;
-
-    function closeBulkInputModal() {
-        document.getElementById('bulkModal').style.display = 'none';
-    }
-    window.closeBulkInputModal = closeBulkInputModal;
-
-    function updateBulkCount() {
-        const text = document.getElementById('bulkTextarea').value;
-        const tokens = getSearchTokens(text);
-        document.getElementById('bulkCountTag').innerText = `已识别 ${tokens.length} 个有效项`;
-    }
-    window.updateBulkCount = updateBulkCount;
-
-    function clearBulkTextarea() {
-        document.getElementById('bulkTextarea').value = '';
-        updateBulkCount();
-    }
-    window.clearBulkTextarea = clearBulkTextarea;
-
-    function applyBulkInput() {
-        const text = document.getElementById('bulkTextarea').value;
-        const tokens = getSearchTokens(text);
-        
-        document.getElementById('searchInput').value = tokens.join(' ');
-        modalHistoryStack = [];
-        renderModalTable();
-        closeBulkInputModal();
-    }
-    window.applyBulkInput = applyBulkInput;
 
     function addAdvFilter() {
         const colSelect = document.getElementById('adv-col');
@@ -531,12 +458,6 @@
             if (foundKey && row[foundKey] !== undefined && row[foundKey] !== '') return row[foundKey];
         }
         return '';
-    }
-
-    // V7.16 通用 Token 正则解析函数（支持空格、换行、逗号、分号、TAB）
-    function getSearchTokens(val) {
-        if (!val) return [];
-        return String(val).split(/[\s,;\t\n]+/).map(t => t.trim().toLowerCase()).filter(t => t.length > 0);
     }
 
     const fileInput = document.getElementById('file-input');
@@ -845,7 +766,7 @@
             const w2_organic_ratio = w2_sales > 0 ? (1 - (w2_ad_sales / w2_sales)) : 0;
             const organic_status = w2_organic_ratio >= 0.6 ? "自然流量健康" : "高度依赖广告";
 
-            let sales_status = (w1_sales_avg > 0 ? sales_avg_diff / w1_sales_avg : (w2_sales_avg > 0 ? 1 : 0)) > 0.05 ? "销量攀升" : ((w1_sales_avg > 0 ? sales_avg_diff / w1_sales_avg : (w2_sales_avg > 0 ? 1 : 0)) < -0.05 ? "销量下滑" : "销量平稳");
+            let sales_status = sales_rate > 0.05 ? "销量攀升" : (sales_rate < -0.05 ? "销量下滑" : "销量平稳");
             let cost_status = (cps_diff > 1.0 || spend_avg_diff > w1_spend_avg * 0.15) ? "成本抬升" : ((cps_diff < -1.0 || spend_avg_diff < -w1_spend_avg * 0.15) ? "成本优化" : "成本可控");
             let profit_status = margin_diff > 0 ? "利润增长" : (margin_diff < -2 ? "利润缩水" : "利润平稳"); 
             let tacos_status = tacos_diff < -0.01 ? "TACOS优化" : (tacos_diff > 0.02 ? "TACOS恶化" : "TACOS平稳");
@@ -887,17 +808,17 @@
             resultRow['上周日均销量'] = Number(w1_sales_avg.toFixed(2));
             resultRow['近一周日均销量'] = Number(w2_sales_avg.toFixed(2));
             resultRow['日均销量差额'] = Number(sales_avg_diff.toFixed(2));
-            resultRow['销量环比'] = Number((w1_sales_avg > 0 ? sales_avg_diff / w1_sales_avg : (w2_sales_avg > 0 ? 1 : 0)).toFixed(4));
+            resultRow['销量环比'] = Number(sales_rate.toFixed(4));
 
             resultRow['上周ASP($)'] = Number(w1_asp.toFixed(2));
             resultRow['近一周ASP($)'] = Number(w2_asp.toFixed(2));
             resultRow['ASP差额($)'] = Number(asp_diff.toFixed(2));
             resultRow['ASP环比'] = Number(asp_rate.toFixed(4));
             
-            resultRow['上周广告占比'] = Number(w1_ad_ratio.toFixed(4));
-            resultRow['近一周广告占比'] = Number(w2_ad_ratio.toFixed(4));
-            resultRow['广告占比差额'] = Number(ad_ratio_diff.toFixed(4));
-            resultRow['广告占比环比'] = Number(ad_ratio_rate.toFixed(4));
+            resultRow['上周广告单占比'] = Number(w1_ad_ratio.toFixed(4));
+            resultRow['近一周广告单占比'] = Number(w2_ad_ratio.toFixed(4));
+            resultRow['广告单占比差额'] = Number(ad_ratio_diff.toFixed(4));
+            resultRow['广告单占比环比'] = Number(ad_ratio_rate.toFixed(4));
 
             resultRow['上周日均花费($)'] = Number(w1_spend_avg.toFixed(2));
             resultRow['近一周日均花费($)'] = Number(w2_spend_avg.toFixed(2));
@@ -1579,7 +1500,7 @@
         
         chartCvr.setOption({
             tooltip: { 
-                trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.92)', borderColor: '#E5E5EA', padding: 12, borderRadius: 12, extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.08);',
+                trigger: 'axis', rgba: 'rgba(255,255,255,0.92)', borderColor: '#E5E5EA', padding: 12, borderRadius: 12, extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.08);',
                 formatter: function(params) {
                     const item = badAsins[params[0].dataIndex];
                     return `<b>父ASIN:</b> ${item['父asin']}<br/><b>货号:</b> ${item['货号'] || '-'}<br/><b>营销负责人:</b> ${item['营销负责人'] || '-'}<br/><br/>
@@ -1621,10 +1542,7 @@
 
     window.onclick = function(event) {
         const modal = document.getElementById('detailModal');
-        const bulkModal = document.getElementById('bulkModal');
-        if (event.target == bulkModal) {
-            closeBulkInputModal();
-        } else if (event.target == modal) {
+        if (event.target == modal) {
             const searchInput = document.getElementById('searchInput');
             if (searchInput.value.trim() !== '') {
                 goBack();
@@ -1683,11 +1601,10 @@
 
     function renderModalTable() {
         const container = document.getElementById('modal-table-container');
-        const searchVal = document.getElementById('searchInput').value.trim();
-        const searchTokens = getSearchTokens(searchVal);
+        const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
         const clearBtn = document.getElementById('clearSearch');
         
-        clearBtn.style.display = searchTokens.length > 0 ? 'block' : 'none';
+        clearBtn.style.display = searchVal ? 'block' : 'none';
         
         let filteredData = [...analyticalResults];
         
@@ -1695,14 +1612,12 @@
             filteredData = filteredData.filter(d => String(d['优化调整优先级']).includes(currentModalType));
         }
 
-        // V7.16 支持多 Token 批量关联匹配
-        if (searchTokens.length > 0) {
-            filteredData = filteredData.filter(d => {
-                const asin = (d['父asin'] || '').toLowerCase();
-                const huohao = String(d['货号'] || '').toLowerCase();
-                const owner = String(d['营销负责人'] || '').toLowerCase();
-                return searchTokens.some(token => asin.includes(token) || huohao.includes(token) || owner.includes(token));
-            });
+        if (searchVal) {
+            filteredData = filteredData.filter(d => 
+                (d['父asin'] && d['父asin'].toLowerCase().includes(searchVal)) || 
+                (d['货号'] && String(d['货号']).toLowerCase().includes(searchVal)) ||
+                (d['营销负责人'] && String(d['营销负责人']).toLowerCase().includes(searchVal))
+            );
         }
 
         activeFilters.forEach(f => {
@@ -1730,9 +1645,8 @@
         });
 
         const allOwners = Array.from(new Set(analyticalResults.map(r => String(r['营销负责人'] || '未知').toLowerCase())));
-        const isOwnerSearch = searchTokens.length === 1 && allOwners.includes(searchTokens[0]);
-        // V7.16 逻辑：当且仅当精准搜索单个 ASIN/货号 时，展开放大 7日流水视图；批量搜索或负责人搜索时保持对比总览视图
-        const isExpanded = searchTokens.length === 1 && !isOwnerSearch;
+        const isOwnerSearch = allOwners.includes(searchVal);
+        const isExpanded = searchVal.length > 0 && !isOwnerSearch;
 
         let html = '';
 
@@ -1757,7 +1671,7 @@
             '日均花费($)': '近一周日均花费($)',
             '利润额(¥)': '近一周边际利润额(¥)',
             '利润率': '近一周边际利润率',
-            '广告占比': '近一周广告占比',
+            '广告单占比': '近一周广告单占比',
             'ASP($)': '近一周ASP($)',
             'CPS($)': '近一周CPS($)',
             'TACOS': '近一周TACOS',
@@ -1767,8 +1681,8 @@
         };
 
         const cols = isExpanded ? 
-            ['日期', '产品信息', '判定', '当日销', '当日花费($)', '当日利润(¥)', '当日利润率', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'] : 
-            ['产品信息', '判定', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'];
+            ['日期', '产品信息', '判定', '当日销', '当日花费($)', '当日利润(¥)', '当日利润率', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'] : 
+            ['产品信息', '判定', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'];
 
         cols.forEach(col => {
             if(colMap[col]) {
@@ -1803,7 +1717,7 @@
             let marginHtml = `<div class="main-val">¥${row['近一周边际利润额(¥)'].toFixed(0)}</div>` + getSubtextHtml(row['上周边际利润额(¥)'], row['利润额差额(¥)'], row['利润额环比'], false, false, 'RMB');
             
             let marginPctHtml = `<div class="main-val">${(row['近一周边际利润率']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周边际利润率'], row['利润率差额'], row['利润率环比'], false, true, '');
-            let adRatioHtml = `<div class="main-val">${(row['近一周广告占比']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周广告占比'], row['广告占比差额'], row['广告占比环比'], true, true, '');
+            let adRatioHtml = `<div class="main-val">${(row['近一周广告单占比']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周广告单占比'], row['广告单占比差额'], row['广告单占比环比'], true, true, '');
             let aspHtml = `<div class="main-val">$${row['近一周ASP($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周ASP($)'], row['ASP差额($)'], row['ASP环比'], false, false, 'USD');
             let cpsHtml = `<div class="main-val">$${row['近一周CPS($)']}</div>` + getSubtextHtml(row['上周CPS($)'], row['CPS差额($)'], row['CPS环比'], true, false, 'USD');
             let tacosHtml = `<div class="main-val">${(row['近一周TACOS']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, '');
@@ -1896,7 +1810,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_16() {
+    async function exportToExcelV7_17() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -1909,7 +1823,7 @@
                 '上周边际利润额(¥)', '近一周边际利润额(¥)', '利润额差额(¥)', '利润额环比',
                 '上周边际利润率', '近一周边际利润率', '利润率差额', '利润率环比',
                 '上周ASP($)', '近一周ASP($)', 'ASP差额($)', 'ASP环比',
-                '上周广告占比', '近一周广告占比', '广告占比差额', '广告占比环比',
+                '上周广告单占比', '近一周广告单占比', '广告单占比差额', '广告单占比环比',
                 '上周日均花费($)', '近一周日均花费($)', '日均花费差额($)', '花费环比',
                 '上周TACOS', '近一周TACOS', 'TACOS差额', 'TACOS环比',
                 '上周CPS($)', '近一周CPS($)', 'CPS差额($)', 'CPS环比',
@@ -2036,7 +1950,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.16_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.17_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
