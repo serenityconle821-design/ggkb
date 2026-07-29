@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.17</title>
+    <title>父ASIN粒度广告分析看板 V7.22</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -45,7 +45,7 @@
         
         .charts-grid { display: grid; gap: 24px; margin-bottom: 24px; display: none; }
         .top-grid { grid-template-columns: 1.2fr 1.8fr; height: 320px; }
-        .full-grid { grid-template-columns: 1fr; height: 400px; margin-bottom: 24px; }
+        .full-grid { grid-template-columns: 1fr; height: 500px; margin-bottom: 24px; }
         
         .chart-container { background: var(--card-bg); padding: 20px 24px; border-radius: var(--radius); box-shadow: var(--shadow-subtle); border: 1px solid var(--border-color); display: flex; flex-direction: column; box-sizing: border-box; height: 100%; transition: all 0.3s; }
         .chart-container:hover { border-color: rgba(0, 102, 204, 0.3); box-shadow: var(--shadow-hover); }
@@ -185,25 +185,27 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_17()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_22()">导出精研分析报告 (Excel)</button>
     </div>
 
-    <div class="charts-grid full-grid" id="owner-summary-grid">
-        <div class="chart-container">
-            <div class="chart-header">
-                <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">负责人多维利润绩效 (7日视角)</span></div>
-                <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;">统一时空对照引擎：色块为本周(Solid) / 灰调为上周(Opacity)</div>
-            </div>
-            <div class="chart-wrapper"><div id="chart-owner-profit" class="absolute-chart"></div></div>
-        </div>
-    </div>
-
+    <!-- 诊断分布视图和管辖健康度提前 -->
     <div class="charts-grid top-grid" id="charts-grid-1">
         <div class="chart-container">
             <div class="chart-wrapper"><div id="chart-priority" class="absolute-chart"></div></div>
         </div>
         <div class="chart-container">
             <div class="chart-wrapper"><div id="chart-owner" class="absolute-chart"></div></div>
+        </div>
+    </div>
+
+    <!-- V7.22 营收与利润深度合并版块 -->
+    <div class="charts-grid full-grid" id="owner-summary-grid">
+        <div class="chart-container">
+            <div class="chart-header">
+                <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">负责人多维营收与利润全景绩效 (7日视角)</span></div>
+                <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;">柱状图：营收与利润额 | 折线图：利润/营销/商品/履约/退款占比追踪</div>
+            </div>
+            <div class="chart-wrapper"><div id="chart-owner-profit" class="absolute-chart"></div></div>
         </div>
     </div>
     
@@ -532,6 +534,7 @@
         globalProfitMap = {};
         let allDates2 = [];
         
+        // 抓取全口径成本结构指标
         data2.forEach(row => {
             const dateStr = String(getColRaw(row, ['统计日期', '日期'])).trim();
             const asinStr = String(getColRaw(row, ['父asin', 'asin'])).trim();
@@ -544,7 +547,11 @@
                     margin: parseNumber(row['边际利润额']),
                     revenue: parseNumber(row['退款前收入']),
                     rate: parseMetric(row['退前边际利润率']),
-                    marketing_cost: parseNumber(row['营销成本'])
+                    marketing_cost: parseNumber(row['营销成本']),
+                    shipped_units: parseNumber(row['已发货销量']),
+                    product_cost: parseNumber(row['商品成本']),
+                    fulfillment_cost: parseNumber(row['履约成本']),
+                    refund_cost: parseNumber(row['售后成本_销售退回'])
                 };
             }
         });
@@ -561,20 +568,45 @@
             
             const owner = asinToOwner[a] || '未知';
             
-            if (!ownerStats[owner]) ownerStats[owner] = { w1_margin: 0, w2_margin: 0, w1_rev: 0, w2_rev: 0, w1_mktg: 0, w2_mktg: 0 };
+            if (!ownerStats[owner]) ownerStats[owner] = { 
+                w1_margin: 0, w2_margin: 0, 
+                w1_rev: 0, w2_rev: 0, 
+                w1_raw_rev: 0, w2_raw_rev: 0, 
+                w1_mktg: 0, w2_mktg: 0,
+                w1_shipped: 0, w2_shipped: 0,
+                w1_prod: 0, w2_prod: 0,
+                w1_fulfill: 0, w2_fulfill: 0,
+                w1_refund: 0, w2_refund: 0
+            };
             
             let margin = parseNumber(r['边际利润额']);
-            let rev = parseNumber(r['退款前收入']);
+            let raw_rev = parseNumber(r['退款前收入']);
+            let return_cost = parseNumber(r['售后成本_销售退回']);
+            let rev = raw_rev - return_cost; // 营收 (扣除退回)
+            
             let mktg = parseNumber(r['营销成本']);
+            let shipped = parseNumber(r['已发货销量']);
+            let prod = parseNumber(r['商品成本']);
+            let fulfill = parseNumber(r['履约成本']);
             
             if (w2Dates.includes(d)) {
                 ownerStats[owner].w2_margin += margin;
                 ownerStats[owner].w2_rev += rev;
+                ownerStats[owner].w2_raw_rev += raw_rev; 
                 ownerStats[owner].w2_mktg += mktg;
+                ownerStats[owner].w2_shipped += shipped;
+                ownerStats[owner].w2_prod += prod;
+                ownerStats[owner].w2_fulfill += fulfill;
+                ownerStats[owner].w2_refund += return_cost;
             } else if (w1Dates.includes(d)) {
                 ownerStats[owner].w1_margin += margin;
                 ownerStats[owner].w1_rev += rev;
+                ownerStats[owner].w1_raw_rev += raw_rev;
                 ownerStats[owner].w1_mktg += mktg;
+                ownerStats[owner].w1_shipped += shipped;
+                ownerStats[owner].w1_prod += prod;
+                ownerStats[owner].w1_fulfill += fulfill;
+                ownerStats[owner].w1_refund += return_cost;
             }
         });
 
@@ -932,15 +964,15 @@
         let diffTacos = (totalW2Revenue > 0 ? (totalW2Spend / totalW2Revenue) : 0) - w1Tacos;
 
         let global_w2_margin_sum = 0, global_w1_margin_sum = 0;
-        let global_w2_margin_rev = 0, global_w1_margin_rev = 0;
+        let global_w2_raw_rev = 0, global_w1_raw_rev = 0; 
         for (const owner in ownerStats) {
             global_w2_margin_sum += ownerStats[owner].w2_margin;
             global_w1_margin_sum += ownerStats[owner].w1_margin;
-            global_w2_margin_rev += ownerStats[owner].w2_rev;
-            global_w1_margin_rev += ownerStats[owner].w1_rev;
+            global_w2_raw_rev += ownerStats[owner].w2_raw_rev;
+            global_w1_raw_rev += ownerStats[owner].w1_raw_rev;
         }
-        let global_w2_margin_pct = global_w2_margin_rev > 0 ? global_w2_margin_sum / global_w2_margin_rev : 0;
-        let global_w1_margin_pct = global_w1_margin_rev > 0 ? global_w1_margin_sum / global_w1_margin_rev : 0;
+        let global_w2_margin_pct = global_w2_raw_rev > 0 ? global_w2_margin_sum / global_w2_raw_rev : 0;
+        let global_w1_margin_pct = global_w1_raw_rev > 0 ? global_w1_margin_sum / global_w1_raw_rev : 0;
         
         function renderTrend(elId, diff, isCost, isPercent, baseVal, currencyType='USD') {
             const el = document.getElementById(elId);
@@ -992,48 +1024,88 @@
         setTimeout(() => {
             populateOwnerFilter(analyticalResults);
             renderCharts(priorityCounts, analyticalResults);
-            renderOwnerChart(ownerStats);
+            renderOwnerChart(ownerStats); // V7.22 核心合并渲染
         }, 50);
     }
 
+    // V7.22 超高密度聚合图表：营收、利润、利润率、各项成本及退款率
     function renderOwnerChart(ownerStats) {
         let ownerArr = [];
         for (const owner in ownerStats) {
             let stats = ownerStats[owner];
+            
             let w2_margin = stats.w2_margin;
             let w1_margin = stats.w1_margin;
-            let w2_mktg_pct = stats.w2_rev > 0 ? (stats.w2_mktg / stats.w2_rev) : 0;
-            let w1_mktg_pct = stats.w1_rev > 0 ? (stats.w1_mktg / stats.w1_rev) : 0;
-            let w2_margin_pct = stats.w2_rev > 0 ? (stats.w2_margin / stats.w2_rev) : 0;
-            let w1_margin_pct = stats.w1_rev > 0 ? (stats.w1_margin / stats.w1_rev) : 0;
+            
+            let w2_rev = stats.w2_rev;
+            let w1_rev = stats.w1_rev;
+            
+            let w2_raw_rev = stats.w2_raw_rev;
+            let w1_raw_rev = stats.w1_raw_rev;
+            
+            let w2_mktg = stats.w2_mktg;
+            let w1_mktg = stats.w1_mktg;
+            
+            let w2_mktg_pct = w2_raw_rev > 0 ? (stats.w2_mktg / w2_raw_rev) : 0;
+            let w1_mktg_pct = w1_raw_rev > 0 ? (stats.w1_mktg / w1_raw_rev) : 0;
+            
+            let w2_margin_pct = w2_raw_rev > 0 ? (stats.w2_margin / w2_raw_rev) : 0;
+            let w1_margin_pct = w1_raw_rev > 0 ? (stats.w1_margin / w1_raw_rev) : 0;
+            
+            let w2_prod_pct = w2_raw_rev > 0 ? (stats.w2_prod / w2_raw_rev) : 0;
+            let w1_prod_pct = w1_raw_rev > 0 ? (stats.w1_prod / w1_raw_rev) : 0;
+            
+            let w2_fulfill_pct = w2_raw_rev > 0 ? (stats.w2_fulfill / w2_raw_rev) : 0;
+            let w1_fulfill_pct = w1_raw_rev > 0 ? (stats.w1_fulfill / w1_raw_rev) : 0;
+            
+            let w2_refund_pct = w2_raw_rev > 0 ? (stats.w2_refund / w2_raw_rev) : 0;
+            let w1_refund_pct = w1_raw_rev > 0 ? (stats.w1_refund / w1_raw_rev) : 0;
             
             ownerArr.push({
                 owner: owner,
-                w2_margin: w2_margin,
-                w1_margin: w1_margin,
-                w2_mktg_pct: w2_mktg_pct,
-                w1_mktg_pct: w1_mktg_pct,
-                w2_margin_pct: w2_margin_pct,
-                w1_margin_pct: w1_margin_pct,
+                w2_margin: w2_margin, w1_margin: w1_margin,
+                w2_rev: w2_rev, w1_rev: w1_rev,
+                w2_mktg: w2_mktg, w1_mktg: w1_mktg,
+                w2_shipped: stats.w2_shipped, w1_shipped: stats.w1_shipped,
+                w2_margin_pct: w2_margin_pct, w1_margin_pct: w1_margin_pct,
+                w2_mktg_pct: w2_mktg_pct, w1_mktg_pct: w1_mktg_pct,
+                w2_prod_pct: w2_prod_pct, w1_prod_pct: w1_prod_pct,
+                w2_fulfill_pct: w2_fulfill_pct, w1_fulfill_pct: w1_fulfill_pct,
+                w2_refund_pct: w2_refund_pct, w1_refund_pct: w1_refund_pct,
                 margin_diff: w2_margin - w1_margin,
+                rev_diff: w2_rev - w1_rev,
+                mktg_diff: w2_mktg - w1_mktg,
+                shipped_diff: stats.w2_shipped - stats.w1_shipped,
+                margin_pct_diff: w2_margin_pct - w1_margin_pct,
                 mktg_pct_diff: w2_mktg_pct - w1_mktg_pct,
-                margin_pct_diff: w2_margin_pct - w1_margin_pct
+                prod_pct_diff: w2_prod_pct - w1_prod_pct,
+                fulfill_pct_diff: w2_fulfill_pct - w1_fulfill_pct,
+                refund_pct_diff: w2_refund_pct - w1_refund_pct
             });
         }
         
-        ownerArr.sort((a, b) => b.w2_margin - a.w2_margin); 
+        ownerArr.sort((a, b) => b.w2_rev - a.w2_rev); 
         
         const chartDom = document.getElementById('chart-owner-profit');
         if (!chartDom) return;
         const myChart = echarts.init(chartDom);
         
         const xData = ownerArr.map(d => d.owner);
+        const revW2Data = ownerArr.map(d => d.w2_rev);
+        const revW1Data = ownerArr.map(d => d.w1_rev);
         const marginW2Data = ownerArr.map(d => d.w2_margin);
         const marginW1Data = ownerArr.map(d => d.w1_margin);
+        
         const marginPctW2Data = ownerArr.map(d => (d.w2_margin_pct * 100).toFixed(1));
         const marginPctW1Data = ownerArr.map(d => (d.w1_margin_pct * 100).toFixed(1));
         const mktgPctW2Data = ownerArr.map(d => (d.w2_mktg_pct * 100).toFixed(1));
         const mktgPctW1Data = ownerArr.map(d => (d.w1_mktg_pct * 100).toFixed(1));
+        const prodPctW2Data = ownerArr.map(d => (d.w2_prod_pct * 100).toFixed(1));
+        const prodPctW1Data = ownerArr.map(d => (d.w1_prod_pct * 100).toFixed(1));
+        const fulfillPctW2Data = ownerArr.map(d => (d.w2_fulfill_pct * 100).toFixed(1));
+        const fulfillPctW1Data = ownerArr.map(d => (d.w1_fulfill_pct * 100).toFixed(1));
+        const refundPctW2Data = ownerArr.map(d => (d.w2_refund_pct * 100).toFixed(1));
+        const refundPctW1Data = ownerArr.map(d => (d.w1_refund_pct * 100).toFixed(1));
         
         const option = {
             tooltip: {
@@ -1044,47 +1116,103 @@
                 padding: 16,
                 borderRadius: 12,
                 textStyle: { color: '#111115' },
-                extraCssText: 'box-shadow: 0 8px 30px rgba(0,0,0,0.12);',
+                extraCssText: 'box-shadow: 0 8px 30px rgba(0,0,0,0.12); z-index: 1000;',
                 formatter: function(params) {
                     let index = params[0].dataIndex;
                     let d = ownerArr[index];
                     
+                    let revSign = d.rev_diff > 0 ? '+' : (d.rev_diff < 0 ? '-' : '');
                     let marginSign = d.margin_diff > 0 ? '+' : (d.margin_diff < 0 ? '-' : '');
-                    let mktgSign = d.mktg_pct_diff > 0 ? '+' : (d.mktg_pct_diff < 0 ? '-' : '');
+                    let mktgSign = d.mktg_diff > 0 ? '+' : (d.mktg_diff < 0 ? '-' : '');
+                    let shippedSign = d.shipped_diff > 0 ? '+' : (d.shipped_diff < 0 ? '-' : '');
+                    
                     let pctSign = d.margin_pct_diff > 0 ? '+' : (d.margin_pct_diff < 0 ? '-' : '');
+                    let mktgPctSign = d.mktg_pct_diff > 0 ? '+' : (d.mktg_pct_diff < 0 ? '-' : '');
+                    let prodSign = d.prod_pct_diff > 0 ? '+' : (d.prod_pct_diff < 0 ? '-' : '');
+                    let fulfillSign = d.fulfill_pct_diff > 0 ? '+' : (d.fulfill_pct_diff < 0 ? '-' : '');
+                    let refundSign = d.refund_pct_diff > 0 ? '+' : (d.refund_pct_diff < 0 ? '-' : '');
                     
+                    let revColor = d.rev_diff > 0 ? '#137333' : '#C5221F';
                     let marginColor = d.margin_diff > 0 ? '#137333' : '#C5221F';
-                    let mktgColor = d.mktg_pct_diff <= 0 ? '#137333' : '#C5221F'; 
-                    let pctColor = d.margin_pct_diff > 0 ? '#137333' : '#C5221F';
+                    let mktgColor = d.mktg_diff <= 0 ? '#137333' : '#C5221F'; 
+                    let shippedColor = d.shipped_diff > 0 ? '#137333' : '#C5221F';
                     
+                    let pctColor = d.margin_pct_diff > 0 ? '#137333' : '#C5221F';
+                    let mktgPctColor = d.mktg_pct_diff <= 0 ? '#137333' : '#C5221F'; 
+                    let prodColor = d.prod_pct_diff <= 0 ? '#137333' : '#C5221F'; 
+                    let fulfillColor = d.fulfill_pct_diff <= 0 ? '#137333' : '#C5221F'; 
+                    let refundColor = d.refund_pct_diff <= 0 ? '#137333' : '#C5221F';
+                    
+                    let revGrowthPct = d.w1_rev !== 0 ? (d.rev_diff / Math.abs(d.w1_rev)) * 100 : 0;
+                    let revGrowthSign = revGrowthPct > 0 ? '+' : (revGrowthPct < 0 ? '-' : '');
+                    let revGrowthStr = d.w1_rev !== 0 ? ` (${revGrowthSign}${Math.abs(revGrowthPct).toFixed(1)}%)` : '';
+
                     let marginGrowthPct = d.w1_margin !== 0 ? (d.margin_diff / Math.abs(d.w1_margin)) * 100 : 0;
                     let marginGrowthSign = marginGrowthPct > 0 ? '+' : (marginGrowthPct < 0 ? '-' : '');
                     let marginGrowthStr = d.w1_margin !== 0 ? ` (${marginGrowthSign}${Math.abs(marginGrowthPct).toFixed(1)}%)` : '';
 
+                    let mktgGrowthPct = d.w1_mktg !== 0 ? (d.mktg_diff / Math.abs(d.w1_mktg)) * 100 : 0;
+                    let mktgGrowthSign = mktgGrowthPct > 0 ? '+' : (mktgGrowthPct < 0 ? '-' : '');
+                    let mktgGrowthStr = d.w1_mktg !== 0 ? ` (${mktgGrowthSign}${Math.abs(mktgGrowthPct).toFixed(1)}%)` : '';
+
+                    let shippedGrowthPct = d.w1_shipped !== 0 ? (d.shipped_diff / Math.abs(d.w1_shipped)) * 100 : 0;
+                    let shippedGrowthSign = shippedGrowthPct > 0 ? '+' : (shippedGrowthPct < 0 ? '-' : '');
+                    let shippedGrowthStr = d.w1_shipped !== 0 ? ` (${shippedGrowthSign}${Math.abs(shippedGrowthPct).toFixed(1)}%)` : '';
+
                     return `<div style="font-weight:700; font-size:15px; margin-bottom:12px; border-bottom:1px solid #E5E5EA; padding-bottom:8px;">🧑‍💼 ${d.owner}</div>
-                            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                <span style="color:#6E6E73; margin-right:24px;">营收 (扣除退回)</span>
+                                <span style="font-weight:700;">本周 ¥${d.w2_rev.toFixed(0)} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ¥${d.w1_rev.toFixed(0)})</span> <span style="font-size:12px; color:${revColor}; font-weight:600; margin-left:4px;">变动: ${revSign}¥${Math.abs(d.rev_diff).toFixed(0)}${revGrowthStr}</span></span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                                 <span style="color:#6E6E73; margin-right:24px;">边际利润额</span>
                                 <span style="font-weight:700;">本周 ¥${d.w2_margin.toFixed(0)} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ¥${d.w1_margin.toFixed(0)})</span> <span style="font-size:12px; color:${marginColor}; font-weight:600; margin-left:4px;">变动: ${marginSign}¥${Math.abs(d.margin_diff).toFixed(0)}${marginGrowthStr}</span></span>
                             </div>
-                            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                <span style="color:#6E6E73; margin-right:24px;">已发货销量</span>
+                                <span style="font-weight:700; color:#111115;">本周 ${d.w2_shipped} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ${d.w1_shipped})</span> <span style="font-size:12px; color:${shippedColor}; font-weight:600; margin-left:4px;">变动: ${shippedSign}${Math.abs(d.shipped_diff)}${shippedGrowthStr}</span></span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px dashed #E5E5EA; padding-bottom:8px;">
+                                <span style="color:#6E6E73; margin-right:24px;">营销成本额</span>
+                                <span style="font-weight:700; color:#FF9500;">本周 ¥${d.w2_mktg.toFixed(0)} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ¥${d.w1_mktg.toFixed(0)})</span> <span style="font-size:12px; color:${mktgColor}; font-weight:600; margin-left:4px;">变动: ${mktgSign}¥${Math.abs(d.mktg_diff).toFixed(0)}${mktgGrowthStr}</span></span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                                 <span style="color:#6E6E73; margin-right:24px;">边际利润率</span>
-                                <span style="font-weight:700; color:#007AFF;">本周 ${(d.w2_margin_pct * 100).toFixed(1)}% <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ${(d.w1_margin_pct * 100).toFixed(1)}%)</span> <span style="font-size:12px; color:${pctColor}; font-weight:600; margin-left:4px;">变动: ${pctSign}${(Math.abs(d.margin_pct_diff) * 100).toFixed(1)}%</span></span>
+                                <span style="font-weight:700; color:#34C759;">本周 ${(d.w2_margin_pct * 100).toFixed(1)}% <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ${(d.w1_margin_pct * 100).toFixed(1)}%)</span> <span style="font-size:12px; color:${pctColor}; font-weight:600; margin-left:4px;">变动: ${pctSign}${(Math.abs(d.margin_pct_diff) * 100).toFixed(1)}%</span></span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                <span style="color:#6E6E73; margin-right:24px;">营销占比</span>
+                                <span style="font-weight:700; color:#FF9500;">本周 ${(d.w2_mktg_pct * 100).toFixed(1)}% <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ${(d.w1_mktg_pct * 100).toFixed(1)}%)</span> <span style="font-size:12px; color:${mktgPctColor}; font-weight:600; margin-left:4px;">变动: ${mktgPctSign}${(Math.abs(d.mktg_pct_diff) * 100).toFixed(1)}%</span></span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                <span style="color:#6E6E73; margin-right:24px;">商品成本占比</span>
+                                <span style="font-weight:700; color:#AF52DE;">本周 ${(d.w2_prod_pct * 100).toFixed(1)}% <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ${(d.w1_prod_pct * 100).toFixed(1)}%)</span> <span style="font-size:12px; color:${prodColor}; font-weight:600; margin-left:4px;">变动: ${prodSign}${(Math.abs(d.prod_pct_diff) * 100).toFixed(1)}%</span></span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                                <span style="color:#6E6E73; margin-right:24px;">履约成本占比</span>
+                                <span style="font-weight:700; color:#FF2D55;">本周 ${(d.w2_fulfill_pct * 100).toFixed(1)}% <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ${(d.w1_fulfill_pct * 100).toFixed(1)}%)</span> <span style="font-size:12px; color:${fulfillColor}; font-weight:600; margin-left:4px;">变动: ${fulfillSign}${(Math.abs(d.fulfill_pct_diff) * 100).toFixed(1)}%</span></span>
                             </div>
                             <div style="display:flex; justify-content:space-between;">
-                                <span style="color:#6E6E73; margin-right:24px;">营销成本占比</span>
-                                <span style="font-weight:700; color:#FF9500;">本周 ${(d.w2_mktg_pct * 100).toFixed(1)}% <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ${(d.w1_mktg_pct * 100).toFixed(1)}%)</span> <span style="font-size:12px; color:${mktgColor}; font-weight:600; margin-left:4px;">变动: ${mktgSign}${(Math.abs(d.mktg_pct_diff) * 100).toFixed(1)}%</span></span>
+                                <span style="color:#6E6E73; margin-right:24px;">退款率</span>
+                                <span style="font-weight:700; color:#32ADE6;">本周 ${(d.w2_refund_pct * 100).toFixed(1)}% <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ${(d.w1_refund_pct * 100).toFixed(1)}%)</span> <span style="font-size:12px; color:${refundColor}; font-weight:600; margin-left:4px;">变动: ${refundSign}${(Math.abs(d.refund_pct_diff) * 100).toFixed(1)}%</span></span>
                             </div>
                             <div style="margin-top: 12px; font-size:11px; color:#A1A1A6; text-align:right;">👉 点击进入该负责人下钻视图</div>`;
                 }
             },
             legend: {
-                data: ['本周利润额', '上周利润额', '本周利润率', '上周利润率', '本周营销占比', '上周营销占比'],
+                data: [
+                    '本周营收', '上周营收', '本周利润', '上周利润', 
+                    '本周利润率', '上周利润率', '本周营销占比', '上周营销占比', 
+                    '本周商品占比', '上周商品占比', '本周履约占比', '上周履约占比', 
+                    '本周退款率', '上周退款率'
+                ],
                 top: 0,
+                type: 'scroll',
                 itemWidth: 14,
                 itemHeight: 14,
-                textStyle: { color: '#6E6E73', fontSize: 12, fontWeight: 500 }
+                textStyle: { color: '#6E6E73', fontSize: 11, fontWeight: 500 }
             },
-            grid: { left: '3%', right: '3%', bottom: '5%', top: '20%', containLabel: true },
+            grid: { left: '3%', right: '3%', bottom: '5%', top: '22%', containLabel: true },
             xAxis: {
                 type: 'category',
                 data: xData,
@@ -1095,14 +1223,14 @@
             yAxis: [
                 {
                     type: 'value',
-                    name: '利润额 (¥)',
+                    name: '金额 (¥)',
                     nameTextStyle: { color: '#6E6E73' },
                     splitLine: { lineStyle: { type: 'dashed', color: '#F2F2F7' } },
                     axisLabel: { color: '#6E6E73' }
                 },
                 {
                     type: 'value',
-                    name: '占比 (%)',
+                    name: '健康指标占比 (%)',
                     nameTextStyle: { color: '#6E6E73' },
                     position: 'right',
                     splitLine: { show: false },
@@ -1111,21 +1239,36 @@
             ],
             series: [
                 {
-                    name: '本周利润额',
+                    name: '本周营收',
                     type: 'bar',
                     yAxisIndex: 0,
-                    barMaxWidth: 32,
-                    barGap: '10%',
-                    itemStyle: { color: '#34C759', borderRadius: [6, 6, 0, 0] },
-                    data: marginW2Data.map(val => val < 0 ? { value: val, itemStyle: { color: '#FF3B30', borderRadius: [0, 0, 6, 6] } } : val)
+                    barMaxWidth: 24,
+                    itemStyle: { color: '#007AFF', borderRadius: [4, 4, 0, 0] },
+                    data: revW2Data
                 },
                 {
-                    name: '上周利润额',
+                    name: '上周营收',
                     type: 'bar',
                     yAxisIndex: 0,
-                    barMaxWidth: 32,
-                    itemStyle: { color: '#E5E5EA', borderRadius: [6, 6, 0, 0] },
-                    data: marginW1Data.map(val => val < 0 ? { value: val, itemStyle: { color: '#FFD1CF', borderRadius: [0, 0, 6, 6] } } : val)
+                    barMaxWidth: 24,
+                    itemStyle: { color: '#E5E5EA', borderRadius: [4, 4, 0, 0] },
+                    data: revW1Data
+                },
+                {
+                    name: '本周利润',
+                    type: 'bar',
+                    yAxisIndex: 0,
+                    barMaxWidth: 24,
+                    itemStyle: { color: '#34C759', borderRadius: [4, 4, 0, 0] },
+                    data: marginW2Data.map(val => val < 0 ? { value: val, itemStyle: { color: '#FF3B30', borderRadius: [0, 0, 4, 4] } } : val)
+                },
+                {
+                    name: '上周利润',
+                    type: 'bar',
+                    yAxisIndex: 0,
+                    barMaxWidth: 24,
+                    itemStyle: { color: '#D1D1D6', borderRadius: [4, 4, 0, 0] },
+                    data: marginW1Data.map(val => val < 0 ? { value: val, itemStyle: { color: '#FFD1CF', borderRadius: [0, 0, 4, 4] } } : val)
                 },
                 {
                     name: '本周利润率',
@@ -1133,7 +1276,7 @@
                     yAxisIndex: 1,
                     smooth: true,
                     symbolSize: 8,
-                    itemStyle: { color: '#007AFF' },
+                    itemStyle: { color: '#34C759' },
                     lineStyle: { width: 3, type: 'solid' },
                     data: marginPctW2Data
                 },
@@ -1143,7 +1286,7 @@
                     yAxisIndex: 1,
                     smooth: true,
                     symbolSize: 0, 
-                    itemStyle: { color: '#007AFF', opacity: 0.4 },
+                    itemStyle: { color: '#34C759', opacity: 0.4 },
                     lineStyle: { width: 2, type: 'dashed', opacity: 0.4 },
                     data: marginPctW1Data
                 },
@@ -1166,6 +1309,66 @@
                     itemStyle: { color: '#FF9500', opacity: 0.4 },
                     lineStyle: { width: 2, type: 'dashed', opacity: 0.4 },
                     data: mktgPctW1Data
+                },
+                {
+                    name: '本周商品占比',
+                    type: 'line',
+                    yAxisIndex: 1,
+                    smooth: true,
+                    symbolSize: 8,
+                    itemStyle: { color: '#AF52DE' },
+                    lineStyle: { width: 3, type: 'solid' },
+                    data: prodPctW2Data
+                },
+                {
+                    name: '上周商品占比',
+                    type: 'line',
+                    yAxisIndex: 1,
+                    smooth: true,
+                    symbolSize: 0, 
+                    itemStyle: { color: '#AF52DE', opacity: 0.4 },
+                    lineStyle: { width: 2, type: 'dashed', opacity: 0.4 },
+                    data: prodPctW1Data
+                },
+                {
+                    name: '本周履约占比',
+                    type: 'line',
+                    yAxisIndex: 1,
+                    smooth: true,
+                    symbolSize: 8,
+                    itemStyle: { color: '#FF2D55' },
+                    lineStyle: { width: 3, type: 'solid' },
+                    data: fulfillPctW2Data
+                },
+                {
+                    name: '上周履约占比',
+                    type: 'line',
+                    yAxisIndex: 1,
+                    smooth: true,
+                    symbolSize: 0,
+                    itemStyle: { color: '#FF2D55', opacity: 0.4 },
+                    lineStyle: { width: 2, type: 'dashed', opacity: 0.4 },
+                    data: fulfillPctW1Data
+                },
+                {
+                    name: '本周退款率',
+                    type: 'line',
+                    yAxisIndex: 1,
+                    smooth: true,
+                    symbolSize: 8,
+                    itemStyle: { color: '#32ADE6' },
+                    lineStyle: { width: 3, type: 'solid' },
+                    data: refundPctW2Data
+                },
+                {
+                    name: '上周退款率',
+                    type: 'line',
+                    yAxisIndex: 1,
+                    smooth: true,
+                    symbolSize: 0, 
+                    itemStyle: { color: '#32ADE6', opacity: 0.4 },
+                    lineStyle: { width: 2, type: 'dashed', opacity: 0.4 },
+                    data: refundPctW1Data
                 }
             ]
         };
@@ -1500,7 +1703,7 @@
         
         chartCvr.setOption({
             tooltip: { 
-                trigger: 'axis', rgba: 'rgba(255,255,255,0.92)', borderColor: '#E5E5EA', padding: 12, borderRadius: 12, extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.08);',
+                trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.92)', borderColor: '#E5E5EA', padding: 12, borderRadius: 12, extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.08);',
                 formatter: function(params) {
                     const item = badAsins[params[0].dataIndex];
                     return `<b>父ASIN:</b> ${item['父asin']}<br/><b>货号:</b> ${item['货号'] || '-'}<br/><b>营销负责人:</b> ${item['营销负责人'] || '-'}<br/><br/>
@@ -1810,7 +2013,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_17() {
+    async function exportToExcelV7_22() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -1950,7 +2153,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.17_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.22_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
