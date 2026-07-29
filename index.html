@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.22</title>
+    <title>父ASIN粒度广告分析看板 V7.24</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -30,6 +30,7 @@
         .upload-area h3 { font-size: 20px; font-weight: 600; margin-bottom: 0; color: var(--text-main); }
         .hidden-input { display: none; }
         
+        /* V7.24 更新：网格回调为 7 列等宽分布 */
         .kpi-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 16px; margin-bottom: 30px; display: none; }
         .kpi-card { min-width: 0; background: var(--card-bg); padding: 14px 10px; border-radius: 16px; box-shadow: var(--shadow-subtle); text-align: center; position: relative; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: center; min-height: 100px; cursor: pointer; }
         .kpi-card:hover { border-color: rgba(0, 102, 204, 0.3); transform: translateY(-4px); box-shadow: var(--shadow-hover); }
@@ -162,14 +163,14 @@
             <div class="kpi-trend" id="trend-organic"></div>
         </div>
         <div class="kpi-card" onclick="openModal('ALL')">
-            <div class="kpi-label">本组单件成本 (CPS)</div>
-            <div class="kpi-value" id="kpi-cps">$0.00</div>
-            <div class="kpi-trend" id="trend-cps"></div>
-        </div>
-        <div class="kpi-card" onclick="openModal('ALL')">
             <div class="kpi-label">综合 TACOS</div>
             <div class="kpi-value" id="kpi-tacos">0%</div>
             <div class="kpi-trend" id="trend-tacos"></div>
+        </div>
+        <div class="kpi-card" onclick="openModal('ALL')">
+            <div class="kpi-label">近一周营业收入</div>
+            <div class="kpi-value" id="kpi-revenue">¥0</div>
+            <div class="kpi-trend" id="trend-revenue"></div>
         </div>
         <div class="kpi-card" onclick="openModal('ALL')">
             <div class="kpi-label">近一周边际利润额</div>
@@ -185,10 +186,9 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_22()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_24()">导出精研分析报告 (Excel)</button>
     </div>
 
-    <!-- 诊断分布视图和管辖健康度提前 -->
     <div class="charts-grid top-grid" id="charts-grid-1">
         <div class="chart-container">
             <div class="chart-wrapper"><div id="chart-priority" class="absolute-chart"></div></div>
@@ -198,7 +198,6 @@
         </div>
     </div>
 
-    <!-- V7.22 营收与利润深度合并版块 -->
     <div class="charts-grid full-grid" id="owner-summary-grid">
         <div class="chart-container">
             <div class="chart-header">
@@ -256,7 +255,7 @@
             <div class="modal-title-group" style="width: 100%;">
                 <div style="display:flex; align-items: center; gap: 16px; flex-wrap: wrap;">
                     <h2 id="modal-title" class="modal-title">深度洞察中心</h2>
-                    <select id="priorityFilter" class="filter-select" onchange="changePriorityFilter()">
+                    <select id="priorityFilter" class="filter-select" onchange="changeModalFilters()">
                         <option value="ALL">全部分级过滤</option>
                         <option value="P0">P0 级 (紧急止损)</option>
                         <option value="P1">P1 级 (降本增效/乘胜追击)</option>
@@ -264,13 +263,19 @@
                         <option value="P3">P3 级 (观察防守)</option>
                         <option value="P4">P4 级 (维持现状)</option>
                     </select>
+                    <select id="modalOwnerFilter" class="filter-select" onchange="changeModalFilters()">
+                        <option value="ALL">全部负责人</option>
+                    </select>
                     <div class="search-box">
                         <span class="search-icon">🔍</span>
-                        <input type="text" id="searchInput" class="search-input" placeholder="输入 ASIN/货号/负责人触发下钻..." onkeyup="debounceSearch()">
+                        <input type="text" id="searchInput" class="search-input" placeholder="输入 ASIN/货号触发下钻..." onkeyup="debounceSearch()">
                         <span class="clear-search" id="clearSearch" onclick="clearSearch()">&times;</span>
                     </div>
                     <button class="btn-adv-toggle" onclick="toggleAdvFilters()">
                         <span style="font-size:14px;">⚡</span> 多维筛选
+                    </button>
+                    <button class="btn-adv-toggle" onclick="openBulkInputModal()">
+                        <span style="font-size:14px;">📋</span> 批量输入
                     </button>
                 </div>
             </div>
@@ -320,6 +325,26 @@
     </div>
 </div>
 
+<div id="bulkModal" class="modal" style="z-index: 1100;">
+    <div class="modal-content" style="max-width: 560px; height: auto; max-height: 85vh; margin: 6% auto; padding: 24px; border-radius: 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+            <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-main);">📋 批量输入 ASIN / 货号</h3>
+            <span class="close-btn" onclick="closeBulkInputModal()">&times;</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
+            支持从 Excel 整列复制粘贴，自动识别空格、换行、逗号或分号分隔的多个查询项。
+        </div>
+        <textarea id="bulkTextarea" placeholder="在此粘贴 ASIN 或货号列表，例如：&#10;B07MY3RS4J&#10;B0CP5DRYQF&#10;C9H882" style="width:100%; height:200px; border:1px solid #E5E5EA; border-radius:14px; padding:12px; font-family:var(--font-family); font-size:13px; outline:none; resize:vertical; box-sizing:border-box; background:#F5F5F7; color:var(--text-main);" oninput="updateBulkCount()"></textarea>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+            <span id="bulkCountTag" style="font-size:12px; color:var(--accent); font-weight:600;">已识别 0 个有效项</span>
+            <div style="display:flex; gap:10px;">
+                <button class="back-btn" onclick="clearBulkTextarea()">清空</button>
+                <button class="btn-export" style="padding: 8px 20px; font-size:13px;" onclick="applyBulkInput()">确认查询</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="imgModal" class="img-modal" onclick="closeImgModal()">
     <span class="img-close-btn" onclick="closeImgModal()">&times;</span>
     <img class="img-modal-content" id="fullImage" onclick="event.stopPropagation()">
@@ -329,7 +354,9 @@
     let globalProcessedData = [];
     let globalOriginalColumns = [];
     let analyticalResults = []; 
-    let currentModalType = 'ALL';
+    
+    let currentModalPriority = 'ALL';
+    let currentModalOwner = 'ALL';
     let globalProfitMap = {}; 
     let modalHistoryStack = []; 
 
@@ -374,6 +401,53 @@
         panel.style.display = panel.style.display === 'none' || panel.style.display === '' ? 'flex' : 'none';
     }
     window.toggleAdvFilters = toggleAdvFilters;
+
+    function openBulkInputModal() {
+        const modal = document.getElementById('bulkModal');
+        const textarea = document.getElementById('bulkTextarea');
+        const currentVal = document.getElementById('searchInput').value.trim();
+        
+        const tokens = getSearchTokens(currentVal);
+        if (tokens.length > 1) {
+            textarea.value = tokens.join('\n');
+        } else {
+            textarea.value = currentVal;
+        }
+        
+        modal.style.display = 'block';
+        updateBulkCount();
+        textarea.focus();
+    }
+    window.openBulkInputModal = openBulkInputModal;
+
+    function closeBulkInputModal() {
+        document.getElementById('bulkModal').style.display = 'none';
+    }
+    window.closeBulkInputModal = closeBulkInputModal;
+
+    function updateBulkCount() {
+        const text = document.getElementById('bulkTextarea').value;
+        const tokens = getSearchTokens(text);
+        document.getElementById('bulkCountTag').innerText = `已识别 ${tokens.length} 个有效项`;
+    }
+    window.updateBulkCount = updateBulkCount;
+
+    function clearBulkTextarea() {
+        document.getElementById('bulkTextarea').value = '';
+        updateBulkCount();
+    }
+    window.clearBulkTextarea = clearBulkTextarea;
+
+    function applyBulkInput() {
+        const text = document.getElementById('bulkTextarea').value;
+        const tokens = getSearchTokens(text);
+        
+        document.getElementById('searchInput').value = tokens.join(' ');
+        modalHistoryStack = [];
+        renderModalTable();
+        closeBulkInputModal();
+    }
+    window.applyBulkInput = applyBulkInput;
 
     function addAdvFilter() {
         const colSelect = document.getElementById('adv-col');
@@ -462,6 +536,11 @@
         return '';
     }
 
+    function getSearchTokens(val) {
+        if (!val) return [];
+        return String(val).split(/[\s,;\t\n]+/).map(t => t.trim().toLowerCase()).filter(t => t.length > 0);
+    }
+
     const fileInput = document.getElementById('file-input');
     fileInput.addEventListener('change', handleFile);
 
@@ -534,7 +613,6 @@
         globalProfitMap = {};
         let allDates2 = [];
         
-        // 抓取全口径成本结构指标
         data2.forEach(row => {
             const dateStr = String(getColRaw(row, ['统计日期', '日期'])).trim();
             const asinStr = String(getColRaw(row, ['父asin', 'asin'])).trim();
@@ -582,7 +660,7 @@
             let margin = parseNumber(r['边际利润额']);
             let raw_rev = parseNumber(r['退款前收入']);
             let return_cost = parseNumber(r['售后成本_销售退回']);
-            let rev = raw_rev - return_cost; // 营收 (扣除退回)
+            let rev = raw_rev - return_cost; 
             
             let mktg = parseNumber(r['营销成本']);
             let shipped = parseNumber(r['已发货销量']);
@@ -950,7 +1028,6 @@
         document.getElementById('kpi-p0').innerText = p0Count;
         let organicRatio = totalW2Sales > 0 ? (1 - (totalW2AdSales / totalW2Sales)) * 100 : 0;
         document.getElementById('kpi-organic-ratio').innerText = organicRatio.toFixed(1) + '%';
-        document.getElementById('kpi-cps').innerText = totalW2Sales > 0 ? '$' + (totalW2Spend / totalW2Sales).toFixed(2) : '$0.00';
         
         let tacos = totalW2Revenue > 0 ? (totalW2Spend / totalW2Revenue) * 100 : 0;
         document.getElementById('kpi-tacos').innerText = tacos.toFixed(1) + '%';
@@ -965,11 +1042,14 @@
 
         let global_w2_margin_sum = 0, global_w1_margin_sum = 0;
         let global_w2_raw_rev = 0, global_w1_raw_rev = 0; 
+        let global_w2_rev = 0, global_w1_rev = 0;
         for (const owner in ownerStats) {
             global_w2_margin_sum += ownerStats[owner].w2_margin;
             global_w1_margin_sum += ownerStats[owner].w1_margin;
             global_w2_raw_rev += ownerStats[owner].w2_raw_rev;
             global_w1_raw_rev += ownerStats[owner].w1_raw_rev;
+            global_w2_rev += ownerStats[owner].w2_rev;
+            global_w1_rev += ownerStats[owner].w1_rev;
         }
         let global_w2_margin_pct = global_w2_raw_rev > 0 ? global_w2_margin_sum / global_w2_raw_rev : 0;
         let global_w1_margin_pct = global_w1_raw_rev > 0 ? global_w1_margin_sum / global_w1_raw_rev : 0;
@@ -1003,9 +1083,11 @@
         }
         
         renderTrend('trend-organic', diffOrg, false, true, w1OrganicRatio, '');
-        renderTrend('trend-cps', diffCps, true, false, w1Cps, 'USD');
         renderTrend('trend-tacos', diffTacos, true, true, w1Tacos, '');
         
+        document.getElementById('kpi-revenue').innerText = '¥' + global_w2_rev.toFixed(0);
+        renderTrend('trend-revenue', global_w2_rev - global_w1_rev, false, false, global_w1_rev, 'RMB');
+
         document.getElementById('kpi-margin-sum').innerText = '¥' + global_w2_margin_sum.toFixed(0);
         renderTrend('trend-margin-sum', global_w2_margin_sum - global_w1_margin_sum, false, false, global_w1_margin_sum, 'RMB');
         document.getElementById('kpi-margin-pct').innerText = (global_w2_margin_pct * 100).toFixed(1) + '%';
@@ -1024,11 +1106,10 @@
         setTimeout(() => {
             populateOwnerFilter(analyticalResults);
             renderCharts(priorityCounts, analyticalResults);
-            renderOwnerChart(ownerStats); // V7.22 核心合并渲染
+            renderOwnerChart(ownerStats); 
         }, 50);
     }
 
-    // V7.22 超高密度聚合图表：营收、利润、利润率、各项成本及退款率
     function renderOwnerChart(ownerStats) {
         let ownerArr = [];
         for (const owner in ownerStats) {
@@ -1745,7 +1826,10 @@
 
     window.onclick = function(event) {
         const modal = document.getElementById('detailModal');
-        if (event.target == modal) {
+        const bulkModal = document.getElementById('bulkModal');
+        if (event.target == bulkModal) {
+            closeBulkInputModal();
+        } else if (event.target == modal) {
             const searchInput = document.getElementById('searchInput');
             if (searchInput.value.trim() !== '') {
                 goBack();
@@ -1805,9 +1889,10 @@
     function renderModalTable() {
         const container = document.getElementById('modal-table-container');
         const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
+        const searchTokens = getSearchTokens(searchVal);
         const clearBtn = document.getElementById('clearSearch');
         
-        clearBtn.style.display = searchVal ? 'block' : 'none';
+        clearBtn.style.display = searchTokens.length > 0 ? 'block' : 'none';
         
         let filteredData = [...analyticalResults];
         
@@ -1815,12 +1900,13 @@
             filteredData = filteredData.filter(d => String(d['优化调整优先级']).includes(currentModalType));
         }
 
-        if (searchVal) {
-            filteredData = filteredData.filter(d => 
-                (d['父asin'] && d['父asin'].toLowerCase().includes(searchVal)) || 
-                (d['货号'] && String(d['货号']).toLowerCase().includes(searchVal)) ||
-                (d['营销负责人'] && String(d['营销负责人']).toLowerCase().includes(searchVal))
-            );
+        if (searchTokens.length > 0) {
+            filteredData = filteredData.filter(d => {
+                const asin = (d['父asin'] || '').toLowerCase();
+                const huohao = String(d['货号'] || '').toLowerCase();
+                const owner = String(d['营销负责人'] || '').toLowerCase();
+                return searchTokens.some(token => asin.includes(token) || huohao.includes(token) || owner.includes(token));
+            });
         }
 
         activeFilters.forEach(f => {
@@ -1848,8 +1934,8 @@
         });
 
         const allOwners = Array.from(new Set(analyticalResults.map(r => String(r['营销负责人'] || '未知').toLowerCase())));
-        const isOwnerSearch = allOwners.includes(searchVal);
-        const isExpanded = searchVal.length > 0 && !isOwnerSearch;
+        const isOwnerSearch = searchTokens.length === 1 && allOwners.includes(searchTokens[0]);
+        const isExpanded = searchTokens.length === 1 && !isOwnerSearch;
 
         let html = '';
 
@@ -2013,7 +2099,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_22() {
+    async function exportToExcelV7_24() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -2153,7 +2239,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.22_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.24_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
