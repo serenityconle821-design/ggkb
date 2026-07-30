@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.43</title>
+    <title>父ASIN粒度广告分析看板 V7.50</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -72,6 +72,17 @@
         .filter-select:focus { border-color: var(--accent); background: #FFFFFF; box-shadow: 0 0 0 4px rgba(0,102,204,0.15); }
         .filter-select:hover { border-color: #D1D1D6; }
         
+        .multi-select-container { position: relative; display: inline-block; vertical-align: middle; }
+        .multi-select-header { border: 1px solid #E5E5EA; border-radius: 12px; padding: 6px 28px 6px 12px; font-size: 13px; background: #F5F5F7; color: var(--text-main); font-weight: 600; cursor: pointer; display:flex; justify-content: space-between; align-items: center; white-space: nowrap; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2210%22%20viewBox%3D%220%200%2014%2010%22%3E%3Cpath%20fill%3D%22%2386868B%22%20d%3D%22M7%2010L0%203l1.4-1.4L7%207.2l5.6-5.6L14%203z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 10px center; background-size: 10px auto; min-width: 100px; max-width: 140px; user-select: none; }
+        .multi-select-header:hover { border-color: #D1D1D6; }
+        .multi-select-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .multi-select-dropdown { display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 2000; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid #E5E5EA; border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.15); max-height: 300px; overflow-y: auto; min-width: 160px; padding: 6px 0; }
+        .multi-select-dropdown.show { display: block; animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+        .multi-select-item { padding: 8px 16px; display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: var(--text-main); transition: background 0.2s; white-space: nowrap; font-weight: 500; user-select: none; }
+        .multi-select-item:hover { background: #F2F2F7; }
+        .multi-select-item input { cursor: pointer; margin: 0; width: 14px; height: 14px; accent-color: var(--accent); }
+
         .search-box { position: relative; }
         .search-input { border: 1px solid #E5E5EA; border-radius: 14px; padding: 8px 16px 8px 36px; font-size: 13px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); width: 180px; font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 500; }
         .search-input:focus { border-color: var(--accent); background: #FFFFFF; box-shadow: 0 0 0 4px rgba(0,102,204,0.15); width: 240px; }
@@ -90,13 +101,13 @@
         .table-wrapper { flex: 1; overflow-y: auto; overflow-x: auto; padding: 0; background: #FFFFFF; }
         .data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; margin: 0; table-layout: auto; }
         .data-table th, .data-table td { padding: 12px 3px; text-align: center; border-bottom: 1px solid #F2F2F7; white-space: nowrap; vertical-align: middle; transition: background 0.2s; } 
-        .data-table th { color: var(--text-muted); font-weight: 600; font-size: 12px; padding: 12px 3px; position: sticky; top: 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 5; box-shadow: 0 1px 0 #E5E5EA; letter-spacing: 0.02em; }
+        .data-table th { color: var(--text-muted); font-weight: 600; font-size: 11px; padding: 10px 3px; position: sticky; top: 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 5; box-shadow: 0 1px 0 #E5E5EA; letter-spacing: 0.01em; }
         .data-table tr:hover td { background-color: #F9FAFB; }
         
         .sortable-th { cursor: pointer; user-select: none; transition: background 0.2s, color 0.2s; }
         .sortable-th:hover { background-color: #F2F2F7 !important; color: var(--text-main) !important; }
 
-        .main-val { font-weight: 700; font-size: 14px; color: var(--text-main); line-height: 1.2; }
+        .main-val { font-weight: 700; font-size: 14px; color: var(--text-main); line-height: 1.1; }
         
         .product-cell {
             white-space: normal !important; 
@@ -164,15 +175,9 @@
             <span style="font-size: 13px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin-right: 4px;">
                 <span style="font-size: 15px;">🌐</span> 全局视角
             </span>
-            <select id="globalSeasonFilter" class="filter-select" onchange="applyGlobalFilters()"><option value="ALL">全部季节</option></select>
-            <select id="globalQuarterFilter" class="filter-select" onchange="applyGlobalFilters()"><option value="ALL">全部企划</option></select>
-            <select id="globalStrategyFilter" class="filter-select" onchange="applyGlobalFilters()">
-                <option value="ALL">全部策略标签</option>
-                <option value="稳定款">稳定款</option>
-                <option value="趋势款">趋势款</option>
-                <option value="淘汰款">淘汰款</option>
-                <option value="新款待定">新款待定</option>
-            </select>
+            <div id="globalSeasonFilter"></div>
+            <div id="globalQuarterFilter"></div>
+            <div id="globalStrategyFilter"></div>
         </div>
     </div>
 
@@ -221,7 +226,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_43()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_50()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -304,15 +309,9 @@
                     
                     <div style="width: 1px; height: 20px; background: #D1D1D6; margin: 0 4px;"></div>
                     
-                    <select id="modalSeasonFilter" class="filter-select" onchange="changeModalFilters()"><option value="ALL">全部季节</option></select>
-                    <select id="modalQuarterFilter" class="filter-select" onchange="changeModalFilters()"><option value="ALL">全部企划</option></select>
-                    <select id="modalStrategyFilter" class="filter-select" onchange="changeModalFilters()">
-                        <option value="ALL">全部策略</option>
-                        <option value="稳定款">稳定款</option>
-                        <option value="趋势款">趋势款</option>
-                        <option value="淘汰款">淘汰款</option>
-                        <option value="新款待定">新款待定</option>
-                    </select>
+                    <div id="modalSeasonFilter"></div>
+                    <div id="modalQuarterFilter"></div>
+                    <div id="modalStrategyFilter"></div>
 
                     <div style="width: 1px; height: 20px; background: #D1D1D6; margin: 0 4px;"></div>
 
@@ -335,7 +334,6 @@
         
         <div id="adv-filters-panel" class="adv-filters-panel">
             <select id="adv-col" class="filter-select" style="padding: 6px 24px 6px 12px; font-size:13px; background-color: #FFFFFF;">
-                <!-- V7.43 已移除业务标签选项组，聚焦数值漏斗 -->
                 <optgroup label="—— 绝对数值指标 ——">
                     <option value="近一周日均销量">日均销</option>
                     <option value="近一周边际利润额(¥)">利润额 (¥)</option>
@@ -362,13 +360,12 @@
                     <option value="ASP环比">ASP环比 (%)</option>
                 </optgroup>
             </select>
-            <!-- V7.43 移除不必要的文本"包含"运算符 -->
             <select id="adv-op" class="filter-select" style="padding: 6px 24px 6px 12px; font-size:13px; background-color: #FFFFFF;">
                 <option value=">">大于</option>
                 <option value="<">小于</option>
                 <option value="=">等于</option>
             </select>
-            <input type="text" id="adv-val" class="search-input" placeholder="输入数值..." style="width: 140px; padding: 6px 12px; background-color: #FFFFFF;" onkeypress="if(event.key === 'Enter') addAdvFilter()">
+            <input type="text" id="adv-val" class="search-input" placeholder="输入比较数值..." style="width: 140px; padding: 6px 12px; background-color: #FFFFFF;" onkeypress="if(event.key === 'Enter') addAdvFilter()">
             <button class="btn-export" style="padding: 6px 16px; font-size: 13px;" onclick="addAdvFilter()">添加/更新条件</button>
             <div style="width: 1px; height: 24px; background: #D1D1D6; margin: 0 8px;"></div>
             <div id="active-filters-container" style="display:flex; gap: 8px; flex-wrap: wrap; flex: 1;"></div>
@@ -425,6 +422,135 @@
     let currentSortCol = '近一周日均销量';
     let currentSortDir = 'desc';
     let activeFilters = []; 
+
+    window.multiSelects = {};
+    class MultiSelect {
+        constructor(id, placeholder, options, onChange) {
+            this.containerId = id;
+            this.placeholder = placeholder;
+            this.options = options || [];
+            this.onChange = onChange;
+            this.selected = new Set();
+            this.render();
+        }
+        setOptions(options) {
+            this.options = options;
+            this.selected.clear();
+            this.updateDropdown();
+            this.updateHeader();
+        }
+        render() {
+            const container = document.getElementById(this.containerId);
+            if(!container) return;
+            container.className = 'multi-select-container';
+            container.innerHTML = `
+                <div class="multi-select-header" onclick="toggleMultiSelect('${this.containerId}', event)">
+                    <span class="multi-select-text">${this.placeholder}</span>
+                </div>
+                <div class="multi-select-dropdown" id="${this.containerId}-dropdown" onclick="event.stopPropagation()"></div>
+            `;
+            this.updateDropdown();
+            this.updateHeader();
+        }
+        updateDropdown() {
+            const drop = document.getElementById(`${this.containerId}-dropdown`);
+            if(!drop) return;
+            let html = `
+                <label class="multi-select-item">
+                    <input type="checkbox" value="ALL" checked onchange="handleMultiSelectChange('${this.containerId}', this)">
+                    ${this.placeholder}
+                </label>
+            `;
+            this.options.forEach(opt => {
+                html += `
+                <label class="multi-select-item">
+                    <input type="checkbox" value="${opt}" onchange="handleMultiSelectChange('${this.containerId}', this)">
+                    ${opt}
+                </label>`;
+            });
+            drop.innerHTML = html;
+        }
+        updateHeader() {
+            const header = document.querySelector(`#${this.containerId} .multi-select-text`);
+            if(!header) return;
+            if (this.selected.size === 0) {
+                header.innerText = this.placeholder;
+                this.setCheckboxes(true);
+            } else if (this.selected.size === 1) {
+                header.innerText = Array.from(this.selected)[0];
+                this.setCheckboxes(false);
+            } else {
+                header.innerText = `已选 ${this.selected.size} 项`;
+                this.setCheckboxes(false);
+            }
+        }
+        setCheckboxes(isAll) {
+            const drop = document.getElementById(`${this.containerId}-dropdown`);
+            if(!drop) return;
+            const inputs = drop.querySelectorAll('input');
+            inputs.forEach(inp => {
+                if (inp.value === 'ALL') {
+                    inp.checked = isAll;
+                } else {
+                    inp.checked = isAll ? false : this.selected.has(inp.value);
+                }
+            });
+        }
+        handleSelect(val, isChecked) {
+            if (val === 'ALL') {
+                this.selected.clear();
+            } else {
+                if (isChecked) {
+                    this.selected.add(val);
+                } else {
+                    this.selected.delete(val);
+                }
+            }
+            this.updateHeader();
+            if(this.onChange) this.onChange();
+        }
+        getValues() {
+            if(this.selected.size === 0) return ['ALL'];
+            return Array.from(this.selected);
+        }
+        reset() {
+            this.selected.clear();
+            this.updateHeader();
+        }
+    }
+
+    function initMultiSelects() {
+        const strategies = ['稳定款', '趋势款', '淘汰款', '新款待定'];
+        window.multiSelects['globalSeasonFilter'] = new MultiSelect('globalSeasonFilter', '全部季节', [], applyGlobalFilters);
+        window.multiSelects['globalQuarterFilter'] = new MultiSelect('globalQuarterFilter', '全部企划', [], applyGlobalFilters);
+        window.multiSelects['globalStrategyFilter'] = new MultiSelect('globalStrategyFilter', '全部策略', strategies, applyGlobalFilters);
+        
+        window.multiSelects['modalSeasonFilter'] = new MultiSelect('modalSeasonFilter', '全部季节', [], changeModalFilters);
+        window.multiSelects['modalQuarterFilter'] = new MultiSelect('modalQuarterFilter', '全部企划', [], changeModalFilters);
+        window.multiSelects['modalStrategyFilter'] = new MultiSelect('modalStrategyFilter', '全部策略', strategies, changeModalFilters);
+
+        document.addEventListener('click', e => {
+            if(!e.target.closest('.multi-select-container')) {
+                document.querySelectorAll('.multi-select-dropdown').forEach(d => d.classList.remove('show'));
+            }
+        });
+    }
+
+    function toggleMultiSelect(id, event) {
+        event.stopPropagation();
+        const drop = document.getElementById(id + '-dropdown');
+        const isShowing = drop.classList.contains('show');
+        
+        document.querySelectorAll('.multi-select-dropdown').forEach(d => d.classList.remove('show'));
+        
+        if (!isShowing) {
+            drop.classList.add('show');
+        }
+    }
+
+    function handleMultiSelectChange(id, cbEl) {
+        window.multiSelects[id].handleSelect(cbEl.value, cbEl.checked);
+    }
 
     function openImgModal(src, event) {
         if(event) event.stopPropagation(); 
@@ -520,7 +646,6 @@
         
         if(valStr === '') return;
         
-        // V7.43 所有下拉项均判定为数值型比较
         let isNumeric = true;
         let val = parseFloat(valStr);
         if (colName.includes('%')) {
@@ -727,11 +852,6 @@
     }
 
     function populateGlobalFilters() {
-        const sSelect = document.getElementById('globalSeasonFilter');
-        const qSelect = document.getElementById('globalQuarterFilter');
-        const msSelect = document.getElementById('modalSeasonFilter');
-        const mqSelect = document.getElementById('modalQuarterFilter');
-        
         let seasons = new Set();
         let quarters = new Set();
 
@@ -742,35 +862,30 @@
             if(q && q!=='-') q.split(', ').forEach(x => quarters.add(x));
         }
 
-        sSelect.innerHTML = '<option value="ALL">全部季节</option>';
-        msSelect.innerHTML = '<option value="ALL">全部季节</option>';
-        Array.from(seasons).sort().forEach(x => {
-            sSelect.add(new Option(x, x));
-            msSelect.add(new Option(x, x));
-        });
+        let sortedSeasons = Array.from(seasons).sort();
+        let sortedQuarters = Array.from(quarters).sort();
 
-        qSelect.innerHTML = '<option value="ALL">全部企划</option>';
-        mqSelect.innerHTML = '<option value="ALL">全部企划</option>';
-        Array.from(quarters).sort().forEach(x => {
-            qSelect.add(new Option(x, x));
-            mqSelect.add(new Option(x, x));
-        });
+        window.multiSelects['globalSeasonFilter'].setOptions(sortedSeasons);
+        window.multiSelects['modalSeasonFilter'].setOptions(sortedSeasons);
+        
+        window.multiSelects['globalQuarterFilter'].setOptions(sortedQuarters);
+        window.multiSelects['modalQuarterFilter'].setOptions(sortedQuarters);
     }
 
     function applyGlobalFilters() {
-        const sFilter = document.getElementById('globalSeasonFilter').value;
-        const qFilter = document.getElementById('globalQuarterFilter').value;
-        const stFilter = document.getElementById('globalStrategyFilter').value;
+        const sFilters = window.multiSelects['globalSeasonFilter'].getValues();
+        const qFilters = window.multiSelects['globalQuarterFilter'].getValues();
+        const stFilters = window.multiSelects['globalStrategyFilter'].getValues();
 
-        let isAnyFilterActive = sFilter !== 'ALL' || qFilter !== 'ALL' || stFilter !== 'ALL';
+        let isAnyFilterActive = !sFilters.includes('ALL') || !qFilters.includes('ALL') || !stFilters.includes('ALL');
         let validAsins = new Set();
 
         if (isAnyFilterActive) {
             for(let asin in globalAsinTags) {
                 let tags = globalAsinTags[asin];
-                let matchS = (sFilter === 'ALL' || tags.season.includes(sFilter));
-                let matchQ = (qFilter === 'ALL' || tags.quarter.includes(qFilter));
-                let matchSt = (stFilter === 'ALL' || tags.strategy === stFilter);
+                let matchS = sFilters.includes('ALL') || sFilters.some(s => tags.season.includes(s));
+                let matchQ = qFilters.includes('ALL') || qFilters.some(q => tags.quarter.includes(q));
+                let matchSt = stFilters.includes('ALL') || stFilters.includes(tags.strategy);
                 
                 if(matchS && matchQ && matchSt) {
                     validAsins.add(asin);
@@ -984,10 +1099,6 @@
                     r['退前边际利润率'] = 0;
                 }
             });
-            totalW2Sales += w2_sales;
-            totalW2AdSales += w2_ad_sales;
-            totalW2Spend += w2_spend;
-            totalW2Revenue += w2_revenue;
 
             let w1_sales = 0, w1_spend = 0, w1_ad_sales = 0, w1_revenue = 0, w1_ctr_sum = 0, w1_cvr_sum = 0;
             let w1_clicks = 0, w1_impressions = 0;
@@ -1026,6 +1137,14 @@
                     r['退前边际利润率'] = 0;
                 }
             });
+            
+            if (w1_sales === 0 && w2_sales === 0) continue;
+
+            totalW2Sales += w2_sales;
+            totalW2AdSales += w2_ad_sales;
+            totalW2Spend += w2_spend;
+            totalW2Revenue += w2_revenue;
+            
             totalW1Sales += w1_sales;
             totalW1AdSales += w1_ad_sales;
             totalW1Spend += w1_spend;
@@ -1075,6 +1194,7 @@
             const margin_pct_rate = w1_margin_pct !== 0 ? margin_pct_diff / Math.abs(w1_margin_pct) : 0;
             
             const w2_organic_ratio = w2_sales > 0 ? (1 - (w2_ad_sales / w2_sales)) : 0;
+            const w1_organic_ratio = w1_sales > 0 ? (1 - (w1_ad_sales / w1_sales)) : 0;
             const organic_status = w2_organic_ratio >= 0.6 ? "自然流量健康" : "高度依赖广告";
 
             let sales_status = sales_rate > 0.05 ? "销量攀升" : (sales_rate < -0.05 ? "销量下滑" : "销量平稳");
@@ -1083,18 +1203,51 @@
             let tacos_status = tacos_diff < -0.01 ? "TACOS优化" : (tacos_diff > 0.02 ? "TACOS恶化" : "TACOS平稳");
             let organic_health = w2_organic_ratio >= 0.6;
 
-            let is_asp_drop = asp_rate < -0.03; 
-            let is_spend_drop = spend_rate < -0.05 || tacos_diff < -0.02;
+            // V7.50 彻底剔除双降伪命题，回归纯粹的降价与防守测试
+            let is_price_cut = asp_rate < -0.015; 
+            let is_price_hike = asp_rate > 0.015;
+            
+            let vol_dropped = sales_rate < 0; 
+            let vol_flat_or_dropped = sales_rate <= 0;
+            let vol_micro_increase = sales_rate > 0 && sales_rate <= 0.10;
+            let vol_not_dropped = sales_rate >= 0;
+
+            let profit_increased = margin_diff > 0; 
+            let profit_not_increased = margin_diff <= 0;
+
+            // TACOS <= 1% 浮动即可视为平稳或优化
+            let tacos_improved = tacos_diff <= 0.01; 
+            let is_tacos_worsened = tacos_diff > 0.01;
+            
+            let organic_improved = (w2_organic_ratio - w1_organic_ratio) > 0.05;
+            
+            let is_spend_drop = spend_rate < -0.05;
             let is_volume_and_profit_drop = sales_rate < 0 && margin_diff < 0; 
+
+            let tacos_warning = (w2_tacos > 0.12) ? "，并优化低效广告" : "";
 
             let action = "", priority = "";
 
-            if (is_asp_drop && is_volume_and_profit_drop) {
-                action = "价格调整失效(降价致使单量与利润双降)，建议立即回调至原价格水位";
-                priority = "P0 - 紧急止损";
-                p0Count++;
-            } else if (is_spend_drop && is_volume_and_profit_drop) {
-                action = "过度控费致规模反噬(花费/TACOS降低致使单量与利润双降)，建议适当回调广告预算恢复流量";
+            if (is_price_hike && vol_not_dropped && profit_increased) {
+                action = "涨价测试成功(价格脱敏)：量利双增，证明溢价能力强，建议密切监控加购与转化率，可继续小幅试探价格极限";
+                priority = "P1 - 乘胜追击";
+            }
+            else if (is_price_cut && vol_micro_increase && profit_not_increased && !organic_improved) {
+                action = "降价换量低效：让渡毛利带来的单量微增未能弥补利润损失(短期不符预期)，建议排查广告优化空间或回调价格" + tacos_warning;
+                priority = "P1 - 降本增效";
+            }
+            else if (is_price_cut && vol_flat_or_dropped) {
+                if (tacos_improved) {
+                    action = "降价测试遇流量瓶颈：单量未涨但TACOS持平/优化(说明流量健康或无效花费已降)，建议适度提升花费，放大流量验证转化";
+                    priority = "P2 - 尝试扩量";
+                } else {
+                    action = "降价测试失效：让渡毛利未能拉动单量且TACOS负优化，建议及时回调价格" + tacos_warning;
+                    priority = "P0 - 紧急止损";
+                    p0Count++;
+                }
+            }
+            else if (is_spend_drop && is_volume_and_profit_drop && !is_price_cut) {
+                action = "过度控费致规模反噬(缩减预算切断转化流，致使单量与利润双降)，建议适当回调广告预算" + tacos_warning;
                 priority = "P0 - 紧急止损";
                 p0Count++;
             } 
@@ -1102,17 +1255,17 @@
                 action = "建议稳步放量(利润与效能双优，抢占核心词)"; 
                 priority = "P1 - 乘胜追击";
             } else if (profit_status === "利润缩水" && tacos_status === "TACOS恶化") {
-                action = "立即排查转化断层，缩减泛流量预算"; 
+                action = "立即排查转化断层，缩减泛流量预算" + tacos_warning; 
                 priority = "P0 - 紧急止损"; 
                 p0Count++;
             } else if (profit_status === "利润缩水" && organic_health) {
                 action = "观望防守(自然流盘稳固，排查市场或客单价因素)"; 
                 priority = "P3 - 观察防守";
             } else if (profit_status === "利润缩水") {
-                action = "防守利润底线(精准降出价，剥离低转化词)"; 
+                action = "防守利润底线(精准降出价，剥离低转化词)" + tacos_warning; 
                 priority = "P1 - 降本增效";
             } else if (profit_status === "利润增长" && tacos_status === "TACOS恶化") {
-                action = "控制点击成本(增收不增效，排查无效曝光)"; 
+                action = "控制点击成本(增收不增效，排查无效曝光)" + tacos_warning; 
                 priority = "P2 - 预算调控";
             } else if (profit_status === "利润增长") {
                 action = "适度放量(基本面向好，尝试拓宽长尾词)"; 
@@ -1200,7 +1353,12 @@
             
             let dataStr = `【波动】销 ${w2_sales_avg.toFixed(1)} (${signSales}${Math.abs(sales_avg_diff).toFixed(1)}) | 利润率 ${(w2_margin_pct*100).toFixed(1)}% (${signMarginPct}${(Math.abs(margin_pct_diff)*100).toFixed(1)}%) | CPS $${w2_cps.toFixed(2)} (${signCps}$${Math.abs(cps_diff).toFixed(2)}) | TACOS ${(w2_tacos*100).toFixed(1)}% (${signTacos}${(Math.abs(tacos_diff)*100).toFixed(1)}%)`;
             
-            resultRow['诊断结论'] = `【特征】${profit_status} | ${tacos_status} | ${organic_status}\n【建议】${action}`;
+            if (action.includes("降价测试") || action.includes("涨价测试")) {
+                 resultRow['诊断结论'] = `【建议】${action}`;
+            } else {
+                 resultRow['诊断结论'] = `【特征】${profit_status} | ${tacos_status} | ${organic_status}\n【建议】${action}`;
+            }
+            
             resultRow['导出诊断结论'] = `${dataStr}\n${resultRow['诊断结论']}`;
             
             resultRow['上周CTR'] = w1_ctr_avg;
@@ -1467,7 +1625,7 @@
 
                     return `<div style="font-weight:700; font-size:15px; margin-bottom:12px; border-bottom:1px solid #E5E5EA; padding-bottom:8px;">🧑‍💼 ${d.owner}</div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                                <span style="color:#6E6E73; margin-right:24px;">营收 (扣除退货)</span>
+                                <span style="color:#6E6E73; margin-right:24px;">营收 (扣除退回)</span>
                                 <span style="font-weight:700;">本周 ¥${d.w2_rev.toLocaleString()} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ¥${d.w1_rev.toLocaleString()})</span> <span style="font-size:12px; color:${revColor}; font-weight:600; margin-left:4px;">变动: ${revSign}¥${Math.abs(d.rev_diff).toLocaleString()}${revGrowthStr}</span></span>
                             </div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
@@ -1740,9 +1898,6 @@
     function changeModalFilters() {
         currentModalPriority = document.getElementById('priorityFilter').value;
         currentModalOwner = document.getElementById('modalOwnerFilter').value;
-        currentModalSeason = document.getElementById('modalSeasonFilter').value;
-        currentModalQuarter = document.getElementById('modalQuarterFilter').value;
-        currentModalStrategy = document.getElementById('modalStrategyFilter').value;
         modalHistoryStack = []; 
         renderModalTable();
     }
@@ -2114,15 +2269,13 @@
         
         currentModalPriority = priority;
         currentModalOwner = 'ALL';
-        currentModalSeason = 'ALL';
-        currentModalQuarter = 'ALL';
-        currentModalStrategy = 'ALL';
         
         document.getElementById('priorityFilter').value = priority;
         document.getElementById('modalOwnerFilter').value = 'ALL';
-        document.getElementById('modalSeasonFilter').value = 'ALL';
-        document.getElementById('modalQuarterFilter').value = 'ALL';
-        document.getElementById('modalStrategyFilter').value = 'ALL';
+        
+        if(window.multiSelects['modalSeasonFilter']) window.multiSelects['modalSeasonFilter'].reset();
+        if(window.multiSelects['modalQuarterFilter']) window.multiSelects['modalQuarterFilter'].reset();
+        if(window.multiSelects['modalStrategyFilter']) window.multiSelects['modalStrategyFilter'].reset();
         
         document.getElementById('searchInput').value = searchStr;
         
@@ -2148,14 +2301,19 @@
         if (currentModalOwner !== 'ALL') {
             filteredData = filteredData.filter(d => String(d['营销负责人']) === currentModalOwner);
         }
-        if (currentModalSeason !== 'ALL') {
-            filteredData = filteredData.filter(d => String(d['季节标签'] || '').includes(currentModalSeason));
+        
+        const mSeasons = window.multiSelects['modalSeasonFilter'] ? window.multiSelects['modalSeasonFilter'].getValues() : ['ALL'];
+        const mQuarters = window.multiSelects['modalQuarterFilter'] ? window.multiSelects['modalQuarterFilter'].getValues() : ['ALL'];
+        const mStrategies = window.multiSelects['modalStrategyFilter'] ? window.multiSelects['modalStrategyFilter'].getValues() : ['ALL'];
+
+        if (!mSeasons.includes('ALL')) {
+            filteredData = filteredData.filter(d => mSeasons.some(s => String(d['季节标签'] || '').includes(s)));
         }
-        if (currentModalQuarter !== 'ALL') {
-            filteredData = filteredData.filter(d => String(d['企划Q季'] || '').includes(currentModalQuarter));
+        if (!mQuarters.includes('ALL')) {
+            filteredData = filteredData.filter(d => mQuarters.some(q => String(d['企划Q季'] || '').includes(q)));
         }
-        if (currentModalStrategy !== 'ALL') {
-            filteredData = filteredData.filter(d => String(d['策略标签'] || '') === currentModalStrategy);
+        if (!mStrategies.includes('ALL')) {
+            filteredData = filteredData.filter(d => mStrategies.includes(String(d['策略标签'] || '')));
         }
 
         if (searchTokens.length > 0) {
@@ -2170,17 +2328,11 @@
         activeFilters.forEach(f => {
             filteredData = filteredData.filter(d => {
                 let cellVal = d[f.col];
-                if (!f.isNumeric) {
-                    cellVal = String(cellVal || '');
-                    if (f.op === '=') return cellVal === f.rawVal;
-                    return cellVal.includes(f.rawVal); 
-                } else {
-                    cellVal = cellVal !== undefined ? cellVal : 0;
-                    if (f.op === '>') return cellVal > f.val;
-                    if (f.op === '<') return cellVal < f.val;
-                    if (f.op === '=') return Math.abs(cellVal - f.val) < 0.0001; 
-                    return true;
-                }
+                cellVal = cellVal !== undefined ? cellVal : 0;
+                if (f.op === '>') return cellVal > f.val;
+                if (f.op === '<') return cellVal < f.val;
+                if (f.op === '=') return Math.abs(cellVal - f.val) < 0.0001; 
+                return true;
             });
         });
 
@@ -2393,7 +2545,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_43() {
+    async function exportToExcelV7_50() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -2533,7 +2685,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.43_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.50_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
@@ -2541,6 +2693,8 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        initMultiSelects();
+        
         document.querySelectorAll('.kpi-card').forEach(el => {
             el.addEventListener('click', function(e) {
                 let type = 'ALL';
