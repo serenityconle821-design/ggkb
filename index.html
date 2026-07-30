@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.36</title>
+    <title>父ASIN粒度广告分析看板 V7.43</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -87,7 +87,6 @@
         .btn-adv-toggle { background: #FFFFFF; border: 1px solid #D1D1D6; color: var(--text-main); padding: 8px 16px; border-radius: 14px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
         .btn-adv-toggle:hover { border-color: var(--accent); color: var(--accent); background: #F0F8FF; }
 
-        /* V7.36: 优化表格内边距，减少横向宽度占用 */
         .table-wrapper { flex: 1; overflow-y: auto; overflow-x: auto; padding: 0; background: #FFFFFF; }
         .data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; margin: 0; table-layout: auto; }
         .data-table th, .data-table td { padding: 12px 3px; text-align: center; border-bottom: 1px solid #F2F2F7; white-space: nowrap; vertical-align: middle; transition: background 0.2s; } 
@@ -99,16 +98,23 @@
 
         .main-val { font-weight: 700; font-size: 14px; color: var(--text-main); line-height: 1.2; }
         
-        /* V7.36 诊断结论自适应流式折行：变窄变高，消除左右滚动条 */
+        .product-cell {
+            white-space: normal !important; 
+            min-width: 150px; 
+            max-width: 180px; 
+            text-align: left !important; 
+            padding-left: 10px !important;
+        }
+
         .wrap-cell { 
             white-space: normal !important; 
-            min-width: 180px; 
-            max-width: 220px; 
+            min-width: 165px; 
+            max-width: 210px; 
             text-align: left !important; 
-            line-height: 1.6; 
-            color: #444; 
-            font-size: 12px; 
-            padding: 16px 8px !important; 
+            line-height: 1.8; 
+            color: var(--text-main); 
+            font-size: 13px; 
+            padding: 20px 10px !important; 
             word-wrap: break-word; 
         }
         
@@ -215,7 +221,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_36()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_43()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -281,25 +287,41 @@
 <div id="detailModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <div class="modal-title-group" style="width: 100%;">
-                <div style="display:flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-                    <h2 id="modal-title" class="modal-title">深度洞察中心</h2>
+            <div class="modal-title-group">
+                <div style="display:flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%;">
+                    <h2 id="modal-title" class="modal-title" style="margin-right: 8px;">深度洞察中心</h2>
                     <select id="priorityFilter" class="filter-select" onchange="changeModalFilters()">
-                        <option value="ALL">全部分级过滤</option>
+                        <option value="ALL">全部判定级别</option>
                         <option value="P0">P0 级 (紧急止损)</option>
-                        <option value="P1">P1 级 (降本增效/乘胜追击)</option>
-                        <option value="P2">P2 级 (预算调控/尝试扩量)</option>
+                        <option value="P1">P1 级 (降本增效)</option>
+                        <option value="P2">P2 级 (扩量/调控)</option>
                         <option value="P3">P3 级 (观察防守)</option>
                         <option value="P4">P4 级 (维持现状)</option>
                     </select>
                     <select id="modalOwnerFilter" class="filter-select" onchange="changeModalFilters()">
                         <option value="ALL">全部负责人</option>
                     </select>
+                    
+                    <div style="width: 1px; height: 20px; background: #D1D1D6; margin: 0 4px;"></div>
+                    
+                    <select id="modalSeasonFilter" class="filter-select" onchange="changeModalFilters()"><option value="ALL">全部季节</option></select>
+                    <select id="modalQuarterFilter" class="filter-select" onchange="changeModalFilters()"><option value="ALL">全部企划</option></select>
+                    <select id="modalStrategyFilter" class="filter-select" onchange="changeModalFilters()">
+                        <option value="ALL">全部策略</option>
+                        <option value="稳定款">稳定款</option>
+                        <option value="趋势款">趋势款</option>
+                        <option value="淘汰款">淘汰款</option>
+                        <option value="新款待定">新款待定</option>
+                    </select>
+
+                    <div style="width: 1px; height: 20px; background: #D1D1D6; margin: 0 4px;"></div>
+
                     <div class="search-box">
                         <span class="search-icon">🔍</span>
-                        <input type="text" id="searchInput" class="search-input" placeholder="输入 ASIN/货号触发下钻..." onkeyup="debounceSearch()">
+                        <input type="text" id="searchInput" class="search-input" placeholder="输入 ASIN/货号..." onkeyup="debounceSearch()">
                         <span class="clear-search" id="clearSearch" onclick="clearSearch()">&times;</span>
                     </div>
+                    
                     <button class="btn-adv-toggle" onclick="toggleAdvFilters()">
                         <span style="font-size:14px;">⚡</span> 多维筛选
                     </button>
@@ -308,16 +330,12 @@
                     </button>
                 </div>
             </div>
-            <span class="close-btn" style="position: absolute; right: 32px; top: 24px;" onclick="closeModal()">&times;</span>
+            <span class="close-btn" style="position: absolute; right: 24px; top: 18px;" onclick="closeModal()">&times;</span>
         </div>
         
         <div id="adv-filters-panel" class="adv-filters-panel">
             <select id="adv-col" class="filter-select" style="padding: 6px 24px 6px 12px; font-size:13px; background-color: #FFFFFF;">
-                <optgroup label="—— 业务标签 ——">
-                    <option value="季节标签">季节标签</option>
-                    <option value="企划Q季">企划Q季</option>
-                    <option value="策略标签">策略标签</option>
-                </optgroup>
+                <!-- V7.43 已移除业务标签选项组，聚焦数值漏斗 -->
                 <optgroup label="—— 绝对数值指标 ——">
                     <option value="近一周日均销量">日均销</option>
                     <option value="近一周边际利润额(¥)">利润额 (¥)</option>
@@ -344,13 +362,13 @@
                     <option value="ASP环比">ASP环比 (%)</option>
                 </optgroup>
             </select>
+            <!-- V7.43 移除不必要的文本"包含"运算符 -->
             <select id="adv-op" class="filter-select" style="padding: 6px 24px 6px 12px; font-size:13px; background-color: #FFFFFF;">
-                <option value="包含">包含 (适用标签)</option>
                 <option value=">">大于</option>
                 <option value="<">小于</option>
                 <option value="=">等于</option>
             </select>
-            <input type="text" id="adv-val" class="search-input" placeholder="输入文本或数值..." style="width: 140px; padding: 6px 12px; background-color: #FFFFFF;" onkeypress="if(event.key === 'Enter') addAdvFilter()">
+            <input type="text" id="adv-val" class="search-input" placeholder="输入数值..." style="width: 140px; padding: 6px 12px; background-color: #FFFFFF;" onkeypress="if(event.key === 'Enter') addAdvFilter()">
             <button class="btn-export" style="padding: 6px 16px; font-size: 13px;" onclick="addAdvFilter()">添加/更新条件</button>
             <div style="width: 1px; height: 24px; background: #D1D1D6; margin: 0 8px;"></div>
             <div id="active-filters-container" style="display:flex; gap: 8px; flex-wrap: wrap; flex: 1;"></div>
@@ -397,6 +415,10 @@
     
     let currentModalPriority = 'ALL';
     let currentModalOwner = 'ALL';
+    let currentModalSeason = 'ALL';
+    let currentModalQuarter = 'ALL';
+    let currentModalStrategy = 'ALL';
+    
     let globalProfitMap = {}; 
     let modalHistoryStack = []; 
 
@@ -498,14 +520,11 @@
         
         if(valStr === '') return;
         
-        let isNumeric = !['季节标签', '企划Q季', '策略标签'].includes(col);
-        let val = valStr;
-
-        if (isNumeric) {
-            val = parseFloat(valStr);
-            if (colName.includes('%')) {
-                val = val / 100;
-            }
+        // V7.43 所有下拉项均判定为数值型比较
+        let isNumeric = true;
+        let val = parseFloat(valStr);
+        if (colName.includes('%')) {
+            val = val / 100;
         }
         
         activeFilters.push({ col, colName, op, val, rawVal: valStr, isNumeric });
@@ -710,6 +729,8 @@
     function populateGlobalFilters() {
         const sSelect = document.getElementById('globalSeasonFilter');
         const qSelect = document.getElementById('globalQuarterFilter');
+        const msSelect = document.getElementById('modalSeasonFilter');
+        const mqSelect = document.getElementById('modalQuarterFilter');
         
         let seasons = new Set();
         let quarters = new Set();
@@ -722,10 +743,18 @@
         }
 
         sSelect.innerHTML = '<option value="ALL">全部季节</option>';
-        Array.from(seasons).sort().forEach(x => sSelect.add(new Option(x, x)));
+        msSelect.innerHTML = '<option value="ALL">全部季节</option>';
+        Array.from(seasons).sort().forEach(x => {
+            sSelect.add(new Option(x, x));
+            msSelect.add(new Option(x, x));
+        });
 
         qSelect.innerHTML = '<option value="ALL">全部企划</option>';
-        Array.from(quarters).sort().forEach(x => qSelect.add(new Option(x, x)));
+        mqSelect.innerHTML = '<option value="ALL">全部企划</option>';
+        Array.from(quarters).sort().forEach(x => {
+            qSelect.add(new Option(x, x));
+            mqSelect.add(new Option(x, x));
+        });
     }
 
     function applyGlobalFilters() {
@@ -911,6 +940,8 @@
 
             const week2Data = group.slice(-7);
             const week1Data = group.slice(0, -7).slice(-7); 
+            
+            const drilldownData = group.slice(-14);
             
             const owner = asinToOwner[asin] || '未知';
 
@@ -1182,16 +1213,12 @@
             resultRow['CVR差额'] = cvr_diff;
             resultRow['CVR环比'] = cvr_rate;
 
-            resultRow['_week2_details'] = week2Data;
+            resultRow['_drilldown_details'] = drilldownData;
             analyticalResults.push(resultRow);
         }
 
         if (analyticalResults.length === 0) {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('kpi-grid').style.display = 'none';
-            ['charts-grid-1', 'owner-summary-grid', 'charts-grid-sales', 'charts-grid-cps', 'charts-grid-ctr', 'charts-grid-cvr'].forEach(id => {
-                document.getElementById(id).style.display = 'none';
-            });
+            container.innerHTML = "<div style='text-align:center; padding: 80px; color: #86868B; font-size:16px; font-weight:500;'>未能匹配到相关数据，请尝试放宽筛选条件</div>";
             return;
         }
 
@@ -1203,13 +1230,13 @@
             group.sort((a, b) => String(a['广告日期']).localeCompare(String(b['广告日期'])));
             if (String(group[group.length - 1]['广告日期']).trim() !== maxDate) continue;
 
-            const week2Data = group.slice(-7);
-            week2Data.forEach((r, idx) => {
-                if (idx === week2Data.length - 1) { 
+            const drilldownData = group.slice(-14);
+            drilldownData.forEach((r, idx) => {
+                if (idx === drilldownData.length - 1) { 
                     const match = analyticalResults.find(res => res['父asin'] === r['父asin']);
                     if(match) {
                         let rowToPush = {...match};
-                        delete rowToPush['_week2_details'];
+                        delete rowToPush['_drilldown_details'];
                         globalProcessedData.push(rowToPush);
                     }
                 } else {
@@ -1440,7 +1467,7 @@
 
                     return `<div style="font-weight:700; font-size:15px; margin-bottom:12px; border-bottom:1px solid #E5E5EA; padding-bottom:8px;">🧑‍💼 ${d.owner}</div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                                <span style="color:#6E6E73; margin-right:24px;">营收 (扣除退回)</span>
+                                <span style="color:#6E6E73; margin-right:24px;">营收 (扣除退货)</span>
                                 <span style="font-weight:700;">本周 ¥${d.w2_rev.toLocaleString()} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ¥${d.w1_rev.toLocaleString()})</span> <span style="font-size:12px; color:${revColor}; font-weight:600; margin-left:4px;">变动: ${revSign}¥${Math.abs(d.rev_diff).toLocaleString()}${revGrowthStr}</span></span>
                             </div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
@@ -2052,7 +2079,6 @@
         setTimeout(() => triggerResize(), 100);
     }
 
-    // V7.36 进一步压实单元格子项，取消不必要的横向占位
     function getSubtextHtml(w1, diff, rate, isCost=false, isPercentFormat=false, currencyType='') {
         let prefix = currencyType === 'RMB' ? '¥' : (currencyType === 'USD' ? '$' : '');
         let absDiff = Math.abs(diff);
@@ -2072,22 +2098,34 @@
         if (diff > 0) colorHex = isCost ? 'var(--red)' : 'var(--green)';
         else if (diff < 0) colorHex = isCost ? 'var(--green)' : 'var(--red)';
 
-        return `<div class="sub-metric" style="line-height:1.2; padding-top:2px;">
+        return `<div class="sub-metric" style="line-height:1.2; padding-top:4px;">
             <div style="color:#A1A1A6; font-size:10px; margin-bottom:1px;">上周: ${w1ValStr}</div>
-            <div style="color:${colorHex}; font-weight:600; font-size:10px;">${diffValStr} <span style="font-size:9px; font-weight:500;">(${rateValStr})</span></div>
+            <div style="color:${colorHex}; font-weight:600; font-size:11px;">${diffValStr} <span style="font-size:10px; font-weight:500;">(${rateValStr})</span></div>
         </div>`;
     }
 
-    function openModal(type) {
-        openModalWithSearch(type, '');
+    function openModal(priority) {
+        openModalWithSearch(priority, '');
     }
 
-    function openModalWithSearch(type, searchStr) {
+    function openModalWithSearch(priority, searchStr) {
         modalHistoryStack = []; 
         activeFilters = []; 
-        currentModalType = type;
-        document.getElementById('priorityFilter').value = type;
+        
+        currentModalPriority = priority;
+        currentModalOwner = 'ALL';
+        currentModalSeason = 'ALL';
+        currentModalQuarter = 'ALL';
+        currentModalStrategy = 'ALL';
+        
+        document.getElementById('priorityFilter').value = priority;
+        document.getElementById('modalOwnerFilter').value = 'ALL';
+        document.getElementById('modalSeasonFilter').value = 'ALL';
+        document.getElementById('modalQuarterFilter').value = 'ALL';
+        document.getElementById('modalStrategyFilter').value = 'ALL';
+        
         document.getElementById('searchInput').value = searchStr;
+        
         renderAdvFilters();
         renderModalTable();
         document.getElementById('detailModal').style.display = "block";
@@ -2104,8 +2142,20 @@
         
         let filteredData = [...analyticalResults];
         
-        if (currentModalType !== 'ALL') {
-            filteredData = filteredData.filter(d => String(d['优化调整优先级']).includes(currentModalType));
+        if (currentModalPriority !== 'ALL') {
+            filteredData = filteredData.filter(d => String(d['优化调整优先级']).includes(currentModalPriority));
+        }
+        if (currentModalOwner !== 'ALL') {
+            filteredData = filteredData.filter(d => String(d['营销负责人']) === currentModalOwner);
+        }
+        if (currentModalSeason !== 'ALL') {
+            filteredData = filteredData.filter(d => String(d['季节标签'] || '').includes(currentModalSeason));
+        }
+        if (currentModalQuarter !== 'ALL') {
+            filteredData = filteredData.filter(d => String(d['企划Q季'] || '').includes(currentModalQuarter));
+        }
+        if (currentModalStrategy !== 'ALL') {
+            filteredData = filteredData.filter(d => String(d['策略标签'] || '') === currentModalStrategy);
         }
 
         if (searchTokens.length > 0) {
@@ -2185,8 +2235,8 @@
         };
 
         const cols = isExpanded ? 
-            ['日期', '产品信息', '判定', '当日销', '当日花费($)', '当日利润(¥)', '当日利润率', '首页点击占比', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'] : 
-            ['产品信息', '判定', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'];
+            ['日期', '产品信息', '判定', '当日销', '当日花费($)', '当日利润(¥)', '当日利润率', '当日TACOS', '首页占比', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'] : 
+            ['产品信息', '判定', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'];
 
         cols.forEach(col => {
             if(colMap[col]) {
@@ -2194,21 +2244,26 @@
                 let iconColor = currentSortCol === colMap[col] ? 'var(--accent)' : '#D1D1D6';
                 let iconWeight = currentSortCol === colMap[col] ? 'bold' : 'normal';
                 
-                html += `<th class="sortable-th" onclick="sortTable('${colMap[col]}')" title="点击按此列排序">
+                let thClass = "sortable-th";
+                if(col === '产品信息') thClass += " product-cell";
+                
+                html += `<th class="${thClass}" onclick="sortTable('${colMap[col]}')" title="点击按此列排序">
                     <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
                         ${col} <span style="font-size:10px; color:${iconColor}; font-weight:${iconWeight};">${sortIcon}</span>
                     </div>
                 </th>`;
             } else {
-                html += `<th>${col}</th>`;
+                let thClass = "";
+                if(col === '诊断结论') thClass = ' class="wrap-cell"';
+                html += `<th${thClass}>${col}</th>`;
             }
         });
         html += `</tr></thead><tbody>`;
 
         filteredData.forEach(row => {
             let priorityTag = getTagHtml(row['优化调整优先级']);
-            const details = row['_week2_details'];
-            const rowSpan = details.length;
+            const details = row['_week2_details'] || row['_drilldown_details'];
+            const rowSpan = details ? details.length : 1;
             let conclusionHtml = row['诊断结论'] ? row['诊断结论'].replace(/\n/g, '<br>').replace(/\\n/g, '<br>') : '-';
             
             let imgHtml = row['主图'] 
@@ -2242,13 +2297,13 @@
             let ctrHtml = `<div class="main-val">${(row['近一周CTR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CTR'], row['CTR差额'], row['CTR环比'], false, true, '');
             let cvrHtml = `<div class="main-val">${(row['近一周CVR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CVR'], row['CVR差额'], row['CVR环比'], false, true, '');
 
-            if(isExpanded) {
+            if(isExpanded && details) {
                 details.forEach((dayRow, idx) => {
                     html += `<tr>`;
                     html += `<td class="daily-cell">${dayRow['广告日期']}</td>`;
                     
                     if (idx === 0) {
-                        html += `<td class="merged-cell" rowspan="${rowSpan}">
+                        html += `<td class="merged-cell product-cell" rowspan="${rowSpan}">
                             <div style="display:flex; align-items:center; gap:8px; text-align:left;">
                                 ${imgHtml}
                                 <div>
@@ -2271,6 +2326,11 @@
                         html += `<td class="missing-data">- 未匹配 -</td>`;
                         html += `<td class="missing-data">- 未匹配 -</td>`;
                     }
+
+                    let dSpend = parseNumber(dayRow['广告花费']);
+                    let dRev = parseNumber(getColRaw(dayRow, ['总销售额', '销售额']));
+                    let dTacosStr = dRev > 0 ? (dSpend / dRev * 100).toFixed(1) + '%' : (dSpend > 0 ? '∞' : '0.0%');
+                    html += `<td style="color:var(--text-muted); font-variant-numeric: tabular-nums;">${dTacosStr}</td>`;
                     
                     let rawTos = getColRaw(dayRow, ['首页点击次数占比', '首页点击占比', '首页点击', 'top of search', '搜索结果顶部']);
                     let tosStr = (rawTos === '' || rawTos === undefined) ? '-' : (parseMetric(rawTos) * 100).toFixed(1) + '%';
@@ -2293,9 +2353,9 @@
                     html += `</tr>`;
                 });
             } else {
-                html += `<tr style="cursor: pointer;" title="点击当前行可直接下钻查看 7 日流水" onclick="drillDown('${row['父asin']}')">
-                    <td>
-                        <div style="display:flex; align-items:center; gap:8px; text-align:left; justify-content:left; padding-left: 4px;">
+                html += `<tr style="cursor: pointer;" title="点击当前行可直接下钻查看 14 日流水" onclick="drillDown('${row['父asin']}')">
+                    <td class="product-cell">
+                        <div style="display:flex; align-items:center; gap:8px; text-align:left; justify-content:left;">
                             ${imgHtml}
                             <div style="text-align:left;">
                                 <strong style="font-size:14px;color:var(--text-main);">${row['父asin'] || '-'}</strong><br>
@@ -2333,7 +2393,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_36() {
+    async function exportToExcelV7_43() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -2473,7 +2533,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.36_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.43_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
