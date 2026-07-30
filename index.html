@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.24</title>
+    <title>父ASIN粒度广告分析看板 V7.28</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -22,21 +22,23 @@
         body { font-family: var(--font-family); background-color: var(--bg-color); margin: 0; padding: 40px 20px; color: var(--text-main); -webkit-font-smoothing: antialiased; }
         .container { max-width: 1440px; margin: 0 auto; }
         
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .title { font-size: 34px; font-weight: 700; letter-spacing: -0.015em; color: var(--text-main); }
+        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; }
+        .title { font-size: 34px; font-weight: 700; letter-spacing: -0.015em; color: var(--text-main); line-height: 1; }
+        
+        .global-filters { display: none; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 8px 12px 8px 16px; border-radius: 100px; box-shadow: var(--shadow-subtle); border: 1px solid rgba(0,0,0,0.06); }
         
         .upload-area { border: 1px dashed #C7C7CC; padding: 40px 30px; text-align: center; background: var(--card-bg); border-radius: var(--radius); cursor: pointer; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); margin-bottom: 30px; box-shadow: var(--shadow-subtle); }
         .upload-area:hover { border-color: var(--accent); background: #FBFBFD; transform: scale(1.002); box-shadow: var(--shadow-hover); }
         .upload-area h3 { font-size: 20px; font-weight: 600; margin-bottom: 0; color: var(--text-main); }
         .hidden-input { display: none; }
         
-        /* V7.24 更新：网格回调为 7 列等宽分布 */
-        .kpi-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 16px; margin-bottom: 30px; display: none; }
-        .kpi-card { min-width: 0; background: var(--card-bg); padding: 14px 10px; border-radius: 16px; box-shadow: var(--shadow-subtle); text-align: center; position: relative; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: center; min-height: 100px; cursor: pointer; }
+        /* V7.28 更新：高密度极简 KPI 排版 */
+        .kpi-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-bottom: 24px; display: none; }
+        .kpi-card { min-width: 0; background: var(--card-bg); padding: 16px 12px; border-radius: 14px; box-shadow: var(--shadow-subtle); text-align: center; position: relative; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: center; min-height: 88px; cursor: pointer; }
         .kpi-card:hover { border-color: rgba(0, 102, 204, 0.3); transform: translateY(-4px); box-shadow: var(--shadow-hover); }
-        .kpi-label { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .kpi-value { font-size: 24px; font-weight: 700; color: var(--text-main); letter-spacing: -0.02em; white-space: nowrap; }
-        .kpi-trend { font-size: 10px; font-weight: 600; margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; }
+        .kpi-label { font-size: 12px; font-weight: 500; color: #86868B; margin-bottom: 4px; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .kpi-value { font-size: 20px; font-weight: 700; color: var(--text-main); letter-spacing: -0.01em; white-space: nowrap; line-height: 1.2; }
+        .kpi-trend { font-size: 11px; margin-top: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; white-space: nowrap; line-height: 1.2; }
         
         .trend-up-bad { color: var(--red); }
         .trend-down-good { color: var(--green); }
@@ -67,7 +69,7 @@
         .modal-title-group { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
         .modal-title { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
         
-        .filter-select { border: 1px solid #E5E5EA; border-radius: 14px; padding: 8px 32px 8px 14px; font-size: 13px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 600; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2210%22%20viewBox%3D%220%200%2014%2010%22%3E%3Cpath%20fill%3D%22%2386868B%22%20d%3D%22M7%2010L0%203l1.4-1.4L7%207.2l5.6-5.6L14%203z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 10px auto; cursor: pointer; }
+        .filter-select { border: 1px solid #E5E5EA; border-radius: 12px; padding: 6px 28px 6px 12px; font-size: 13px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 600; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2210%22%20viewBox%3D%220%200%2014%2010%22%3E%3Cpath%20fill%3D%22%2386868B%22%20d%3D%22M7%2010L0%203l1.4-1.4L7%207.2l5.6-5.6L14%203z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 10px center; background-size: 10px auto; cursor: pointer; }
         .filter-select:focus { border-color: var(--accent); background: #FFFFFF; box-shadow: 0 0 0 4px rgba(0,102,204,0.15); }
         .filter-select:hover { border-color: #D1D1D6; }
         
@@ -137,16 +139,31 @@
     <div class="header">
         <div>
             <div class="title">父ASIN粒度广告分析看板</div>
-            <div id="data-cutoff-date" style="font-size: 14px; color: var(--text-muted); font-weight: 500; margin-top: 8px; display: none; letter-spacing: 0.02em;">数据截止日期：-</div>
+            <div id="data-cutoff-date" style="font-size: 14px; color: var(--text-muted); font-weight: 500; margin-top: 10px; display: none; letter-spacing: 0.02em;">数据截止日期：-</div>
+        </div>
+        
+        <div id="global-filters-bar" class="global-filters">
+            <span style="font-size: 13px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin-right: 4px;">
+                <span style="font-size: 15px;">🌐</span> 全局视角
+            </span>
+            <select id="globalSeasonFilter" class="filter-select" onchange="applyGlobalFilters()"><option value="ALL">全部季节</option></select>
+            <select id="globalQuarterFilter" class="filter-select" onchange="applyGlobalFilters()"><option value="ALL">全部企划</option></select>
+            <select id="globalStrategyFilter" class="filter-select" onchange="applyGlobalFilters()">
+                <option value="ALL">全部策略标签</option>
+                <option value="稳定款">稳定款</option>
+                <option value="趋势款">趋势款</option>
+                <option value="淘汰款">淘汰款</option>
+                <option value="新款待定">新款待定</option>
+            </select>
         </div>
     </div>
 
     <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
-        <h3>导入《广告数据报表》 (支持包含 Sheet2 利润结构表)</h3>
+        <h3>导入《广告数据报表》 (支持包含 Sheet2利润 及 Sheet3标签)</h3>
         <input type="file" id="file-input" class="hidden-input" accept=".xlsx, .xls">
     </div>
 
-    <div id="loading">正在提取特征矩阵并缝合利润数据... (请保持页面打开)</div>
+    <div id="loading">正在提取特征矩阵并缝合数据... (请保持页面打开)</div>
 
     <div class="kpi-grid" id="kpi-grid">
         <div class="kpi-card" onclick="openModal('ALL')">
@@ -186,7 +203,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_24()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_28()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -284,6 +301,11 @@
         
         <div id="adv-filters-panel" class="adv-filters-panel">
             <select id="adv-col" class="filter-select" style="padding: 6px 24px 6px 12px; font-size:13px; background-color: #FFFFFF;">
+                <optgroup label="—— 业务标签 ——">
+                    <option value="季节标签">季节标签</option>
+                    <option value="企划Q季">企划Q季</option>
+                    <option value="策略标签">策略标签</option>
+                </optgroup>
                 <optgroup label="—— 绝对数值指标 ——">
                     <option value="近一周日均销量">日均销</option>
                     <option value="近一周边际利润额(¥)">利润额 (¥)</option>
@@ -311,11 +333,12 @@
                 </optgroup>
             </select>
             <select id="adv-op" class="filter-select" style="padding: 6px 24px 6px 12px; font-size:13px; background-color: #FFFFFF;">
+                <option value="包含">包含 (适用标签)</option>
                 <option value=">">大于</option>
                 <option value="<">小于</option>
                 <option value="=">等于</option>
             </select>
-            <input type="number" id="adv-val" class="search-input" placeholder="输入数值..." style="width: 100px; padding: 6px 12px; background-color: #FFFFFF;" onkeypress="if(event.key === 'Enter') addAdvFilter()">
+            <input type="text" id="adv-val" class="search-input" placeholder="输入文本或数值..." style="width: 140px; padding: 6px 12px; background-color: #FFFFFF;" onkeypress="if(event.key === 'Enter') addAdvFilter()">
             <button class="btn-export" style="padding: 6px 16px; font-size: 13px;" onclick="addAdvFilter()">添加/更新条件</button>
             <div style="width: 1px; height: 24px; background: #D1D1D6; margin: 0 8px;"></div>
             <div id="active-filters-container" style="display:flex; gap: 8px; flex-wrap: wrap; flex: 1;"></div>
@@ -351,6 +374,11 @@
 </div>
 
 <script>
+    let rawData1 = [];
+    let rawData2 = [];
+    let rawData3 = [];
+    let globalAsinTags = {};
+    
     let globalProcessedData = [];
     let globalOriginalColumns = [];
     let analyticalResults = []; 
@@ -454,16 +482,21 @@
         const col = colSelect.value;
         const colName = colSelect.options[colSelect.selectedIndex].text;
         const op = document.getElementById('adv-op').value;
-        const valStr = document.getElementById('adv-val').value;
+        const valStr = document.getElementById('adv-val').value.trim();
         
         if(valStr === '') return;
         
-        let val = parseFloat(valStr);
-        if (colName.includes('%')) {
-            val = val / 100;
+        let isNumeric = !['季节标签', '企划Q季', '策略标签'].includes(col);
+        let val = valStr;
+
+        if (isNumeric) {
+            val = parseFloat(valStr);
+            if (colName.includes('%')) {
+                val = val / 100;
+            }
         }
         
-        activeFilters.push({ col, colName, op, val, rawVal: valStr });
+        activeFilters.push({ col, colName, op, val, rawVal: valStr, isNumeric });
         document.getElementById('adv-val').value = '';
         renderAdvFilters();
         renderModalTable();
@@ -564,21 +597,31 @@
                 const workbook = XLSX.read(data, {type: 'array'});
                 
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData1 = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});
+                rawData1 = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});
                 
-                if(jsonData1.length > 0) {
-                    globalOriginalColumns = Object.keys(jsonData1[0]);
+                if(rawData1.length > 0) {
+                    globalOriginalColumns = Object.keys(rawData1[0]);
                 } else {
                     throw new Error("广告数据表 (Sheet1) 为空或格式无法识别。");
                 }
                 
-                let jsonData2 = [];
+                rawData2 = [];
                 if (workbook.SheetNames.length > 1) {
                     const secondSheet = workbook.Sheets[workbook.SheetNames[1]];
-                    jsonData2 = XLSX.utils.sheet_to_json(secondSheet, {defval: ""});
+                    rawData2 = XLSX.utils.sheet_to_json(secondSheet, {defval: ""});
                 }
                 
-                processData(jsonData1, jsonData2);
+                rawData3 = [];
+                if (workbook.SheetNames.length > 2) {
+                    const thirdSheet = workbook.Sheets[workbook.SheetNames[2]];
+                    rawData3 = XLSX.utils.sheet_to_json(thirdSheet, {defval: ""});
+                }
+                
+                buildGlobalTags(rawData3);
+                populateGlobalFilters();
+                applyGlobalFilters();
+                
+                document.getElementById('global-filters-bar').style.display = 'flex';
                 
             } catch (err) {
                 alert("导入终止，错误原因：" + err.message);
@@ -596,6 +639,121 @@
         };
         reader.readAsArrayBuffer(file);
     }
+
+    function buildGlobalTags(data3) {
+        globalAsinTags = {};
+        
+        const getWeight = (tag) => {
+            if(!tag) return 0;
+            if(tag.includes('稳定')) return 4;
+            if(tag.includes('趋势')) return 3;
+            if(tag.includes('淘汰') || tag.includes('弃置')) return 2;
+            if(tag.includes('新款') || tag.includes('待定')) return 1;
+            return 0;
+        };
+        
+        const getStandardStrategy = (tag) => {
+            if(!tag) return '-';
+            if(tag.includes('稳定')) return '稳定款';
+            if(tag.includes('趋势')) return '趋势款';
+            if(tag.includes('淘汰') || tag.includes('弃置')) return '淘汰款';
+            if(tag.includes('新款') || tag.includes('待定')) return '新款待定';
+            return tag; 
+        };
+
+        if (data3 && data3.length > 0) {
+            data3.forEach(row => {
+                let asin = String(getColRaw(row, ['父asin', 'asin']) || '').trim();
+                let season = String(getColRaw(row, ['季节标签', '季节']) || '').trim();
+                let quarter = String(getColRaw(row, ['企划Q季', '企划']) || '').trim();
+                let rawStrategy = String(getColRaw(row, ['策略标签', '策略']) || '').trim();
+
+                if (asin) {
+                    if (!globalAsinTags[asin]) {
+                        globalAsinTags[asin] = {
+                            season: new Set(),
+                            quarter: new Set(),
+                            strategyWeight: -1,
+                            strategy: '-'
+                        };
+                    }
+                    if (season && season !== '-') globalAsinTags[asin].season.add(season);
+                    if (quarter && quarter !== '-') globalAsinTags[asin].quarter.add(quarter);
+                    
+                    let w = getWeight(rawStrategy);
+                    if (w > globalAsinTags[asin].strategyWeight) {
+                        globalAsinTags[asin].strategyWeight = w;
+                        globalAsinTags[asin].strategy = getStandardStrategy(rawStrategy);
+                    }
+                }
+            });
+        }
+        
+        for(let asin in globalAsinTags) {
+            globalAsinTags[asin].season = Array.from(globalAsinTags[asin].season).join(', ') || '-';
+            globalAsinTags[asin].quarter = Array.from(globalAsinTags[asin].quarter).join(', ') || '-';
+        }
+    }
+
+    function populateGlobalFilters() {
+        const sSelect = document.getElementById('globalSeasonFilter');
+        const qSelect = document.getElementById('globalQuarterFilter');
+        
+        let seasons = new Set();
+        let quarters = new Set();
+
+        for(let asin in globalAsinTags) {
+            let s = globalAsinTags[asin].season;
+            let q = globalAsinTags[asin].quarter;
+            if(s && s!=='-') s.split(', ').forEach(x => seasons.add(x));
+            if(q && q!=='-') q.split(', ').forEach(x => quarters.add(x));
+        }
+
+        sSelect.innerHTML = '<option value="ALL">全部季节</option>';
+        Array.from(seasons).sort().forEach(x => sSelect.add(new Option(x, x)));
+
+        qSelect.innerHTML = '<option value="ALL">全部企划</option>';
+        Array.from(quarters).sort().forEach(x => qSelect.add(new Option(x, x)));
+    }
+
+    function applyGlobalFilters() {
+        const sFilter = document.getElementById('globalSeasonFilter').value;
+        const qFilter = document.getElementById('globalQuarterFilter').value;
+        const stFilter = document.getElementById('globalStrategyFilter').value;
+
+        let isAnyFilterActive = sFilter !== 'ALL' || qFilter !== 'ALL' || stFilter !== 'ALL';
+        let validAsins = new Set();
+
+        if (isAnyFilterActive) {
+            for(let asin in globalAsinTags) {
+                let tags = globalAsinTags[asin];
+                let matchS = (sFilter === 'ALL' || tags.season.includes(sFilter));
+                let matchQ = (qFilter === 'ALL' || tags.quarter.includes(qFilter));
+                let matchSt = (stFilter === 'ALL' || tags.strategy === stFilter);
+                
+                if(matchS && matchQ && matchSt) {
+                    validAsins.add(asin);
+                }
+            }
+        }
+
+        const filterData = (data) => data.filter(row => {
+            if (!isAnyFilterActive) return true;
+            let asin = String(getColRaw(row, ['父asin', 'asin']) || '').trim();
+            return validAsins.has(asin);
+        });
+
+        let fData1 = filterData(rawData1);
+        let fData2 = filterData(rawData2);
+
+        if (isAnyFilterActive && (fData1.length === 0 || fData2.length === 0)) {
+            alert("警告：当前大盘筛选条件下无任何流水数据，请放宽业务标签条件！");
+            return;
+        }
+        
+        processData(fData1, fData2);
+    }
+    window.applyGlobalFilters = applyGlobalFilters;
 
     function processData(data1, data2) {
         let asinToOwner = {};
@@ -915,6 +1073,11 @@
             resultRow['主图'] = getColRaw(lastRow, ['主图', '图片', '商品图片', 'image', 'img', '主图链接']);
             resultRow['营销负责人'] = owner;
             
+            let tags = globalAsinTags[asin] || { season: '-', quarter: '-', strategy: '-' };
+            resultRow['季节标签'] = tags.season;
+            resultRow['企划Q季'] = tags.quarter;
+            resultRow['策略标签'] = tags.strategy;
+            
             resultRow['上周日均销量'] = Number(w1_sales_avg.toFixed(2));
             resultRow['近一周日均销量'] = Number(w2_sales_avg.toFixed(2));
             resultRow['日均销量差额'] = Number(sales_avg_diff.toFixed(2));
@@ -998,7 +1161,12 @@
         }
 
         if (analyticalResults.length === 0) {
-            throw new Error("处理成功，但未识别到在最后一天有流水的 ASIN。");
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('kpi-grid').style.display = 'none';
+            ['charts-grid-1', 'owner-summary-grid', 'charts-grid-sales', 'charts-grid-cps', 'charts-grid-ctr', 'charts-grid-cvr'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+            return;
         }
 
         analyticalResults.sort((a, b) => b['近一周日均销量'] - a['近一周日均销量']);
@@ -1024,8 +1192,8 @@
             });
         }
 
-        document.getElementById('kpi-asins').innerText = analyticalResults.length;
-        document.getElementById('kpi-p0').innerText = p0Count;
+        document.getElementById('kpi-asins').innerText = analyticalResults.length.toLocaleString();
+        document.getElementById('kpi-p0').innerText = p0Count.toLocaleString();
         let organicRatio = totalW2Sales > 0 ? (1 - (totalW2AdSales / totalW2Sales)) * 100 : 0;
         document.getElementById('kpi-organic-ratio').innerText = organicRatio.toFixed(1) + '%';
         
@@ -1071,24 +1239,28 @@
                 let pct = baseVal !== 0 ? (diff / Math.abs(baseVal)) * 100 : 0;
                 let pctSign = pct > 0 ? '+' : (pct < 0 ? '-' : '');
                 let pctStr = baseVal !== 0 ? ` (${pctSign}${Math.abs(pct).toFixed(1)}%)` : '';
-                valStr = prefix + Math.abs(diff).toFixed(currencyType === 'RMB' ? 0 : 2) + pctStr;
+                let diffFmt = currencyType === 'RMB' ? Math.round(Math.abs(diff)).toLocaleString() : Math.abs(diff).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+                valStr = prefix + diffFmt + pctStr;
             }
 
             if (diff === 0) valStr = '持平';
             
-            let baseStr = isPercent ? (baseVal * 100).toFixed(1) + '%' : prefix + baseVal.toFixed(currencyType === 'RMB' ? 0 : 2);
+            let baseStr = isPercent ? (baseVal * 100).toFixed(1) + '%' : prefix + (currencyType === 'RMB' ? Math.round(baseVal).toLocaleString() : baseVal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));
             
             el.className = 'kpi-trend'; 
-            el.innerHTML = `<span style="color:#86868b; font-weight:500; margin-right:4px;">上周: ${baseStr}</span><span class="${colorClass}">环比 ${icon} ${valStr}</span>`;
+            el.innerHTML = `
+                <span style="color:#A1A1A6; font-weight:400; font-size: 10px;">上周: ${baseStr}</span>
+                <span class="${colorClass}" style="font-weight:600; font-size: 11px;">环比 ${icon} ${valStr}</span>
+            `;
         }
         
         renderTrend('trend-organic', diffOrg, false, true, w1OrganicRatio, '');
         renderTrend('trend-tacos', diffTacos, true, true, w1Tacos, '');
         
-        document.getElementById('kpi-revenue').innerText = '¥' + global_w2_rev.toFixed(0);
+        document.getElementById('kpi-revenue').innerText = '¥' + Math.round(global_w2_rev).toLocaleString();
         renderTrend('trend-revenue', global_w2_rev - global_w1_rev, false, false, global_w1_rev, 'RMB');
 
-        document.getElementById('kpi-margin-sum').innerText = '¥' + global_w2_margin_sum.toFixed(0);
+        document.getElementById('kpi-margin-sum').innerText = '¥' + Math.round(global_w2_margin_sum).toLocaleString();
         renderTrend('trend-margin-sum', global_w2_margin_sum - global_w1_margin_sum, false, false, global_w1_margin_sum, 'RMB');
         document.getElementById('kpi-margin-pct').innerText = (global_w2_margin_pct * 100).toFixed(1) + '%';
         renderTrend('trend-margin-pct', global_w2_margin_pct - global_w1_margin_pct, false, true, global_w1_margin_pct, '');
@@ -1243,19 +1415,19 @@
                     return `<div style="font-weight:700; font-size:15px; margin-bottom:12px; border-bottom:1px solid #E5E5EA; padding-bottom:8px;">🧑‍💼 ${d.owner}</div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                                 <span style="color:#6E6E73; margin-right:24px;">营收 (扣除退回)</span>
-                                <span style="font-weight:700;">本周 ¥${d.w2_rev.toFixed(0)} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ¥${d.w1_rev.toFixed(0)})</span> <span style="font-size:12px; color:${revColor}; font-weight:600; margin-left:4px;">变动: ${revSign}¥${Math.abs(d.rev_diff).toFixed(0)}${revGrowthStr}</span></span>
+                                <span style="font-weight:700;">本周 ¥${d.w2_rev.toLocaleString()} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ¥${d.w1_rev.toLocaleString()})</span> <span style="font-size:12px; color:${revColor}; font-weight:600; margin-left:4px;">变动: ${revSign}¥${Math.abs(d.rev_diff).toLocaleString()}${revGrowthStr}</span></span>
                             </div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                                 <span style="color:#6E6E73; margin-right:24px;">边际利润额</span>
-                                <span style="font-weight:700;">本周 ¥${d.w2_margin.toFixed(0)} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ¥${d.w1_margin.toFixed(0)})</span> <span style="font-size:12px; color:${marginColor}; font-weight:600; margin-left:4px;">变动: ${marginSign}¥${Math.abs(d.margin_diff).toFixed(0)}${marginGrowthStr}</span></span>
+                                <span style="font-weight:700;">本周 ¥${d.w2_margin.toLocaleString()} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ¥${d.w1_margin.toLocaleString()})</span> <span style="font-size:12px; color:${marginColor}; font-weight:600; margin-left:4px;">变动: ${marginSign}¥${Math.abs(d.margin_diff).toLocaleString()}${marginGrowthStr}</span></span>
                             </div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                                 <span style="color:#6E6E73; margin-right:24px;">已发货销量</span>
-                                <span style="font-weight:700; color:#111115;">本周 ${d.w2_shipped} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ${d.w1_shipped})</span> <span style="font-size:12px; color:${shippedColor}; font-weight:600; margin-left:4px;">变动: ${shippedSign}${Math.abs(d.shipped_diff)}${shippedGrowthStr}</span></span>
+                                <span style="font-weight:700; color:#111115;">本周 ${d.w2_shipped.toLocaleString()} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ${d.w1_shipped.toLocaleString()})</span> <span style="font-size:12px; color:${shippedColor}; font-weight:600; margin-left:4px;">变动: ${shippedSign}${Math.abs(d.shipped_diff).toLocaleString()}${shippedGrowthStr}</span></span>
                             </div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px dashed #E5E5EA; padding-bottom:8px;">
                                 <span style="color:#6E6E73; margin-right:24px;">营销成本额</span>
-                                <span style="font-weight:700; color:#FF9500;">本周 ¥${d.w2_mktg.toFixed(0)} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ¥${d.w1_mktg.toFixed(0)})</span> <span style="font-size:12px; color:${mktgColor}; font-weight:600; margin-left:4px;">变动: ${mktgSign}¥${Math.abs(d.mktg_diff).toFixed(0)}${mktgGrowthStr}</span></span>
+                                <span style="font-weight:700; color:#FF9500;">本周 ¥${d.w2_mktg.toLocaleString()} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ¥${d.w1_mktg.toLocaleString()})</span> <span style="font-size:12px; color:${mktgColor}; font-weight:600; margin-left:4px;">变动: ${mktgSign}¥${Math.abs(d.mktg_diff).toLocaleString()}${mktgGrowthStr}</span></span>
                             </div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                                 <span style="color:#6E6E73; margin-right:24px;">边际利润率</span>
@@ -1848,7 +2020,7 @@
     function getSubtextHtml(w1, diff, rate, isCost=false, isPercentFormat=false, currencyType='') {
         let prefix = currencyType === 'RMB' ? '¥' : (currencyType === 'USD' ? '$' : '');
         let absDiff = Math.abs(diff);
-        let diffVal = isPercentFormat ? (absDiff * 100).toFixed(1) + '%' : absDiff.toFixed(currencyType === 'RMB' ? 0 : 2);
+        let diffVal = isPercentFormat ? (absDiff * 100).toFixed(1) + '%' : absDiff.toLocaleString('en-US', {minimumFractionDigits: currencyType==='RMB'?0:2, maximumFractionDigits: currencyType==='RMB'?0:2});
         let diffSign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
         let diffValStr = diffSign + prefix + diffVal;
 
@@ -1857,7 +2029,7 @@
         let rateSign = rate > 0 ? '+' : (rate < 0 ? '-' : '');
         let rateValStr = rateSign + rateVal;
 
-        let w1ValStr = isPercentFormat ? (w1 * 100).toFixed(1) + '%' : w1.toFixed(currencyType === 'RMB' ? 0 : 2);
+        let w1ValStr = isPercentFormat ? (w1 * 100).toFixed(1) + '%' : w1.toLocaleString('en-US', {minimumFractionDigits: currencyType==='RMB'?0:2, maximumFractionDigits: currencyType==='RMB'?0:2});
         if(!isPercentFormat) w1ValStr = prefix + w1ValStr;
         
         let colorHex = '#86868b';
@@ -1911,11 +2083,18 @@
 
         activeFilters.forEach(f => {
             filteredData = filteredData.filter(d => {
-                let cellVal = d[f.col] !== undefined ? d[f.col] : 0;
-                if (f.op === '>') return cellVal > f.val;
-                if (f.op === '<') return cellVal < f.val;
-                if (f.op === '=') return Math.abs(cellVal - f.val) < 0.0001; 
-                return true;
+                let cellVal = d[f.col];
+                if (!f.isNumeric) {
+                    cellVal = String(cellVal || '');
+                    if (f.op === '=') return cellVal === f.rawVal;
+                    return cellVal.includes(f.rawVal); 
+                } else {
+                    cellVal = cellVal !== undefined ? cellVal : 0;
+                    if (f.op === '>') return cellVal > f.val;
+                    if (f.op === '<') return cellVal < f.val;
+                    if (f.op === '=') return Math.abs(cellVal - f.val) < 0.0001; 
+                    return true;
+                }
             });
         });
 
@@ -2000,10 +2179,23 @@
                 ? `<img src="${row['主图']}" onclick="openImgModal('${row['主图']}', event)" onerror="this.style.display='none'" style="width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: #F2F2F7; flex-shrink:0; border: 1px solid #E5E5EA; cursor: zoom-in;" title="点击放大图片">` 
                 : `<div style="width: 44px; height: 44px; border-radius: 6px; background: #F2F2F7; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#A1A1A6; font-size:10px; border: 1px solid #E5E5EA;">暂无</div>`;
 
+            let tagHtmlStr = '';
+            const t1 = row['季节标签']; const t2 = row['企划Q季']; const t3 = row['策略标签'];
+            if(t1 && t1 !== '-') tagHtmlStr += `<span style="background:#F2F2F7; color:#6E6E73; padding: 2px 6px; border-radius: 4px; font-size: 10px; white-space: nowrap;">${t1}</span>`;
+            if(t2 && t2 !== '-') tagHtmlStr += `<span style="background:#F2F2F7; color:#6E6E73; padding: 2px 6px; border-radius: 4px; font-size: 10px; white-space: nowrap;">${t2}</span>`;
+            if(t3 && t3 !== '-') {
+                let sBg = '#F2F2F7', sCol = '#6E6E73', sBrd = 'transparent';
+                if(t3.includes('稳定')) { sBg = '#EBF9EE'; sCol = '#34C759'; sBrd = '#C3EBCF'; }
+                else if(t3.includes('趋势')) { sBg = '#FFF4E5'; sCol = '#FF9500'; sBrd = '#FFE0B2'; }
+                else if(t3.includes('淘汰')) { sBg = '#FFECEB'; sCol = '#FF3B30'; sBrd = '#FFD1CF'; }
+                else if(t3.includes('新款')) { sBg = '#E5F1FF'; sCol = '#007AFF'; sBrd = '#B2D7FF'; }
+                tagHtmlStr += `<span style="background:${sBg}; color:${sCol}; padding: 2px 6px; border-radius: 4px; font-size: 10px; white-space: nowrap; border: 1px solid ${sBrd};">${t3}</span>`;
+            }
+
             let salesHtml = `<div class="main-val">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, '');
             let spendHtml = `<div class="main-val">$${row['近一周日均花费($)']}</div>` + getSubtextHtml(row['上周日均花费($)'], row['日均花费差额($)'], row['花费环比'], true, false, 'USD');
             
-            let marginHtml = `<div class="main-val">¥${row['近一周边际利润额(¥)'].toFixed(0)}</div>` + getSubtextHtml(row['上周边际利润额(¥)'], row['利润额差额(¥)'], row['利润额环比'], false, false, 'RMB');
+            let marginHtml = `<div class="main-val">¥${Math.round(row['近一周边际利润额(¥)']).toLocaleString()}</div>` + getSubtextHtml(row['上周边际利润额(¥)'], row['利润额差额(¥)'], row['利润额环比'], false, false, 'RMB');
             
             let marginPctHtml = `<div class="main-val">${(row['近一周边际利润率']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周边际利润率'], row['利润率差额'], row['利润率环比'], false, true, '');
             let adRatioHtml = `<div class="main-val">${(row['近一周广告单占比']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周广告单占比'], row['广告单占比差额'], row['广告单占比环比'], true, true, '');
@@ -2026,6 +2218,7 @@
                                 <div>
                                     <strong style="font-size:13px;color:var(--text-main);">${row['父asin']}</strong><br>
                                     <span style="color:var(--text-muted);font-size:11px;font-weight:500;">${row['货号'] || '-'} / ${row['营销负责人'] || '-'}</span>
+                                    ${tagHtmlStr ? `<div style="margin-top: 4px; display:flex; flex-wrap:wrap; gap:4px;">${tagHtmlStr}</div>` : ''}
                                 </div>
                             </div>
                         </td>`;
@@ -2067,6 +2260,7 @@
                             <div style="text-align:left;">
                                 <strong style="font-size:13px;color:var(--text-main);">${row['父asin'] || '-'}</strong><br>
                                 <span style="color:var(--text-muted);font-size:11px;font-weight:500;">${row['货号'] || '-'} / ${row['营销负责人'] || '-'}</span>
+                                ${tagHtmlStr ? `<div style="margin-top: 4px; display:flex; flex-wrap:wrap; gap:4px;">${tagHtmlStr}</div>` : ''}
                             </div>
                         </div>
                     </td>
@@ -2099,7 +2293,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_24() {
+    async function exportToExcelV7_28() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -2107,7 +2301,7 @@
             const ws = wb.addWorksheet('全矩阵洞察报表');
 
             const newCols = [
-                '主图',
+                '主图', '季节标签', '企划Q季', '策略标签',
                 '上周日均销量', '近一周日均销量', '日均销量差额', '销量环比',
                 '上周边际利润额(¥)', '近一周边际利润额(¥)', '利润额差额(¥)', '利润额环比',
                 '上周边际利润率', '近一周边际利润率', '利润率差额', '利润率环比',
@@ -2239,7 +2433,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.24_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.28_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
@@ -2288,18 +2482,28 @@
             const workbook = XLSX.read(data, {type: 'array'});
             
             const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const jsonData1 = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});
+            rawData1 = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});
             
-            if(jsonData1.length > 0) {
-                globalOriginalColumns = Object.keys(jsonData1[0]);
+            if(rawData1.length > 0) {
+                globalOriginalColumns = Object.keys(rawData1[0]);
                 
-                let jsonData2 = [];
+                rawData2 = [];
                 if (workbook.SheetNames.length > 1) {
                     const secondSheet = workbook.Sheets[workbook.SheetNames[1]];
-                    jsonData2 = XLSX.utils.sheet_to_json(secondSheet, {defval: ""});
+                    rawData2 = XLSX.utils.sheet_to_json(secondSheet, {defval: ""});
                 }
                 
-                processData(jsonData1, jsonData2);
+                rawData3 = [];
+                if (workbook.SheetNames.length > 2) {
+                    const thirdSheet = workbook.Sheets[workbook.SheetNames[2]];
+                    rawData3 = XLSX.utils.sheet_to_json(thirdSheet, {defval: ""});
+                }
+                
+                buildGlobalTags(rawData3);
+                populateGlobalFilters();
+                applyGlobalFilters();
+                
+                document.getElementById('global-filters-bar').style.display = 'flex';
             } else {
                 throw new Error("云端表格为空");
             }
