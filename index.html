@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.28</title>
+    <title>父ASIN粒度广告分析看板 V7.36</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -32,7 +32,6 @@
         .upload-area h3 { font-size: 20px; font-weight: 600; margin-bottom: 0; color: var(--text-main); }
         .hidden-input { display: none; }
         
-        /* V7.28 更新：高密度极简 KPI 排版 */
         .kpi-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-bottom: 24px; display: none; }
         .kpi-card { min-width: 0; background: var(--card-bg); padding: 16px 12px; border-radius: 14px; box-shadow: var(--shadow-subtle); text-align: center; position: relative; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); border: 1px solid var(--border-color); display: flex; flex-direction: column; justify-content: center; min-height: 88px; cursor: pointer; }
         .kpi-card:hover { border-color: rgba(0, 102, 204, 0.3); transform: translateY(-4px); box-shadow: var(--shadow-hover); }
@@ -66,7 +65,7 @@
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.3); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: opacity 0.3s; }
         .modal-content { background-color: var(--card-bg); margin: 1.5% auto; padding: 0; border-radius: 24px; width: 98%; max-width: 1760px; height: 95vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.2); }
         .modal-header { padding: 20px 32px; border-bottom: 1px solid #E5E5EA; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.92); z-index: 10; flex-wrap: wrap; gap: 12px; }
-        .modal-title-group { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .modal-title-group { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; width: 100%; }
         .modal-title { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
         
         .filter-select { border: 1px solid #E5E5EA; border-radius: 12px; padding: 6px 28px 6px 12px; font-size: 13px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 600; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2210%22%20viewBox%3D%220%200%2014%2010%22%3E%3Cpath%20fill%3D%22%2386868B%22%20d%3D%22M7%2010L0%203l1.4-1.4L7%207.2l5.6-5.6L14%203z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 10px center; background-size: 10px auto; cursor: pointer; }
@@ -74,8 +73,8 @@
         .filter-select:hover { border-color: #D1D1D6; }
         
         .search-box { position: relative; }
-        .search-input { border: 1px solid #E5E5EA; border-radius: 14px; padding: 8px 16px 8px 36px; font-size: 13px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); width: 220px; font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 500; }
-        .search-input:focus { border-color: var(--accent); background: #FFFFFF; box-shadow: 0 0 0 4px rgba(0,102,204,0.15); width: 280px; }
+        .search-input { border: 1px solid #E5E5EA; border-radius: 14px; padding: 8px 16px 8px 36px; font-size: 13px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); width: 180px; font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 500; }
+        .search-input:focus { border-color: var(--accent); background: #FFFFFF; box-shadow: 0 0 0 4px rgba(0,102,204,0.15); width: 240px; }
         .search-input::placeholder { color: #A1A1A6; font-weight: 400; }
         .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #A1A1A6; font-size: 14px; }
         .clear-search { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #A1A1A6; font-size: 18px; cursor: pointer; display: none; line-height: 1; }
@@ -88,17 +87,30 @@
         .btn-adv-toggle { background: #FFFFFF; border: 1px solid #D1D1D6; color: var(--text-main); padding: 8px 16px; border-radius: 14px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
         .btn-adv-toggle:hover { border-color: var(--accent); color: var(--accent); background: #F0F8FF; }
 
+        /* V7.36: 优化表格内边距，减少横向宽度占用 */
         .table-wrapper { flex: 1; overflow-y: auto; overflow-x: auto; padding: 0; background: #FFFFFF; }
         .data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; margin: 0; table-layout: auto; }
-        .data-table th, .data-table td { padding: 10px 4px; text-align: center; border-bottom: 1px solid #F2F2F7; white-space: nowrap; vertical-align: middle; transition: background 0.2s; } 
-        .data-table th { color: var(--text-muted); font-weight: 600; font-size: 12px; position: sticky; top: 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 5; box-shadow: 0 1px 0 #E5E5EA; letter-spacing: 0.02em; }
+        .data-table th, .data-table td { padding: 12px 3px; text-align: center; border-bottom: 1px solid #F2F2F7; white-space: nowrap; vertical-align: middle; transition: background 0.2s; } 
+        .data-table th { color: var(--text-muted); font-weight: 600; font-size: 12px; padding: 12px 3px; position: sticky; top: 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 5; box-shadow: 0 1px 0 #E5E5EA; letter-spacing: 0.02em; }
         .data-table tr:hover td { background-color: #F9FAFB; }
         
         .sortable-th { cursor: pointer; user-select: none; transition: background 0.2s, color 0.2s; }
         .sortable-th:hover { background-color: #F2F2F7 !important; color: var(--text-main) !important; }
 
         .main-val { font-weight: 700; font-size: 14px; color: var(--text-main); line-height: 1.2; }
-        .wrap-cell { white-space: normal !important; min-width: 140px; text-align: left !important; line-height: 1.5; color: #444; font-size: 12px; }
+        
+        /* V7.36 诊断结论自适应流式折行：变窄变高，消除左右滚动条 */
+        .wrap-cell { 
+            white-space: normal !important; 
+            min-width: 180px; 
+            max-width: 220px; 
+            text-align: left !important; 
+            line-height: 1.6; 
+            color: #444; 
+            font-size: 12px; 
+            padding: 16px 8px !important; 
+            word-wrap: break-word; 
+        }
         
         .merged-cell { background-color: #FAFAFC; border-right: 1px solid #F2F2F7; }
         .daily-cell { font-size: 11px; color: #86868B; font-variant-numeric: tabular-nums; }
@@ -111,7 +123,7 @@
         .tag-p3 { background-color: #EBF9EE; color: #34C759; border-color: #C3EBCF; }
         .tag-p4 { background-color: #F2F2F7; color: #8E8E93; border-color: #E5E5EA; }
         
-        .sub-metric { font-size:10px; color:var(--text-muted); margin-top:2px; white-space:nowrap; line-height:1.3; font-weight: 500; font-variant-numeric: tabular-nums; }
+        .sub-metric { font-size:11px; color:var(--text-muted); margin-top:2px; white-space:nowrap; line-height:1.3; font-weight: 500; font-variant-numeric: tabular-nums; }
         
         .back-btn { background: #F2F2F7; border: none; padding: 6px 16px; border-radius: 14px; cursor: pointer; font-size: 13px; color: var(--text-main); font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px; }
         .back-btn:hover { background: #E5E5EA; }
@@ -203,7 +215,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_28()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_36()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -1040,8 +1052,22 @@
             let tacos_status = tacos_diff < -0.01 ? "TACOS优化" : (tacos_diff > 0.02 ? "TACOS恶化" : "TACOS平稳");
             let organic_health = w2_organic_ratio >= 0.6;
 
+            let is_asp_drop = asp_rate < -0.03; 
+            let is_spend_drop = spend_rate < -0.05 || tacos_diff < -0.02;
+            let is_volume_and_profit_drop = sales_rate < 0 && margin_diff < 0; 
+
             let action = "", priority = "";
-            if (profit_status === "利润增长" && tacos_status === "TACOS优化") {
+
+            if (is_asp_drop && is_volume_and_profit_drop) {
+                action = "价格调整失效(降价致使单量与利润双降)，建议立即回调至原价格水位";
+                priority = "P0 - 紧急止损";
+                p0Count++;
+            } else if (is_spend_drop && is_volume_and_profit_drop) {
+                action = "过度控费致规模反噬(花费/TACOS降低致使单量与利润双降)，建议适当回调广告预算恢复流量";
+                priority = "P0 - 紧急止损";
+                p0Count++;
+            } 
+            else if (profit_status === "利润增长" && tacos_status === "TACOS优化") {
                 action = "建议稳步放量(利润与效能双优，抢占核心词)"; 
                 priority = "P1 - 乘胜追击";
             } else if (profit_status === "利润缩水" && tacos_status === "TACOS恶化") {
@@ -1641,6 +1667,7 @@
         const select2 = document.getElementById('ownerFilterCvr');
         const select3 = document.getElementById('ownerFilterSales');
         const select4 = document.getElementById('ownerFilterCtr');
+        const modalOwnerSelect = document.getElementById('modalOwnerFilter');
         const owners = new Set();
         results.forEach(r => {
             if (r['营销负责人']) owners.add(r['营销负责人']);
@@ -1650,6 +1677,8 @@
         select2.innerHTML = '<option value="ALL">全员</option>';
         select3.innerHTML = '<option value="ALL">全员</option>';
         select4.innerHTML = '<option value="ALL">全员</option>';
+        modalOwnerSelect.innerHTML = '<option value="ALL">全部负责人</option>';
+        
         Array.from(owners).sort().forEach(owner => {
             const opt = document.createElement('option');
             opt.value = owner;
@@ -1658,6 +1687,7 @@
             select2.appendChild(opt.cloneNode(true));
             select3.appendChild(opt.cloneNode(true));
             select4.appendChild(opt.cloneNode(true));
+            modalOwnerSelect.appendChild(opt.cloneNode(true));
         });
     }
 
@@ -1680,11 +1710,16 @@
     }
     window.goBack = goBack;
 
-    function changePriorityFilter() {
-        currentModalType = document.getElementById('priorityFilter').value;
+    function changeModalFilters() {
+        currentModalPriority = document.getElementById('priorityFilter').value;
+        currentModalOwner = document.getElementById('modalOwnerFilter').value;
+        currentModalSeason = document.getElementById('modalSeasonFilter').value;
+        currentModalQuarter = document.getElementById('modalQuarterFilter').value;
+        currentModalStrategy = document.getElementById('modalStrategyFilter').value;
+        modalHistoryStack = []; 
         renderModalTable();
     }
-    window.changePriorityFilter = changePriorityFilter;
+    window.changeModalFilters = changeModalFilters;
 
     function getPriorityColor(name) {
         if(name.includes('P0')) return '#FF3B30';
@@ -2017,6 +2052,7 @@
         setTimeout(() => triggerResize(), 100);
     }
 
+    // V7.36 进一步压实单元格子项，取消不必要的横向占位
     function getSubtextHtml(w1, diff, rate, isCost=false, isPercentFormat=false, currencyType='') {
         let prefix = currencyType === 'RMB' ? '¥' : (currencyType === 'USD' ? '$' : '');
         let absDiff = Math.abs(diff);
@@ -2036,9 +2072,9 @@
         if (diff > 0) colorHex = isCost ? 'var(--red)' : 'var(--green)';
         else if (diff < 0) colorHex = isCost ? 'var(--green)' : 'var(--red)';
 
-        return `<div class="sub-metric">
-            <span style="color:#A1A1A6;">上周:</span> ${w1ValStr} <br>
-            <span style="color:${colorHex};">变动: ${diffValStr} <span style="transform: scale(0.9); display: inline-block;">(${rateValStr})</span></span>
+        return `<div class="sub-metric" style="line-height:1.2; padding-top:2px;">
+            <div style="color:#A1A1A6; font-size:10px; margin-bottom:1px;">上周: ${w1ValStr}</div>
+            <div style="color:${colorHex}; font-weight:600; font-size:10px;">${diffValStr} <span style="font-size:9px; font-weight:500;">(${rateValStr})</span></div>
         </div>`;
     }
 
@@ -2149,7 +2185,7 @@
         };
 
         const cols = isExpanded ? 
-            ['日期', '产品信息', '判定', '当日销', '当日花费($)', '当日利润(¥)', '当日利润率', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'] : 
+            ['日期', '产品信息', '判定', '当日销', '当日花费($)', '当日利润(¥)', '当日利润率', '首页点击占比', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'] : 
             ['产品信息', '判定', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'];
 
         cols.forEach(col => {
@@ -2181,15 +2217,15 @@
 
             let tagHtmlStr = '';
             const t1 = row['季节标签']; const t2 = row['企划Q季']; const t3 = row['策略标签'];
-            if(t1 && t1 !== '-') tagHtmlStr += `<span style="background:#F2F2F7; color:#6E6E73; padding: 2px 6px; border-radius: 4px; font-size: 10px; white-space: nowrap;">${t1}</span>`;
-            if(t2 && t2 !== '-') tagHtmlStr += `<span style="background:#F2F2F7; color:#6E6E73; padding: 2px 6px; border-radius: 4px; font-size: 10px; white-space: nowrap;">${t2}</span>`;
+            if(t1 && t1 !== '-') tagHtmlStr += `<span style="background:#F2F2F7; color:#6E6E73; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap;">${t1}</span>`;
+            if(t2 && t2 !== '-') tagHtmlStr += `<span style="background:#F2F2F7; color:#6E6E73; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap;">${t2}</span>`;
             if(t3 && t3 !== '-') {
                 let sBg = '#F2F2F7', sCol = '#6E6E73', sBrd = 'transparent';
                 if(t3.includes('稳定')) { sBg = '#EBF9EE'; sCol = '#34C759'; sBrd = '#C3EBCF'; }
                 else if(t3.includes('趋势')) { sBg = '#FFF4E5'; sCol = '#FF9500'; sBrd = '#FFE0B2'; }
                 else if(t3.includes('淘汰')) { sBg = '#FFECEB'; sCol = '#FF3B30'; sBrd = '#FFD1CF'; }
                 else if(t3.includes('新款')) { sBg = '#E5F1FF'; sCol = '#007AFF'; sBrd = '#B2D7FF'; }
-                tagHtmlStr += `<span style="background:${sBg}; color:${sCol}; padding: 2px 6px; border-radius: 4px; font-size: 10px; white-space: nowrap; border: 1px solid ${sBrd};">${t3}</span>`;
+                tagHtmlStr += `<span style="background:${sBg}; color:${sCol}; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap; border: 1px solid ${sBrd};">${t3}</span>`;
             }
 
             let salesHtml = `<div class="main-val">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, '');
@@ -2216,8 +2252,8 @@
                             <div style="display:flex; align-items:center; gap:8px; text-align:left;">
                                 ${imgHtml}
                                 <div>
-                                    <strong style="font-size:13px;color:var(--text-main);">${row['父asin']}</strong><br>
-                                    <span style="color:var(--text-muted);font-size:11px;font-weight:500;">${row['货号'] || '-'} / ${row['营销负责人'] || '-'}</span>
+                                    <strong style="font-size:14px;color:var(--text-main);">${row['父asin']}</strong><br>
+                                    <span style="color:var(--text-muted);font-size:12px;font-weight:500;">${row['货号'] || '-'} / ${row['营销负责人'] || '-'}</span>
                                     ${tagHtmlStr ? `<div style="margin-top: 4px; display:flex; flex-wrap:wrap; gap:4px;">${tagHtmlStr}</div>` : ''}
                                 </div>
                             </div>
@@ -2235,6 +2271,10 @@
                         html += `<td class="missing-data">- 未匹配 -</td>`;
                         html += `<td class="missing-data">- 未匹配 -</td>`;
                     }
+                    
+                    let rawTos = getColRaw(dayRow, ['首页点击次数占比', '首页点击占比', '首页点击', 'top of search', '搜索结果顶部']);
+                    let tosStr = (rawTos === '' || rawTos === undefined) ? '-' : (parseMetric(rawTos) * 100).toFixed(1) + '%';
+                    html += `<td style="color:var(--text-muted); font-variant-numeric: tabular-nums;">${tosStr}</td>`;
                     
                     if (idx === 0) {
                         html += `<td class="merged-cell" rowspan="${rowSpan}">${salesHtml}</td>`;
@@ -2258,8 +2298,8 @@
                         <div style="display:flex; align-items:center; gap:8px; text-align:left; justify-content:left; padding-left: 4px;">
                             ${imgHtml}
                             <div style="text-align:left;">
-                                <strong style="font-size:13px;color:var(--text-main);">${row['父asin'] || '-'}</strong><br>
-                                <span style="color:var(--text-muted);font-size:11px;font-weight:500;">${row['货号'] || '-'} / ${row['营销负责人'] || '-'}</span>
+                                <strong style="font-size:14px;color:var(--text-main);">${row['父asin'] || '-'}</strong><br>
+                                <span style="color:var(--text-muted);font-size:12px;font-weight:500;">${row['货号'] || '-'} / ${row['营销负责人'] || '-'}</span>
                                 ${tagHtmlStr ? `<div style="margin-top: 4px; display:flex; flex-wrap:wrap; gap:4px;">${tagHtmlStr}</div>` : ''}
                             </div>
                         </div>
@@ -2293,7 +2333,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_28() {
+    async function exportToExcelV7_36() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -2433,7 +2473,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.28_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.36_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
