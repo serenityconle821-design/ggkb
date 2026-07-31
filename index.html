@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.50</title>
+    <title>父ASIN粒度广告分析看板 V7.51</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -22,7 +22,8 @@
         body { font-family: var(--font-family); background-color: var(--bg-color); margin: 0; padding: 40px 20px; color: var(--text-main); -webkit-font-smoothing: antialiased; }
         .container { max-width: 1440px; margin: 0 auto; }
         
-        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; }
+        /* V7.51 修复层级遮挡问题：追加 position: relative; z-index: 100; */
+        .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; position: relative; z-index: 100; }
         .title { font-size: 34px; font-weight: 700; letter-spacing: -0.015em; color: var(--text-main); line-height: 1; }
         
         .global-filters { display: none; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 8px 12px 8px 16px; border-radius: 100px; box-shadow: var(--shadow-subtle); border: 1px solid rgba(0,0,0,0.06); }
@@ -100,7 +101,7 @@
 
         .table-wrapper { flex: 1; overflow-y: auto; overflow-x: auto; padding: 0; background: #FFFFFF; }
         .data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; margin: 0; table-layout: auto; }
-        .data-table th, .data-table td { padding: 12px 3px; text-align: center; border-bottom: 1px solid #F2F2F7; white-space: nowrap; vertical-align: middle; transition: background 0.2s; } 
+        .data-table th, .data-table td { padding: 8px 3px; text-align: center; border-bottom: 1px solid #F2F2F7; white-space: nowrap; vertical-align: middle; transition: background 0.2s; } 
         .data-table th { color: var(--text-muted); font-weight: 600; font-size: 11px; padding: 10px 3px; position: sticky; top: 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 5; box-shadow: 0 1px 0 #E5E5EA; letter-spacing: 0.01em; }
         .data-table tr:hover td { background-color: #F9FAFB; }
         
@@ -226,7 +227,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_50()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_51()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -1203,7 +1204,6 @@
             let tacos_status = tacos_diff < -0.01 ? "TACOS优化" : (tacos_diff > 0.02 ? "TACOS恶化" : "TACOS平稳");
             let organic_health = w2_organic_ratio >= 0.6;
 
-            // V7.50 彻底剔除双降伪命题，回归纯粹的降价与防守测试
             let is_price_cut = asp_rate < -0.015; 
             let is_price_hike = asp_rate > 0.015;
             
@@ -1215,7 +1215,6 @@
             let profit_increased = margin_diff > 0; 
             let profit_not_increased = margin_diff <= 0;
 
-            // TACOS <= 1% 浮动即可视为平稳或优化
             let tacos_improved = tacos_diff <= 0.01; 
             let is_tacos_worsened = tacos_diff > 0.01;
             
@@ -2545,7 +2544,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_50() {
+    async function exportToExcelV7_51() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -2685,7 +2684,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.50_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.51_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
