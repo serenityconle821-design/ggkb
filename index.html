@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.51</title>
+    <title>父ASIN粒度广告分析看板 V7.53</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -22,7 +22,6 @@
         body { font-family: var(--font-family); background-color: var(--bg-color); margin: 0; padding: 40px 20px; color: var(--text-main); -webkit-font-smoothing: antialiased; }
         .container { max-width: 1440px; margin: 0 auto; }
         
-        /* V7.51 修复层级遮挡问题：追加 position: relative; z-index: 100; */
         .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; position: relative; z-index: 100; }
         .title { font-size: 34px; font-weight: 700; letter-spacing: -0.015em; color: var(--text-main); line-height: 1; }
         
@@ -120,15 +119,41 @@
 
         .wrap-cell { 
             white-space: normal !important; 
-            min-width: 165px; 
-            max-width: 210px; 
+            min-width: 160px; 
+            max-width: 240px; 
             text-align: left !important; 
-            line-height: 1.8; 
+            line-height: 1.6; 
             color: var(--text-main); 
             font-size: 13px; 
-            padding: 20px 10px !important; 
+            padding: 16px 14px !important; 
             word-wrap: break-word; 
+            
+            position: sticky;
+            right: 0;
+            background-color: #FFFFFF;
+            z-index: 10;
         }
+        
+        .wrap-cell::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: -8px;
+            width: 8px;
+            background: linear-gradient(to left, rgba(0,0,0,0.05), transparent);
+            pointer-events: none;
+        }
+        
+        .data-table th.wrap-cell {
+            background-color: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 15;
+        }
+
+        .merged-cell.wrap-cell { background-color: #FAFAFC; }
+        .data-table tr:hover .wrap-cell:not(.merged-cell) { background-color: #F9FAFB; }
         
         .merged-cell { background-color: #FAFAFC; border-right: 1px solid #F2F2F7; }
         .daily-cell { font-size: 11px; color: #86868B; font-variant-numeric: tabular-nums; }
@@ -227,7 +252,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_51()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_53()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -1624,7 +1649,7 @@
 
                     return `<div style="font-weight:700; font-size:15px; margin-bottom:12px; border-bottom:1px solid #E5E5EA; padding-bottom:8px;">🧑‍💼 ${d.owner}</div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                                <span style="color:#6E6E73; margin-right:24px;">营收 (扣除退回)</span>
+                                <span style="color:#6E6E73; margin-right:24px;">营收 (扣除退货)</span>
                                 <span style="font-weight:700;">本周 ¥${d.w2_rev.toLocaleString()} <span style="font-size:12px; color:#A1A1A6; font-weight:500;">(上周 ¥${d.w1_rev.toLocaleString()})</span> <span style="font-size:12px; color:${revColor}; font-weight:600; margin-left:4px;">变动: ${revSign}¥${Math.abs(d.rev_diff).toLocaleString()}${revGrowthStr}</span></span>
                             </div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
@@ -2386,8 +2411,8 @@
         };
 
         const cols = isExpanded ? 
-            ['日期', '产品信息', '判定', '当日销', '当日花费($)', '当日利润(¥)', '当日利润率', '当日TACOS', '首页占比', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'] : 
-            ['产品信息', '判定', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'];
+            ['日期', '产品信息', '判定', '当日销', '当日花费($)', '当日利润(¥)', '当日利润率', '当日TACOS', '首页占比', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'] : 
+            ['产品信息', '判定', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'];
 
         cols.forEach(col => {
             if(colMap[col]) {
@@ -2544,7 +2569,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_51() {
+    async function exportToExcelV7_53() {
         if(globalProcessedData.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -2684,7 +2709,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.51_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.53_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
