@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.53</title>
+    <title>父ASIN粒度广告分析看板 V7.56</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -25,7 +25,7 @@
         .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; position: relative; z-index: 100; }
         .title { font-size: 34px; font-weight: 700; letter-spacing: -0.015em; color: var(--text-main); line-height: 1; }
         
-        .global-filters { display: none; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 8px 12px 8px 16px; border-radius: 100px; box-shadow: var(--shadow-subtle); border: 1px solid rgba(0,0,0,0.06); }
+        .global-filters { display: none; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 8px 12px 8px 16px; border-radius: 100px; box-shadow: var(--shadow-subtle); border: 1px solid rgba(0,0,0,0.06); flex-wrap: wrap; }
         
         .upload-area { border: 1px dashed #C7C7CC; padding: 40px 30px; text-align: center; background: var(--card-bg); border-radius: var(--radius); cursor: pointer; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); margin-bottom: 30px; box-shadow: var(--shadow-subtle); }
         .upload-area:hover { border-color: var(--accent); background: #FBFBFD; transform: scale(1.002); box-shadow: var(--shadow-hover); }
@@ -201,6 +201,8 @@
             <span style="font-size: 13px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin-right: 4px;">
                 <span style="font-size: 15px;">🌐</span> 全局视角
             </span>
+            <div id="globalCat2Filter"></div>
+            <div id="globalCat4Filter"></div>
             <div id="globalSeasonFilter"></div>
             <div id="globalQuarterFilter"></div>
             <div id="globalStrategyFilter"></div>
@@ -208,11 +210,11 @@
     </div>
 
     <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
-        <h3>导入《广告数据报表》 (支持包含 Sheet2利润 及 Sheet3标签)</h3>
+        <h3>导入《广告数据报表》 (支持包含 Sheet2利润、Sheet3标签 及 Sheet4类目)</h3>
         <input type="file" id="file-input" class="hidden-input" accept=".xlsx, .xls">
     </div>
 
-    <div id="loading">正在提取特征矩阵并缝合数据... (请保持页面打开)</div>
+    <div id="loading">正在提取特征矩阵并构建底层跨表桥接池... (请保持页面打开)</div>
 
     <div class="kpi-grid" id="kpi-grid">
         <div class="kpi-card" onclick="openModal('ALL')">
@@ -252,7 +254,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_53()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_56()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -268,7 +270,7 @@
         <div class="chart-container">
             <div class="chart-header">
                 <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">负责人多维营收与利润全景绩效 (7日视角)</span></div>
-                <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;">柱状图：营收与利润额 | 折线图：利润/营销/商品/履约/退款占比追踪</div>
+                <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;">柱状图：营收与利润额 | 折线图：各项核心成本退款占比追踪</div>
             </div>
             <div class="chart-wrapper"><div id="chart-owner-profit" class="absolute-chart"></div></div>
         </div>
@@ -277,7 +279,7 @@
     <div class="charts-grid full-grid" id="charts-grid-sales">
         <div class="chart-container">
             <div class="chart-header">
-                <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">日均销量骤降 TOP 10</span></div>
+                <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">日均销量骤降 TOP 10 (已剔除淘汰款)</span></div>
                 <div><select id="ownerFilterSales" class="filter-select" style="padding: 6px 28px 6px 12px; font-size: 12px;" onchange="updateSalesChart()"><option value="ALL">全员</option></select></div>
             </div>
             <div class="chart-wrapper"><div id="chart-sales" class="absolute-chart"></div></div>
@@ -287,7 +289,7 @@
     <div class="charts-grid full-grid" id="charts-grid-cps">
         <div class="chart-container">
             <div class="chart-header">
-                <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">成本恶化 TOP 10 (单均获客成本抬升)</span></div>
+                <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">成本恶化 TOP 10 (单均获客成本抬升 - 已剔除淘汰款)</span></div>
                 <div><select id="ownerFilterCps" class="filter-select" style="padding: 6px 28px 6px 12px; font-size: 12px;" onchange="updateCpsChart()"><option value="ALL">全员</option></select></div>
             </div>
             <div class="chart-wrapper"><div id="chart-cps" class="absolute-chart"></div></div>
@@ -297,7 +299,7 @@
     <div class="charts-grid full-grid" id="charts-grid-ctr">
         <div class="chart-container">
             <div class="chart-header">
-                <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">点击率 (CTR) 骤降 TOP 10</span></div>
+                <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">点击率 (CTR) 骤降 TOP 10 (已剔除淘汰款)</span></div>
                 <div><select id="ownerFilterCtr" class="filter-select" style="padding: 6px 28px 6px 12px; font-size: 12px;" onchange="updateCtrChart()"><option value="ALL">全员</option></select></div>
             </div>
             <div class="chart-wrapper"><div id="chart-ctr" class="absolute-chart"></div></div>
@@ -307,7 +309,7 @@
     <div class="charts-grid full-grid" id="charts-grid-cvr">
         <div class="chart-container">
             <div class="chart-header">
-                <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">转化率 (CVR) 骤降 TOP 10</span></div>
+                <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">转化率 (CVR) 骤降 TOP 10 (已剔除淘汰款)</span></div>
                 <div><select id="ownerFilterCvr" class="filter-select" style="padding: 6px 28px 6px 12px; font-size: 12px;" onchange="updateCvrChart()"><option value="ALL">全员</option></select></div>
             </div>
             <div class="chart-wrapper"><div id="chart-cvr" class="absolute-chart"></div></div>
@@ -320,7 +322,7 @@
         <div class="modal-header">
             <div class="modal-title-group">
                 <div style="display:flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%;">
-                    <h2 id="modal-title" class="modal-title" style="margin-right: 8px;">深度洞察中心</h2>
+                    <h2 id="modal-title" class="modal-title" style="margin-right: 8px;">深度洞察中心 <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">(独立跨品类查询视图)</span></h2>
                     <select id="priorityFilter" class="filter-select" onchange="changeModalFilters()">
                         <option value="ALL">全部判定级别</option>
                         <option value="P0">P0 级 (紧急止损)</option>
@@ -335,6 +337,8 @@
                     
                     <div style="width: 1px; height: 20px; background: #D1D1D6; margin: 0 4px;"></div>
                     
+                    <div id="modalCat2Filter"></div>
+                    <div id="modalCat4Filter"></div>
                     <div id="modalSeasonFilter"></div>
                     <div id="modalQuarterFilter"></div>
                     <div id="modalStrategyFilter"></div>
@@ -427,22 +431,19 @@
 </div>
 
 <script>
-    let rawData1 = [];
-    let rawData2 = [];
-    let rawData3 = [];
     let globalAsinTags = {};
     
-    let globalProcessedData = [];
-    let globalOriginalColumns = [];
-    let analyticalResults = []; 
+    let globalAllAnalyticalResults = []; 
+    let globalAsinMetrics = {}; 
     
+    let globalOriginalColumns = [];
+    
+    let cat2Baselines = {};
+    let seasonBaselines = {};
+
     let currentModalPriority = 'ALL';
     let currentModalOwner = 'ALL';
-    let currentModalSeason = 'ALL';
-    let currentModalQuarter = 'ALL';
-    let currentModalStrategy = 'ALL';
     
-    let globalProfitMap = {}; 
     let modalHistoryStack = []; 
 
     let currentSortCol = '近一周日均销量';
@@ -543,14 +544,25 @@
             this.selected.clear();
             this.updateHeader();
         }
+        setState(valuesArray) {
+            this.selected.clear();
+            if(valuesArray && !valuesArray.includes('ALL')) {
+                valuesArray.forEach(v => this.selected.add(v));
+            }
+            this.updateHeader();
+        }
     }
 
     function initMultiSelects() {
         const strategies = ['稳定款', '趋势款', '淘汰款', '新款待定'];
+        window.multiSelects['globalCat2Filter'] = new MultiSelect('globalCat2Filter', '全部二级类目', [], applyGlobalFilters);
+        window.multiSelects['globalCat4Filter'] = new MultiSelect('globalCat4Filter', '全部四级类目', [], applyGlobalFilters);
         window.multiSelects['globalSeasonFilter'] = new MultiSelect('globalSeasonFilter', '全部季节', [], applyGlobalFilters);
         window.multiSelects['globalQuarterFilter'] = new MultiSelect('globalQuarterFilter', '全部企划', [], applyGlobalFilters);
         window.multiSelects['globalStrategyFilter'] = new MultiSelect('globalStrategyFilter', '全部策略', strategies, applyGlobalFilters);
         
+        window.multiSelects['modalCat2Filter'] = new MultiSelect('modalCat2Filter', '全部二级类目', [], changeModalFilters);
+        window.multiSelects['modalCat4Filter'] = new MultiSelect('modalCat4Filter', '全部四级类目', [], changeModalFilters);
         window.multiSelects['modalSeasonFilter'] = new MultiSelect('modalSeasonFilter', '全部季节', [], changeModalFilters);
         window.multiSelects['modalQuarterFilter'] = new MultiSelect('modalQuarterFilter', '全部企划', [], changeModalFilters);
         window.multiSelects['modalStrategyFilter'] = new MultiSelect('modalStrategyFilter', '全部策略', strategies, changeModalFilters);
@@ -779,7 +791,7 @@
                 const workbook = XLSX.read(data, {type: 'array'});
                 
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                rawData1 = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});
+                let rawData1 = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});
                 
                 if(rawData1.length > 0) {
                     globalOriginalColumns = Object.keys(rawData1[0]);
@@ -787,20 +799,28 @@
                     throw new Error("广告数据表 (Sheet1) 为空或格式无法识别。");
                 }
                 
-                rawData2 = [];
+                let rawData2 = [];
                 if (workbook.SheetNames.length > 1) {
                     const secondSheet = workbook.Sheets[workbook.SheetNames[1]];
                     rawData2 = XLSX.utils.sheet_to_json(secondSheet, {defval: ""});
                 }
                 
-                rawData3 = [];
+                let rawData3 = [];
                 if (workbook.SheetNames.length > 2) {
                     const thirdSheet = workbook.Sheets[workbook.SheetNames[2]];
                     rawData3 = XLSX.utils.sheet_to_json(thirdSheet, {defval: ""});
                 }
                 
-                buildGlobalTags(rawData3);
+                let rawData4 = [];
+                if (workbook.SheetNames.length > 3) {
+                    const fourthSheet = workbook.Sheets[workbook.SheetNames[3]];
+                    rawData4 = XLSX.utils.sheet_to_json(fourthSheet, {defval: ""});
+                }
+                
+                buildGlobalTags(rawData3, rawData1, rawData4);
                 populateGlobalFilters();
+                
+                processAllDataOnce(rawData1, rawData2);
                 applyGlobalFilters();
                 
                 document.getElementById('global-filters-bar').style.display = 'flex';
@@ -822,8 +842,31 @@
         reader.readAsArrayBuffer(file);
     }
 
-    function buildGlobalTags(data3) {
+    function buildGlobalTags(data3, data1, data4) {
         globalAsinTags = {};
+        
+        let skuToCat = {};
+        if (data4 && data4.length > 0) {
+            data4.forEach(row => {
+                let sku = String(getColRaw(row, ['货号', 'SKU', 'sku']) || '').trim().toUpperCase();
+                let cat2 = String(getColRaw(row, ['二级类目', '二级', 'Category 2']) || '').trim();
+                let cat4 = String(getColRaw(row, ['四级类目', '四级', 'Category 4']) || '').trim();
+                if (sku) {
+                    skuToCat[sku] = { cat2: cat2, cat4: cat4 };
+                }
+            });
+        }
+
+        let asinToSku = {};
+        if (data1 && data1.length > 0) {
+            data1.forEach(row => {
+                let a = String(getColRaw(row, ['父asin', 'asin']) || '').trim();
+                let s = String(getColRaw(row, ['货号', 'SKU', 'sku']) || '').trim();
+                if (a && s && s !== 'undefined' && s !== '-') {
+                    asinToSku[a] = s;
+                }
+            });
+        }
         
         const getWeight = (tag) => {
             if(!tag) return 0;
@@ -845,121 +888,147 @@
 
         if (data3 && data3.length > 0) {
             data3.forEach(row => {
-                let asin = String(getColRaw(row, ['父asin', 'asin']) || '').trim();
+                let rawAsin = String(getColRaw(row, ['父asin', 'asin']) || '').trim();
+                let rawSku = String(getColRaw(row, ['货号', 'SKU', 'sku']) || '').trim();
                 let season = String(getColRaw(row, ['季节标签', '季节']) || '').trim();
                 let quarter = String(getColRaw(row, ['企划Q季', '企划']) || '').trim();
                 let rawStrategy = String(getColRaw(row, ['策略标签', '策略']) || '').trim();
 
-                if (asin) {
-                    if (!globalAsinTags[asin]) {
-                        globalAsinTags[asin] = {
-                            season: new Set(),
-                            quarter: new Set(),
-                            strategyWeight: -1,
-                            strategy: '-'
-                        };
+                if (rawAsin) {
+                    if (rawSku && rawSku !== '-') {
+                        asinToSku[rawAsin] = rawSku;
                     }
-                    if (season && season !== '-') globalAsinTags[asin].season.add(season);
-                    if (quarter && quarter !== '-') globalAsinTags[asin].quarter.add(quarter);
+                    
+                    if (!globalAsinTags[rawAsin]) {
+                        globalAsinTags[rawAsin] = { season: new Set(), quarter: new Set(), cat2: new Set(), cat4: new Set(), strategyWeight: -1, strategy: '-' };
+                    }
+                    if (season && season !== '-') globalAsinTags[rawAsin].season.add(season);
+                    if (quarter && quarter !== '-') globalAsinTags[rawAsin].quarter.add(quarter);
                     
                     let w = getWeight(rawStrategy);
-                    if (w > globalAsinTags[asin].strategyWeight) {
-                        globalAsinTags[asin].strategyWeight = w;
-                        globalAsinTags[asin].strategy = getStandardStrategy(rawStrategy);
+                    if (w > globalAsinTags[rawAsin].strategyWeight) {
+                        globalAsinTags[rawAsin].strategyWeight = w;
+                        globalAsinTags[rawAsin].strategy = getStandardStrategy(rawStrategy);
                     }
                 }
             });
+        }
+
+        // 统一贯通类目信息
+        for (let asin in asinToSku) {
+            if (!globalAsinTags[asin]) {
+                globalAsinTags[asin] = { season: new Set(), quarter: new Set(), cat2: new Set(), cat4: new Set(), strategyWeight: -1, strategy: '-' };
+            }
+            let rawSku = asinToSku[asin];
+            if (rawSku) {
+                let skus = rawSku.split(/[/,;，；\\]+/);
+                skus.forEach(sku => {
+                    sku = sku.trim().toUpperCase();
+                    if (skuToCat[sku]) {
+                        let c2 = skuToCat[sku].cat2;
+                        let c4 = skuToCat[sku].cat4;
+                        if (c2 && c2 !== '-') globalAsinTags[asin].cat2.add(c2);
+                        if (c4 && c4 !== '-') globalAsinTags[asin].cat4.add(c4);
+                    }
+                });
+            }
         }
         
         for(let asin in globalAsinTags) {
             globalAsinTags[asin].season = Array.from(globalAsinTags[asin].season).join(', ') || '-';
             globalAsinTags[asin].quarter = Array.from(globalAsinTags[asin].quarter).join(', ') || '-';
+            globalAsinTags[asin].cat2 = Array.from(globalAsinTags[asin].cat2).join(', ') || '-';
+            globalAsinTags[asin].cat4 = Array.from(globalAsinTags[asin].cat4).join(', ') || '-';
         }
     }
 
     function populateGlobalFilters() {
-        let seasons = new Set();
-        let quarters = new Set();
+        let seasons = new Set(), quarters = new Set(), cat2s = new Set(), cat4s = new Set();
 
         for(let asin in globalAsinTags) {
-            let s = globalAsinTags[asin].season;
-            let q = globalAsinTags[asin].quarter;
-            if(s && s!=='-') s.split(', ').forEach(x => seasons.add(x));
-            if(q && q!=='-') q.split(', ').forEach(x => quarters.add(x));
+            let tags = globalAsinTags[asin];
+            if(tags.season && tags.season!=='-') tags.season.split(', ').forEach(x => seasons.add(x));
+            if(tags.quarter && tags.quarter!=='-') tags.quarter.split(', ').forEach(x => quarters.add(x));
+            if(tags.cat2 && tags.cat2!=='-') tags.cat2.split(', ').forEach(x => cat2s.add(x));
+            if(tags.cat4 && tags.cat4!=='-') tags.cat4.split(', ').forEach(x => cat4s.add(x));
         }
 
-        let sortedSeasons = Array.from(seasons).sort();
-        let sortedQuarters = Array.from(quarters).sort();
-
-        window.multiSelects['globalSeasonFilter'].setOptions(sortedSeasons);
-        window.multiSelects['modalSeasonFilter'].setOptions(sortedSeasons);
+        window.multiSelects['globalCat2Filter'].setOptions(Array.from(cat2s).sort());
+        window.multiSelects['modalCat2Filter'].setOptions(Array.from(cat2s).sort());
         
-        window.multiSelects['globalQuarterFilter'].setOptions(sortedQuarters);
-        window.multiSelects['modalQuarterFilter'].setOptions(sortedQuarters);
+        window.multiSelects['globalCat4Filter'].setOptions(Array.from(cat4s).sort());
+        window.multiSelects['modalCat4Filter'].setOptions(Array.from(cat4s).sort());
+
+        window.multiSelects['globalSeasonFilter'].setOptions(Array.from(seasons).sort());
+        window.multiSelects['modalSeasonFilter'].setOptions(Array.from(seasons).sort());
+        
+        window.multiSelects['globalQuarterFilter'].setOptions(Array.from(quarters).sort());
+        window.multiSelects['modalQuarterFilter'].setOptions(Array.from(quarters).sort());
+    }
+
+    function isAsinMatchTags(asin, filters) {
+        let tags = globalAsinTags[asin] || {season:'-', quarter:'-', cat2:'-', cat4:'-', strategy:'-'};
+        
+        let matchS = filters.seasons.includes('ALL') || filters.seasons.some(s => tags.season.includes(s));
+        let matchQ = filters.quarters.includes('ALL') || filters.quarters.some(q => tags.quarter.includes(q));
+        let matchSt = filters.strategies.includes('ALL') || filters.strategies.includes(tags.strategy);
+        let matchC2 = filters.cat2s.includes('ALL') || filters.cat2s.some(c => tags.cat2.includes(c));
+        let matchC4 = filters.cat4s.includes('ALL') || filters.cat4s.some(c => tags.cat4.includes(c));
+        
+        return matchS && matchQ && matchSt && matchC2 && matchC4;
     }
 
     function applyGlobalFilters() {
-        const sFilters = window.multiSelects['globalSeasonFilter'].getValues();
-        const qFilters = window.multiSelects['globalQuarterFilter'].getValues();
-        const stFilters = window.multiSelects['globalStrategyFilter'].getValues();
+        if (globalAllAnalyticalResults.length === 0) return;
+        
+        const filters = {
+            seasons: window.multiSelects['globalSeasonFilter'].getValues(),
+            quarters: window.multiSelects['globalQuarterFilter'].getValues(),
+            strategies: window.multiSelects['globalStrategyFilter'].getValues(),
+            cat2s: window.multiSelects['globalCat2Filter'].getValues(),
+            cat4s: window.multiSelects['globalCat4Filter'].getValues()
+        };
+        
+        window.multiSelects['modalSeasonFilter'].setState(filters.seasons);
+        window.multiSelects['modalQuarterFilter'].setState(filters.quarters);
+        window.multiSelects['modalStrategyFilter'].setState(filters.strategies);
+        window.multiSelects['modalCat2Filter'].setState(filters.cat2s);
+        window.multiSelects['modalCat4Filter'].setState(filters.cat4s);
 
-        let isAnyFilterActive = !sFilters.includes('ALL') || !qFilters.includes('ALL') || !stFilters.includes('ALL');
-        let validAsins = new Set();
-
-        if (isAnyFilterActive) {
-            for(let asin in globalAsinTags) {
-                let tags = globalAsinTags[asin];
-                let matchS = sFilters.includes('ALL') || sFilters.some(s => tags.season.includes(s));
-                let matchQ = qFilters.includes('ALL') || qFilters.some(q => tags.quarter.includes(q));
-                let matchSt = stFilters.includes('ALL') || stFilters.includes(tags.strategy);
-                
-                if(matchS && matchQ && matchSt) {
-                    validAsins.add(asin);
-                }
+        let filteredDashboardResults = globalAllAnalyticalResults.filter(row => isAsinMatchTags(row['父asin'], filters));
+        let filteredAsinMetrics = {};
+        for(let asin in globalAsinMetrics) {
+            if (isAsinMatchTags(asin, filters)) {
+                filteredAsinMetrics[asin] = globalAsinMetrics[asin];
             }
         }
-
-        const filterData = (data) => data.filter(row => {
-            if (!isAnyFilterActive) return true;
-            let asin = String(getColRaw(row, ['父asin', 'asin']) || '').trim();
-            return validAsins.has(asin);
-        });
-
-        let fData1 = filterData(rawData1);
-        let fData2 = filterData(rawData2);
-
-        if (isAnyFilterActive && (fData1.length === 0 || fData2.length === 0)) {
-            alert("警告：当前大盘筛选条件下无任何流水数据，请放宽业务标签条件！");
-            return;
+        
+        if (filteredDashboardResults.length === 0 && Object.keys(filteredAsinMetrics).length === 0) {
+            alert("警告：当前全局筛选条件下无任何流水数据，请放宽业务标签条件！");
         }
         
-        processData(fData1, fData2);
+        renderDashboard(filteredDashboardResults, filteredAsinMetrics);
     }
     window.applyGlobalFilters = applyGlobalFilters;
 
-    function processData(data1, data2) {
+    function processAllDataOnce(data1, data2) {
         let asinToOwner = {};
-        data1.forEach(r => {
-            let a = String(getColRaw(r, ['父asin', 'asin']) || '').trim();
-            let o = getColRaw(r, ['营销负责人', '负责人', 'owner']);
-            if (a && o && o !== 'undefined') asinToOwner[a] = String(o).trim();
-        });
-        data2.forEach(r => {
-            let a = String(getColRaw(r, ['父asin', 'asin']) || '').trim();
-            let o = getColRaw(r, ['营销负责人', '负责人', 'owner']);
-            if (a && o && o !== 'undefined') asinToOwner[a] = String(o).trim();
-        });
-
-        globalProfitMap = {};
         let allDates2 = [];
+        let globalProfitMap = {};
         
+        const extractOwner = (r) => {
+            let a = String(getColRaw(r, ['父asin', 'asin']) || '').trim();
+            let o = getColRaw(r, ['营销负责人', '负责人', 'owner']);
+            if (a && o && o !== 'undefined') asinToOwner[a] = String(o).trim();
+        };
+        data1.forEach(extractOwner);
+        data2.forEach(extractOwner);
+
         data2.forEach(row => {
             const dateStr = String(getColRaw(row, ['统计日期', '日期'])).trim();
             const asinStr = String(getColRaw(row, ['父asin', 'asin'])).trim();
             if (dateStr && asinStr) {
-                if (/\d/.test(dateStr) && !allDates2.includes(dateStr)) {
-                    allDates2.push(dateStr);
-                }
+                if (/\d/.test(dateStr) && !allDates2.includes(dateStr)) allDates2.push(dateStr);
                 if (!globalProfitMap[asinStr]) globalProfitMap[asinStr] = {};
                 globalProfitMap[asinStr][dateStr] = {
                     margin: parseNumber(row['边际利润额']),
@@ -978,59 +1047,42 @@
         const w2Dates = allDates2.slice(-7);
         const w1Dates = allDates2.slice(-14, -7);
 
-        let ownerStats = {};
-        data2.forEach(r => {
-            const d = String(getColRaw(r, ['统计日期', '日期'])).trim();
-            const a = String(getColRaw(r, ['父asin', 'asin'])).trim();
-            if (!/\d/.test(d) || !a) return;
-            
-            const owner = asinToOwner[a] || '未知';
-            
-            if (!ownerStats[owner]) ownerStats[owner] = { 
+        globalAsinMetrics = {};
+        for(let asin in globalProfitMap) {
+            globalAsinMetrics[asin] = { 
+                owner: asinToOwner[asin] || '未知',
                 w1_margin: 0, w2_margin: 0, 
-                w1_rev: 0, w2_rev: 0, 
-                w1_raw_rev: 0, w2_raw_rev: 0, 
-                w1_mktg: 0, w2_mktg: 0,
-                w1_shipped: 0, w2_shipped: 0,
-                w1_prod: 0, w2_prod: 0,
-                w1_fulfill: 0, w2_fulfill: 0,
+                w1_rev: 0, w2_rev: 0, w1_raw_rev: 0, w2_raw_rev: 0, 
+                w1_mktg: 0, w2_mktg: 0, w1_shipped: 0, w2_shipped: 0,
+                w1_prod: 0, w2_prod: 0, w1_fulfill: 0, w2_fulfill: 0,
                 w1_refund: 0, w2_refund: 0
             };
-            
-            let margin = parseNumber(r['边际利润额']);
-            let raw_rev = parseNumber(r['退款前收入']);
-            let return_cost = parseNumber(r['售后成本_销售退回']);
-            let rev = raw_rev - return_cost; 
-            
-            let mktg = parseNumber(r['营销成本']);
-            let shipped = parseNumber(r['已发货销量']);
-            let prod = parseNumber(r['商品成本']);
-            let fulfill = parseNumber(r['履约成本']);
-            
-            if (w2Dates.includes(d)) {
-                ownerStats[owner].w2_margin += margin;
-                ownerStats[owner].w2_rev += rev;
-                ownerStats[owner].w2_raw_rev += raw_rev; 
-                ownerStats[owner].w2_mktg += mktg;
-                ownerStats[owner].w2_shipped += shipped;
-                ownerStats[owner].w2_prod += prod;
-                ownerStats[owner].w2_fulfill += fulfill;
-                ownerStats[owner].w2_refund += return_cost;
-            } else if (w1Dates.includes(d)) {
-                ownerStats[owner].w1_margin += margin;
-                ownerStats[owner].w1_rev += rev;
-                ownerStats[owner].w1_raw_rev += raw_rev;
-                ownerStats[owner].w1_mktg += mktg;
-                ownerStats[owner].w1_shipped += shipped;
-                ownerStats[owner].w1_prod += prod;
-                ownerStats[owner].w1_fulfill += fulfill;
-                ownerStats[owner].w1_refund += return_cost;
+            for(let d in globalProfitMap[asin]) {
+                let p = globalProfitMap[asin][d];
+                let rev = p.revenue - p.refund_cost;
+                if(w2Dates.includes(d)) {
+                    globalAsinMetrics[asin].w2_margin += p.margin;
+                    globalAsinMetrics[asin].w2_rev += rev;
+                    globalAsinMetrics[asin].w2_raw_rev += p.revenue;
+                    globalAsinMetrics[asin].w2_mktg += p.marketing_cost;
+                    globalAsinMetrics[asin].w2_shipped += p.shipped_units;
+                    globalAsinMetrics[asin].w2_prod += p.product_cost;
+                    globalAsinMetrics[asin].w2_fulfill += p.fulfillment_cost;
+                    globalAsinMetrics[asin].w2_refund += p.refund_cost;
+                } else if(w1Dates.includes(d)) {
+                    globalAsinMetrics[asin].w1_margin += p.margin;
+                    globalAsinMetrics[asin].w1_rev += rev;
+                    globalAsinMetrics[asin].w1_raw_rev += p.revenue;
+                    globalAsinMetrics[asin].w1_mktg += p.marketing_cost;
+                    globalAsinMetrics[asin].w1_shipped += p.shipped_units;
+                    globalAsinMetrics[asin].w1_prod += p.product_cost;
+                    globalAsinMetrics[asin].w1_fulfill += p.fulfillment_cost;
+                    globalAsinMetrics[asin].w1_refund += p.refund_cost;
+                }
             }
-        });
+        }
 
         const grouped = {};
-        let totalW2Sales = 0, totalW2AdSales = 0, totalW2Spend = 0, totalW2Revenue = 0;
-        let totalW1Sales = 0, totalW1AdSales = 0, totalW1Spend = 0, totalW1Revenue = 0;
         let maxDate = '';
 
         data1.forEach(row => {
@@ -1043,35 +1095,25 @@
             }
 
             if (/\d/.test(rowDateStr)) {
-                if (maxDate === '' || rowDateStr > maxDate) {
-                    maxDate = rowDateStr;
-                }
+                if (maxDate === '' || rowDateStr > maxDate) maxDate = rowDateStr;
             }
-            
             if (!grouped[asinStr]) grouped[asinStr] = [];
             grouped[asinStr].push(row);
         });
 
-        if (maxDate === '') {
-            throw new Error("无法在【广告日期】列提取到有效日期。请检查表格内是否存在奇怪的占位符。");
-        }
+        if (maxDate === '') throw new Error("无法在【广告日期】列提取到有效日期。");
 
         const dateEl = document.getElementById('data-cutoff-date');
         if (dateEl) {
             let displayDate = maxDate;
             if (/^\d{8}$/.test(maxDate)) {
-                const y = maxDate.substring(0, 4);
-                const m = parseInt(maxDate.substring(4, 6), 10);
-                const d = parseInt(maxDate.substring(6, 8), 10);
-                displayDate = `${y}.${m}.${d}`;
+                displayDate = `${maxDate.substring(0, 4)}.${parseInt(maxDate.substring(4, 6), 10)}.${parseInt(maxDate.substring(6, 8), 10)}`;
             }
             dateEl.innerText = `数据截止日期：${displayDate}`;
             dateEl.style.display = 'block';
         }
 
-        analyticalResults = [];
-        let p0Count = 0;
-        let priorityCounts = {'P0 - 紧急止损': 0, 'P1 - 乘胜追击': 0, 'P1 - 降本增效': 0, 'P2 - 尝试扩量': 0, 'P2 - 预算调控': 0, 'P3 - 观察防守': 0, 'P4 - 维持现状': 0};
+        globalAllAnalyticalResults = [];
         
         for (const asin in grouped) {
             let group = grouped[asin];
@@ -1081,100 +1123,57 @@
 
             const week2Data = group.slice(-7);
             const week1Data = group.slice(0, -7).slice(-7); 
-            
             const drilldownData = group.slice(-14);
             
             const owner = asinToOwner[asin] || '未知';
 
-            let w2_sales = 0, w2_spend = 0, w2_ad_sales = 0, w2_revenue = 0, w2_ctr_sum = 0, w2_cvr_sum = 0;
-            let w2_clicks = 0, w2_impressions = 0;
-            let w2_margin_sum = 0, w2_margin_rev_sum = 0;
-            let w1_margin_sum = 0, w1_margin_rev_sum = 0;
-            
+            let w2_sales = 0, w2_spend = 0, w2_ad_sales = 0, w2_revenue = 0, w2_ctr_sum = 0, w2_cvr_sum = 0, w2_clicks = 0, w2_impressions = 0, w2_margin_sum = 0, w2_margin_rev_sum = 0;
             week2Data.forEach(r => {
                 const d = String(r['广告日期']).trim();
-                const a = String(r['父asin']).trim();
-                
                 w2_sales += parseNumber(r['总销量']);
                 w2_spend += parseNumber(r['广告花费']);
                 w2_ad_sales += parseNumber(r['广告销售量']);
                 w2_revenue += parseNumber(getColRaw(r, ['总销售额', '销售额']));
                 w2_clicks += parseNumber(getColRaw(r, ['点击', 'click']));
                 w2_impressions += parseNumber(getColRaw(r, ['曝光', '展现', 'impression']));
+                let r_ctr = parseMetric(getColRaw(r, ['CTR', '点击率'])); w2_ctr_sum += (r_ctr > 1 ? r_ctr/100 : r_ctr);
+                let r_cvr = parseMetric(getColRaw(r, ['CVR', '转化率', '7天总订单转化率'])); w2_cvr_sum += (r_cvr > 1 ? r_cvr/100 : r_cvr);
                 
-                let r_ctr = parseMetric(getColRaw(r, ['CTR', '点击率']));
-                if(r_ctr > 1) r_ctr = r_ctr / 100;
-                w2_ctr_sum += r_ctr;
-                
-                let r_cvr = parseMetric(getColRaw(r, ['CVR', '转化率', '7天总订单转化率']));
-                if(r_cvr > 1) r_cvr = r_cvr / 100;
-                w2_cvr_sum += r_cvr;
-
                 r['_has_profit'] = false;
-                if (globalProfitMap[a] && globalProfitMap[a][d]) {
-                    const pData = globalProfitMap[a][d];
-                    w2_margin_sum += pData.margin;
-                    w2_margin_rev_sum += pData.revenue;
-                    r['边际利润额'] = pData.margin;
-                    r['退款前收入'] = pData.revenue;
-                    r['退前边际利润率'] = pData.rate;
+                if (globalProfitMap[asin] && globalProfitMap[asin][d]) {
+                    w2_margin_sum += globalProfitMap[asin][d].margin;
+                    w2_margin_rev_sum += globalProfitMap[asin][d].revenue;
+                    r['边际利润额'] = globalProfitMap[asin][d].margin;
+                    r['退款前收入'] = globalProfitMap[asin][d].revenue;
+                    r['退前边际利润率'] = globalProfitMap[asin][d].rate;
                     r['_has_profit'] = true;
-                } else {
-                    r['边际利润额'] = 0;
-                    r['退款前收入'] = 0;
-                    r['退前边际利润率'] = 0;
                 }
             });
 
-            let w1_sales = 0, w1_spend = 0, w1_ad_sales = 0, w1_revenue = 0, w1_ctr_sum = 0, w1_cvr_sum = 0;
-            let w1_clicks = 0, w1_impressions = 0;
-
+            let w1_sales = 0, w1_spend = 0, w1_ad_sales = 0, w1_revenue = 0, w1_ctr_sum = 0, w1_cvr_sum = 0, w1_clicks = 0, w1_impressions = 0, w1_margin_sum = 0, w1_margin_rev_sum = 0;
             week1Data.forEach(r => {
                 const d = String(r['广告日期']).trim();
-                const a = String(r['父asin']).trim();
-
                 w1_sales += parseNumber(r['总销量']);
                 w1_spend += parseNumber(r['广告花费']);
                 w1_ad_sales += parseNumber(r['广告销售量']);
                 w1_revenue += parseNumber(getColRaw(r, ['总销售额', '销售额']));
                 w1_clicks += parseNumber(getColRaw(r, ['点击', 'click']));
                 w1_impressions += parseNumber(getColRaw(r, ['曝光', '展现', 'impression']));
+                let r_ctr = parseMetric(getColRaw(r, ['CTR', '点击率'])); w1_ctr_sum += (r_ctr > 1 ? r_ctr/100 : r_ctr);
+                let r_cvr = parseMetric(getColRaw(r, ['CVR', '转化率', '7天总订单转化率'])); w1_cvr_sum += (r_cvr > 1 ? r_cvr/100 : r_cvr);
                 
-                let r_ctr = parseMetric(getColRaw(r, ['CTR', '点击率']));
-                if(r_ctr > 1) r_ctr = r_ctr / 100;
-                w1_ctr_sum += r_ctr;
-                
-                let r_cvr = parseMetric(getColRaw(r, ['CVR', '转化率', '7天总订单转化率']));
-                if(r_cvr > 1) r_cvr = r_cvr / 100;
-                w1_cvr_sum += r_cvr;
-
                 r['_has_profit'] = false;
-                if (globalProfitMap[a] && globalProfitMap[a][d]) {
-                    const pData = globalProfitMap[a][d];
-                    w1_margin_sum += pData.margin;
-                    w1_margin_rev_sum += pData.revenue;
-                    r['边际利润额'] = pData.margin;
-                    r['退款前收入'] = pData.revenue;
-                    r['退前边际利润率'] = pData.rate;
+                if (globalProfitMap[asin] && globalProfitMap[asin][d]) {
+                    w1_margin_sum += globalProfitMap[asin][d].margin;
+                    w1_margin_rev_sum += globalProfitMap[asin][d].revenue;
+                    r['边际利润额'] = globalProfitMap[asin][d].margin;
+                    r['退款前收入'] = globalProfitMap[asin][d].revenue;
+                    r['退前边际利润率'] = globalProfitMap[asin][d].rate;
                     r['_has_profit'] = true;
-                } else {
-                    r['边际利润额'] = 0;
-                    r['退款前收入'] = 0;
-                    r['退前边际利润率'] = 0;
                 }
             });
             
             if (w1_sales === 0 && w2_sales === 0) continue;
-
-            totalW2Sales += w2_sales;
-            totalW2AdSales += w2_ad_sales;
-            totalW2Spend += w2_spend;
-            totalW2Revenue += w2_revenue;
-            
-            totalW1Sales += w1_sales;
-            totalW1AdSales += w1_ad_sales;
-            totalW1Spend += w1_spend;
-            totalW1Revenue += w1_revenue;
 
             const w2_sales_avg = w2_sales / (week2Data.length || 1);
             const w1_sales_avg = w1_sales / (week1Data.length || 1);
@@ -1224,82 +1223,39 @@
             const organic_status = w2_organic_ratio >= 0.6 ? "自然流量健康" : "高度依赖广告";
 
             let sales_status = sales_rate > 0.05 ? "销量攀升" : (sales_rate < -0.05 ? "销量下滑" : "销量平稳");
-            let cost_status = (cps_diff > 1.0 || spend_avg_diff > w1_spend_avg * 0.15) ? "成本抬升" : ((cps_diff < -1.0 || spend_avg_diff < -w1_spend_avg * 0.15) ? "成本优化" : "成本可控");
             let profit_status = margin_diff > 0 ? "利润增长" : (margin_diff < -2 ? "利润缩水" : "利润平稳"); 
             let tacos_status = tacos_diff < -0.01 ? "TACOS优化" : (tacos_diff > 0.02 ? "TACOS恶化" : "TACOS平稳");
-            let organic_health = w2_organic_ratio >= 0.6;
 
+            let organic_health = w2_organic_ratio >= 0.6;
             let is_price_cut = asp_rate < -0.015; 
             let is_price_hike = asp_rate > 0.015;
-            
-            let vol_dropped = sales_rate < 0; 
             let vol_flat_or_dropped = sales_rate <= 0;
             let vol_micro_increase = sales_rate > 0 && sales_rate <= 0.10;
             let vol_not_dropped = sales_rate >= 0;
-
             let profit_increased = margin_diff > 0; 
             let profit_not_increased = margin_diff <= 0;
-
             let tacos_improved = tacos_diff <= 0.01; 
-            let is_tacos_worsened = tacos_diff > 0.01;
-            
             let organic_improved = (w2_organic_ratio - w1_organic_ratio) > 0.05;
-            
             let is_spend_drop = spend_rate < -0.05;
             let is_volume_and_profit_drop = sales_rate < 0 && margin_diff < 0; 
 
             let tacos_warning = (w2_tacos > 0.12) ? "，并优化低效广告" : "";
-
             let action = "", priority = "";
 
-            if (is_price_hike && vol_not_dropped && profit_increased) {
-                action = "涨价测试成功(价格脱敏)：量利双增，证明溢价能力强，建议密切监控加购与转化率，可继续小幅试探价格极限";
-                priority = "P1 - 乘胜追击";
-            }
-            else if (is_price_cut && vol_micro_increase && profit_not_increased && !organic_improved) {
-                action = "降价换量低效：让渡毛利带来的单量微增未能弥补利润损失(短期不符预期)，建议排查广告优化空间或回调价格" + tacos_warning;
-                priority = "P1 - 降本增效";
-            }
+            if (is_price_hike && vol_not_dropped && profit_increased) { action = "涨价测试成功(价格脱敏)：量利双增，证明溢价能力强，可继续小幅试探价格极限"; priority = "P1 - 乘胜追击"; }
+            else if (is_price_cut && vol_micro_increase && profit_not_increased && !organic_improved) { action = "降价换量低效：让渡毛利带来的单量微增未能弥补利润损失(短期不符预期)" + tacos_warning; priority = "P1 - 降本增效"; }
             else if (is_price_cut && vol_flat_or_dropped) {
-                if (tacos_improved) {
-                    action = "降价测试遇流量瓶颈：单量未涨但TACOS持平/优化(说明流量健康或无效花费已降)，建议适度提升花费，放大流量验证转化";
-                    priority = "P2 - 尝试扩量";
-                } else {
-                    action = "降价测试失效：让渡毛利未能拉动单量且TACOS负优化，建议及时回调价格" + tacos_warning;
-                    priority = "P0 - 紧急止损";
-                    p0Count++;
-                }
+                if (tacos_improved) { action = "降价测试遇流量瓶颈：单量未涨但TACOS持平/优化(说明流量健康或无效花费已降)，建议适度放大流量"; priority = "P2 - 尝试扩量"; }
+                else { action = "降价测试失效：让渡毛利未能拉动单量且TACOS负优化，建议及时回调价格" + tacos_warning; priority = "P0 - 紧急止损"; }
             }
-            else if (is_spend_drop && is_volume_and_profit_drop && !is_price_cut) {
-                action = "过度控费致规模反噬(缩减预算切断转化流，致使单量与利润双降)，建议适当回调广告预算" + tacos_warning;
-                priority = "P0 - 紧急止损";
-                p0Count++;
-            } 
-            else if (profit_status === "利润增长" && tacos_status === "TACOS优化") {
-                action = "建议稳步放量(利润与效能双优，抢占核心词)"; 
-                priority = "P1 - 乘胜追击";
-            } else if (profit_status === "利润缩水" && tacos_status === "TACOS恶化") {
-                action = "立即排查转化断层，缩减泛流量预算" + tacos_warning; 
-                priority = "P0 - 紧急止损"; 
-                p0Count++;
-            } else if (profit_status === "利润缩水" && organic_health) {
-                action = "观望防守(自然流盘稳固，排查市场或客单价因素)"; 
-                priority = "P3 - 观察防守";
-            } else if (profit_status === "利润缩水") {
-                action = "防守利润底线(精准降出价，剥离低转化词)" + tacos_warning; 
-                priority = "P1 - 降本增效";
-            } else if (profit_status === "利润增长" && tacos_status === "TACOS恶化") {
-                action = "控制点击成本(增收不增效，排查无效曝光)" + tacos_warning; 
-                priority = "P2 - 预算调控";
-            } else if (profit_status === "利润增长") {
-                action = "适度放量(基本面向好，尝试拓宽长尾词)"; 
-                priority = "P2 - 尝试扩量";
-            } else {
-                action = "维持现状，定期复盘"; 
-                priority = "P4 - 维持现状";
-            }
-
-            if(priorityCounts[priority] !== undefined) priorityCounts[priority]++;
+            else if (is_spend_drop && is_volume_and_profit_drop && !is_price_cut) { action = "过度控费致规模反噬(缩减预算切断转化流，致使单量与利润双降)，建议适当回调广告预算" + tacos_warning; priority = "P0 - 紧急止损"; } 
+            else if (profit_status === "利润增长" && tacos_status === "TACOS优化") { action = "建议稳步放量(利润与效能双优，抢占核心词)"; priority = "P1 - 乘胜追击"; } 
+            else if (profit_status === "利润缩水" && tacos_status === "TACOS恶化") { action = "立即排查转化断层，缩减泛流量预算" + tacos_warning; priority = "P0 - 紧急止损"; } 
+            else if (profit_status === "利润缩水" && organic_health) { action = "观望防守(自然流盘稳固，排查市场或客单价因素)"; priority = "P3 - 观察防守"; } 
+            else if (profit_status === "利润缩水") { action = "防守利润底线(精准降出价，剥离低转化词)" + tacos_warning; priority = "P1 - 降本增效"; } 
+            else if (profit_status === "利润增长" && tacos_status === "TACOS恶化") { action = "控制点击成本(增收不增效，排查无效曝光)" + tacos_warning; priority = "P2 - 预算调控"; } 
+            else if (profit_status === "利润增长") { action = "适度放量(基本面向好，尝试拓宽长尾词)"; priority = "P2 - 尝试扩量"; } 
+            else { action = "维持现状，定期复盘"; priority = "P4 - 维持现状"; }
 
             const lastRow = week2Data[week2Data.length - 1];
             const resultRow = { ...lastRow };
@@ -1307,9 +1263,11 @@
             resultRow['主图'] = getColRaw(lastRow, ['主图', '图片', '商品图片', 'image', 'img', '主图链接']);
             resultRow['营销负责人'] = owner;
             
-            let tags = globalAsinTags[asin] || { season: '-', quarter: '-', strategy: '-' };
+            let tags = globalAsinTags[asin] || { season: '-', quarter: '-', cat2: '-', cat4: '-', strategy: '-' };
             resultRow['季节标签'] = tags.season;
             resultRow['企划Q季'] = tags.quarter;
+            resultRow['二级类目'] = tags.cat2;
+            resultRow['四级类目'] = tags.cat4;
             resultRow['策略标签'] = tags.strategy;
             
             resultRow['上周日均销量'] = Number(w1_sales_avg.toFixed(2));
@@ -1370,12 +1328,8 @@
             const cvr_rate = w1_cvr_avg > 0 ? cvr_diff / w1_cvr_avg : 0;
 
             function getSignStr(val) { return val > 0 ? '+' : (val < 0 ? '-' : ''); }
-            let signSales = getSignStr(sales_avg_diff);
-            let signCps = getSignStr(cps_diff);
-            let signTacos = getSignStr(tacos_diff);
-            let signMarginPct = getSignStr(margin_pct_diff);
             
-            let dataStr = `【波动】销 ${w2_sales_avg.toFixed(1)} (${signSales}${Math.abs(sales_avg_diff).toFixed(1)}) | 利润率 ${(w2_margin_pct*100).toFixed(1)}% (${signMarginPct}${(Math.abs(margin_pct_diff)*100).toFixed(1)}%) | CPS $${w2_cps.toFixed(2)} (${signCps}$${Math.abs(cps_diff).toFixed(2)}) | TACOS ${(w2_tacos*100).toFixed(1)}% (${signTacos}${(Math.abs(tacos_diff)*100).toFixed(1)}%)`;
+            let dataStr = `【波动】销 ${w2_sales_avg.toFixed(1)} (${getSignStr(sales_avg_diff)}${Math.abs(sales_avg_diff).toFixed(1)}) | 利润率 ${(w2_margin_pct*100).toFixed(1)}% (${getSignStr(margin_pct_diff)}${(Math.abs(margin_pct_diff)*100).toFixed(1)}%) | CPS $${w2_cps.toFixed(2)} (${getSignStr(cps_diff)}$${Math.abs(cps_diff).toFixed(2)}) | TACOS ${(w2_tacos*100).toFixed(1)}% (${getSignStr(tacos_diff)}${(Math.abs(tacos_diff)*100).toFixed(1)}%)`;
             
             if (action.includes("降价测试") || action.includes("涨价测试")) {
                  resultRow['诊断结论'] = `【建议】${action}`;
@@ -1395,40 +1349,106 @@
             resultRow['CVR差额'] = cvr_diff;
             resultRow['CVR环比'] = cvr_rate;
 
+            resultRow['w2_sales_total'] = w2_sales;
+            resultRow['w1_sales_total'] = w1_sales;
+            resultRow['w2_ad_sales'] = w2_ad_sales;
+            resultRow['w1_ad_sales'] = w1_ad_sales;
+            resultRow['w2_spend'] = w2_spend;
+            resultRow['w1_spend'] = w1_spend;
+            resultRow['w2_revenue'] = w2_revenue;
+            resultRow['w1_revenue'] = w1_revenue;
+            resultRow['w2_clicks'] = w2_clicks;
+            resultRow['w2_impressions'] = w2_impressions;
+            resultRow['w2_margin_sum_raw'] = w2_margin_sum; 
+
             resultRow['_drilldown_details'] = drilldownData;
-            analyticalResults.push(resultRow);
+            globalAllAnalyticalResults.push(resultRow);
         }
 
-        if (analyticalResults.length === 0) {
-            container.innerHTML = "<div style='text-align:center; padding: 80px; color: #86868B; font-size:16px; font-weight:500;'>未能匹配到相关数据，请尝试放宽筛选条件</div>";
-            return;
-        }
+        // 构建均线基座
+        buildBaselines(globalAllAnalyticalResults);
+    }
+    
+    function buildBaselines(allResults) {
+        let catStats = {};
+        let seasonStats = {};
+        
+        allResults.forEach(r => {
+            if (r['策略标签'] === '淘汰款') return;
+            
+            let c2 = r['二级类目'];
+            let s = r['季节标签'];
+            
+            let addStats = (statObj) => {
+                statObj.sales += r.w2_sales_total || 0;
+                statObj.spend += r.w2_spend || 0;
+                statObj.rev += r.w2_revenue || 0;
+                statObj.adSales += r.w2_ad_sales || 0;
+                statObj.clicks += r.w2_clicks || 0;
+                statObj.imps += r.w2_impressions || 0;
+                statObj.margin += r.w2_margin_sum_raw || 0;
+                statObj.rawRev += r['退款前收入'] ? r['退款前收入'] * 7 : (r.w2_revenue || 0);
+                statObj.days += 7;
+                statObj.asinCount += 1;
+            };
+            
+            if (c2 && c2 !== '-') {
+                if(!catStats[c2]) catStats[c2] = { sales:0, spend:0, rev:0, adSales:0, clicks:0, imps:0, margin:0, rawRev:0, days:0, asinCount:0 };
+                addStats(catStats[c2]);
+            }
+            
+            if (c2 && c2 !== '-' && s && s !== '-') {
+                let key = c2 + ' - ' + s;
+                if(!seasonStats[key]) seasonStats[key] = { sales:0, spend:0, rev:0, adSales:0, clicks:0, imps:0, margin:0, rawRev:0, days:0, asinCount:0 };
+                addStats(seasonStats[key]);
+            }
+        });
+        
+        const calcAvg = (stat) => ({
+            avgSales: stat.asinCount > 0 ? (stat.sales / stat.asinCount / 7).toFixed(2) : '0',
+            tacos: stat.rev > 0 ? ((stat.spend / stat.rev)*100).toFixed(1) + '%' : '0.0%',
+            cps: stat.sales > 0 ? '$' + (stat.spend / stat.sales).toFixed(2) : '$0.00',
+            cpc: stat.clicks > 0 ? '$' + (stat.spend / stat.clicks).toFixed(2) : '$0.00',
+            ctr: stat.imps > 0 ? ((stat.clicks / stat.imps)*100).toFixed(2) + '%' : '0.00%',
+            cvr: stat.clicks > 0 ? ((stat.adSales / stat.clicks)*100).toFixed(1) + '%' : '0.0%',
+            marginPct: stat.rawRev > 0 ? ((stat.margin / stat.rawRev)*100).toFixed(1) + '%' : '0.0%',
+            adRatio: stat.sales > 0 ? ((stat.adSales / stat.sales)*100).toFixed(1) + '%' : '0.0%',
+            asp: stat.sales > 0 ? '$' + (stat.rev / stat.sales).toFixed(2) : '$0.00'
+        });
+        
+        cat2Baselines = {};
+        for(let c in catStats) cat2Baselines[c] = calcAvg(catStats[c]);
+        
+        seasonBaselines = {};
+        for(let k in seasonStats) seasonBaselines[k] = calcAvg(seasonStats[k]);
+    }
 
-        analyticalResults.sort((a, b) => b['近一周日均销量'] - a['近一周日均销量']);
+    function renderDashboard(dashResults, dashMetrics) {
+        let p0Count = 0;
+        let priorityCounts = {'P0 - 紧急止损': 0, 'P1 - 乘胜追击': 0, 'P1 - 降本增效': 0, 'P2 - 尝试扩量': 0, 'P2 - 预算调控': 0, 'P3 - 观察防守': 0, 'P4 - 维持现状': 0};
+        
+        let totalW2Sales = 0, totalW2AdSales = 0, totalW2Spend = 0, totalW2Revenue = 0;
+        let totalW1Sales = 0, totalW1AdSales = 0, totalW1Spend = 0, totalW1Revenue = 0;
+        
+        dashResults.forEach(r => {
+            let prio = r['优化调整优先级'];
+            if(prio.includes('P0')) p0Count++;
+            if(priorityCounts[prio] !== undefined) priorityCounts[prio]++;
+            
+            totalW2Sales += r.w2_sales_total || 0;
+            totalW2AdSales += r.w2_ad_sales || 0;
+            totalW2Spend += r.w2_spend || 0;
+            totalW2Revenue += r.w2_revenue || 0;
+            
+            totalW1Sales += r.w1_sales_total || 0;
+            totalW1AdSales += r.w1_ad_sales || 0;
+            totalW1Spend += r.w1_spend || 0;
+            totalW1Revenue += r.w1_revenue || 0;
+        });
 
-        globalProcessedData = [];
-        for (const asin in grouped) {
-            let group = grouped[asin];
-            group.sort((a, b) => String(a['广告日期']).localeCompare(String(b['广告日期'])));
-            if (String(group[group.length - 1]['广告日期']).trim() !== maxDate) continue;
-
-            const drilldownData = group.slice(-14);
-            drilldownData.forEach((r, idx) => {
-                if (idx === drilldownData.length - 1) { 
-                    const match = analyticalResults.find(res => res['父asin'] === r['父asin']);
-                    if(match) {
-                        let rowToPush = {...match};
-                        delete rowToPush['_drilldown_details'];
-                        globalProcessedData.push(rowToPush);
-                    }
-                } else {
-                    globalProcessedData.push(r);
-                }
-            });
-        }
-
-        document.getElementById('kpi-asins').innerText = analyticalResults.length.toLocaleString();
+        document.getElementById('kpi-asins').innerText = dashResults.length.toLocaleString();
         document.getElementById('kpi-p0').innerText = p0Count.toLocaleString();
+        
         let organicRatio = totalW2Sales > 0 ? (1 - (totalW2AdSales / totalW2Sales)) * 100 : 0;
         document.getElementById('kpi-organic-ratio').innerText = organicRatio.toFixed(1) + '%';
         
@@ -1436,24 +1456,39 @@
         document.getElementById('kpi-tacos').innerText = tacos.toFixed(1) + '%';
 
         let w1OrganicRatio = totalW1Sales > 0 ? (1 - (totalW1AdSales / totalW1Sales)) : 0;
-        let w1Cps = totalW1Sales > 0 ? (totalW1Spend / totalW1Sales) : 0;
         let w1Tacos = totalW1Revenue > 0 ? (totalW1Spend / totalW1Revenue) : 0;
         
         let diffOrg = (totalW2Sales > 0 ? (1 - (totalW2AdSales / totalW2Sales)) : 0) - w1OrganicRatio;
-        let diffCps = (totalW2Sales > 0 ? (totalW2Spend / totalW2Sales) : 0) - w1Cps;
         let diffTacos = (totalW2Revenue > 0 ? (totalW2Spend / totalW2Revenue) : 0) - w1Tacos;
 
         let global_w2_margin_sum = 0, global_w1_margin_sum = 0;
         let global_w2_raw_rev = 0, global_w1_raw_rev = 0; 
         let global_w2_rev = 0, global_w1_rev = 0;
-        for (const owner in ownerStats) {
-            global_w2_margin_sum += ownerStats[owner].w2_margin;
-            global_w1_margin_sum += ownerStats[owner].w1_margin;
-            global_w2_raw_rev += ownerStats[owner].w2_raw_rev;
-            global_w1_raw_rev += ownerStats[owner].w1_raw_rev;
-            global_w2_rev += ownerStats[owner].w2_rev;
-            global_w1_rev += ownerStats[owner].w1_rev;
+        
+        let ownerStats = {};
+        for(let asin in dashMetrics) {
+            let m = dashMetrics[asin];
+            let owner = m.owner;
+            if(!ownerStats[owner]) ownerStats[owner] = { 
+                w1_margin: 0, w2_margin: 0, w1_rev: 0, w2_rev: 0, w1_raw_rev: 0, w2_raw_rev: 0, 
+                w1_mktg: 0, w2_mktg: 0, w1_shipped: 0, w2_shipped: 0, w1_prod: 0, w2_prod: 0, 
+                w1_fulfill: 0, w2_fulfill: 0, w1_refund: 0, w2_refund: 0 
+            };
+            
+            ownerStats[owner].w2_margin += m.w2_margin; ownerStats[owner].w1_margin += m.w1_margin;
+            ownerStats[owner].w2_rev += m.w2_rev; ownerStats[owner].w1_rev += m.w1_rev;
+            ownerStats[owner].w2_raw_rev += m.w2_raw_rev; ownerStats[owner].w1_raw_rev += m.w1_raw_rev;
+            ownerStats[owner].w2_mktg += m.w2_mktg; ownerStats[owner].w1_mktg += m.w1_mktg;
+            ownerStats[owner].w2_shipped += m.w2_shipped; ownerStats[owner].w1_shipped += m.w1_shipped;
+            ownerStats[owner].w2_prod += m.w2_prod; ownerStats[owner].w1_prod += m.w1_prod;
+            ownerStats[owner].w2_fulfill += m.w2_fulfill; ownerStats[owner].w1_fulfill += m.w1_fulfill;
+            ownerStats[owner].w2_refund += m.w2_refund; ownerStats[owner].w1_refund += m.w1_refund;
+            
+            global_w2_margin_sum += m.w2_margin; global_w1_margin_sum += m.w1_margin;
+            global_w2_rev += m.w2_rev; global_w1_rev += m.w1_rev;
+            global_w2_raw_rev += m.w2_raw_rev; global_w1_raw_rev += m.w1_raw_rev;
         }
+
         let global_w2_margin_pct = global_w2_raw_rev > 0 ? global_w2_margin_sum / global_w2_raw_rev : 0;
         let global_w1_margin_pct = global_w1_raw_rev > 0 ? global_w1_margin_sum / global_w1_raw_rev : 0;
         
@@ -1511,9 +1546,14 @@
         document.getElementById('actions').style.display = 'block';
 
         setTimeout(() => {
-            populateOwnerFilter(analyticalResults);
-            renderCharts(priorityCounts, analyticalResults);
+            populateOwnerFilter(dashResults);
+            renderCharts(priorityCounts, dashResults);
             renderOwnerChart(ownerStats); 
+            
+            updateSalesChart(dashResults);
+            updateCpsChart(dashResults);
+            updateCtrChart(dashResults);
+            updateCvrChart(dashResults);
         }, 50);
     }
 
@@ -1951,7 +1991,7 @@
         const pieData = Object.keys(priorityCounts).map(k => ({name: k, value: priorityCounts[k]})).filter(d => d.value > 0);
         
         chartPriority.setOption({
-            title: { text: '诊断分布视图', textStyle: { fontWeight: 700, fontSize: 16, color: '#111115' }, left: 'center', top: '2%' },
+            title: { text: '大盘诊断分布', textStyle: { fontWeight: 700, fontSize: 16, color: '#111115' }, left: 'center', top: '2%' },
             tooltip: { trigger: 'item', backgroundColor: 'rgba(255,255,255,0.92)', borderColor: '#E5E5EA', textStyle: {color: '#111115'}, padding: 12, borderRadius: 12, extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.08);' },
             series: [{
                 type: 'pie', 
@@ -2015,11 +2055,6 @@
             if (params.name) openModalWithSearch('ALL', params.name); 
         });
 
-        updateSalesChart();
-        updateCpsChart();
-        updateCtrChart();
-        updateCvrChart();
-
         window.addEventListener('resize', triggerResize);
     }
 
@@ -2034,15 +2069,15 @@
     }
     window.sortTable = sortTable;
 
-    function updateSalesChart() {
+    function updateSalesChart(results = globalAllAnalyticalResults) {
         const ownerFilter = document.getElementById('ownerFilterSales').value;
-        let filtered = analyticalResults;
+        let filtered = results;
         if (ownerFilter !== 'ALL') {
-            filtered = analyticalResults.filter(r => (r['营销负责人'] || '未知') === ownerFilter);
+            filtered = results.filter(r => (r['营销负责人'] || '未知') === ownerFilter);
         }
 
         const chartSales = echarts.init(document.getElementById('chart-sales'));
-        let badAsins = [...filtered].filter(a => a['日均销量差额'] < 0 && a['上周日均花费($)'] > 0).sort((a, b) => a['日均销量差额'] - b['日均销量差额']).slice(0, 10);
+        let badAsins = [...filtered].filter(a => a['策略标签'] !== '淘汰款' && a['日均销量差额'] < 0 && a['上周日均花费($)'] > 0).sort((a, b) => a['日均销量差额'] - b['日均销量差额']).slice(0, 10);
         
         chartSales.setOption({
             tooltip: { 
@@ -2075,15 +2110,15 @@
         });
     }
 
-    function updateCtrChart() {
+    function updateCtrChart(results = globalAllAnalyticalResults) {
         const ownerFilter = document.getElementById('ownerFilterCtr').value;
-        let filtered = analyticalResults;
+        let filtered = results;
         if (ownerFilter !== 'ALL') {
-            filtered = analyticalResults.filter(r => (r['营销负责人'] || '未知') === ownerFilter);
+            filtered = results.filter(r => (r['营销负责人'] || '未知') === ownerFilter);
         }
 
         const chartCtr = echarts.init(document.getElementById('chart-ctr'));
-        let badAsins = [...filtered].filter(a => a['CTR差额'] < 0 && a['上周日均花费($)'] > 0).sort((a, b) => a['CTR差额'] - b['CTR差额']).slice(0, 10);
+        let badAsins = [...filtered].filter(a => a['策略标签'] !== '淘汰款' && a['CTR差额'] < 0 && a['上周日均花费($)'] > 0).sort((a, b) => a['CTR差额'] - b['CTR差额']).slice(0, 10);
         
         chartCtr.setOption({
             tooltip: { 
@@ -2127,15 +2162,15 @@
         });
     }
 
-    function updateCpsChart() {
+    function updateCpsChart(results = globalAllAnalyticalResults) {
         const ownerFilter = document.getElementById('ownerFilterCps').value;
-        let filtered = analyticalResults;
+        let filtered = results;
         if (ownerFilter !== 'ALL') {
-            filtered = analyticalResults.filter(r => (r['营销负责人'] || '未知') === ownerFilter);
+            filtered = results.filter(r => (r['营销负责人'] || '未知') === ownerFilter);
         }
 
         const chartCps = echarts.init(document.getElementById('chart-cps'));
-        let badAsins = [...filtered].filter(a => a['CPS差额($)'] > 0 && a['上周日均花费($)'] > 0).sort((a, b) => b['CPS差额($)'] - a['CPS差额($)']).slice(0, 10);
+        let badAsins = [...filtered].filter(a => a['策略标签'] !== '淘汰款' && a['CPS差额($)'] > 0 && a['上周日均花费($)'] > 0).sort((a, b) => b['CPS差额($)'] - a['CPS差额($)']).slice(0, 10);
         
         chartCps.setOption({
             tooltip: { 
@@ -2185,15 +2220,15 @@
         });
     }
 
-    function updateCvrChart() {
+    function updateCvrChart(results = globalAllAnalyticalResults) {
         const ownerFilter = document.getElementById('ownerFilterCvr').value;
-        let filtered = analyticalResults;
+        let filtered = results;
         if (ownerFilter !== 'ALL') {
-            filtered = analyticalResults.filter(r => (r['营销负责人'] || '未知') === ownerFilter);
+            filtered = results.filter(r => (r['营销负责人'] || '未知') === ownerFilter);
         }
 
         const chartCvr = echarts.init(document.getElementById('chart-cvr'));
-        let badAsins = [...filtered].filter(a => a['CVR差额'] < 0 && a['上周日均花费($)'] > 0).sort((a, b) => a['CVR差额'] - b['CVR差额']).slice(0, 10);
+        let badAsins = [...filtered].filter(a => a['策略标签'] !== '淘汰款' && a['CVR差额'] < 0 && a['上周日均花费($)'] > 0).sort((a, b) => a['CVR差额'] - b['CVR差额']).slice(0, 10);
         
         chartCvr.setOption({
             tooltip: { 
@@ -2282,6 +2317,10 @@
             <div style="color:${colorHex}; font-weight:600; font-size:11px;">${diffValStr} <span style="font-size:10px; font-weight:500;">(${rateValStr})</span></div>
         </div>`;
     }
+    
+    function getBaselineHtml(valStr, label) {
+        return `<div style="font-size:10px; color:#0066CC; font-weight:600; margin-top:6px; background:#E5F1FF; padding:3px 6px; border-radius:6px; display:inline-block; line-height:1; white-space:nowrap; border:1px solid #B2D7FF;">${label}: ${valStr}</div>`;
+    }
 
     function openModal(priority) {
         openModalWithSearch(priority, '');
@@ -2297,9 +2336,11 @@
         document.getElementById('priorityFilter').value = priority;
         document.getElementById('modalOwnerFilter').value = 'ALL';
         
-        if(window.multiSelects['modalSeasonFilter']) window.multiSelects['modalSeasonFilter'].reset();
-        if(window.multiSelects['modalQuarterFilter']) window.multiSelects['modalQuarterFilter'].reset();
-        if(window.multiSelects['modalStrategyFilter']) window.multiSelects['modalStrategyFilter'].reset();
+        window.multiSelects['modalSeasonFilter'].setState(window.multiSelects['globalSeasonFilter'].getValues());
+        window.multiSelects['modalQuarterFilter'].setState(window.multiSelects['globalQuarterFilter'].getValues());
+        window.multiSelects['modalStrategyFilter'].setState(window.multiSelects['globalStrategyFilter'].getValues());
+        window.multiSelects['modalCat2Filter'].setState(window.multiSelects['globalCat2Filter'].getValues());
+        window.multiSelects['modalCat4Filter'].setState(window.multiSelects['globalCat4Filter'].getValues());
         
         document.getElementById('searchInput').value = searchStr;
         
@@ -2317,7 +2358,7 @@
         
         clearBtn.style.display = searchTokens.length > 0 ? 'block' : 'none';
         
-        let filteredData = [...analyticalResults];
+        let filteredData = [...globalAllAnalyticalResults];
         
         if (currentModalPriority !== 'ALL') {
             filteredData = filteredData.filter(d => String(d['优化调整优先级']).includes(currentModalPriority));
@@ -2329,16 +2370,14 @@
         const mSeasons = window.multiSelects['modalSeasonFilter'] ? window.multiSelects['modalSeasonFilter'].getValues() : ['ALL'];
         const mQuarters = window.multiSelects['modalQuarterFilter'] ? window.multiSelects['modalQuarterFilter'].getValues() : ['ALL'];
         const mStrategies = window.multiSelects['modalStrategyFilter'] ? window.multiSelects['modalStrategyFilter'].getValues() : ['ALL'];
+        const mCat2s = window.multiSelects['modalCat2Filter'] ? window.multiSelects['modalCat2Filter'].getValues() : ['ALL'];
+        const mCat4s = window.multiSelects['modalCat4Filter'] ? window.multiSelects['modalCat4Filter'].getValues() : ['ALL'];
 
-        if (!mSeasons.includes('ALL')) {
-            filteredData = filteredData.filter(d => mSeasons.some(s => String(d['季节标签'] || '').includes(s)));
-        }
-        if (!mQuarters.includes('ALL')) {
-            filteredData = filteredData.filter(d => mQuarters.some(q => String(d['企划Q季'] || '').includes(q)));
-        }
-        if (!mStrategies.includes('ALL')) {
-            filteredData = filteredData.filter(d => mStrategies.includes(String(d['策略标签'] || '')));
-        }
+        if (!mSeasons.includes('ALL')) filteredData = filteredData.filter(d => mSeasons.some(s => String(d['季节标签'] || '').includes(s)));
+        if (!mQuarters.includes('ALL')) filteredData = filteredData.filter(d => mQuarters.some(q => String(d['企划Q季'] || '').includes(q)));
+        if (!mStrategies.includes('ALL')) filteredData = filteredData.filter(d => mStrategies.includes(String(d['策略标签'] || '')));
+        if (!mCat2s.includes('ALL')) filteredData = filteredData.filter(d => mCat2s.some(c => String(d['二级类目'] || '').includes(c)));
+        if (!mCat4s.includes('ALL')) filteredData = filteredData.filter(d => mCat4s.some(c => String(d['四级类目'] || '').includes(c)));
 
         if (searchTokens.length > 0) {
             filteredData = filteredData.filter(d => {
@@ -2374,7 +2413,7 @@
             }
         });
 
-        const allOwners = Array.from(new Set(analyticalResults.map(r => String(r['营销负责人'] || '未知').toLowerCase())));
+        const allOwners = Array.from(new Set(globalAllAnalyticalResults.map(r => String(r['营销负责人'] || '未知').toLowerCase())));
         const isOwnerSearch = searchTokens.length === 1 && allOwners.includes(searchTokens[0]);
         const isExpanded = searchTokens.length === 1 && !isOwnerSearch;
 
@@ -2439,7 +2478,6 @@
         filteredData.forEach(row => {
             let priorityTag = getTagHtml(row['优化调整优先级']);
             const details = row['_week2_details'] || row['_drilldown_details'];
-            const rowSpan = details ? details.length : 1;
             let conclusionHtml = row['诊断结论'] ? row['诊断结论'].replace(/\n/g, '<br>').replace(/\\n/g, '<br>') : '-';
             
             let imgHtml = row['主图'] 
@@ -2447,7 +2485,8 @@
                 : `<div style="width: 44px; height: 44px; border-radius: 6px; background: #F2F2F7; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#A1A1A6; font-size:10px; border: 1px solid #E5E5EA;">暂无</div>`;
 
             let tagHtmlStr = '';
-            const t1 = row['季节标签']; const t2 = row['企划Q季']; const t3 = row['策略标签'];
+            const t1 = row['季节标签']; const t2 = row['企划Q季']; const t3 = row['策略标签']; const tc2 = row['二级类目'];
+            if(tc2 && tc2 !== '-') tagHtmlStr += `<span style="background:#F2F2F7; color:#6E6E73; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap;">${tc2}</span>`;
             if(t1 && t1 !== '-') tagHtmlStr += `<span style="background:#F2F2F7; color:#6E6E73; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap;">${t1}</span>`;
             if(t2 && t2 !== '-') tagHtmlStr += `<span style="background:#F2F2F7; color:#6E6E73; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap;">${t2}</span>`;
             if(t3 && t3 !== '-') {
@@ -2459,21 +2498,61 @@
                 tagHtmlStr += `<span style="background:${sBg}; color:${sCol}; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap; border: 1px solid ${sBrd};">${t3}</span>`;
             }
 
-            let salesHtml = `<div class="main-val">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, '');
+            let c2BaseHtml = ''; let sBaseHtml = '';
+            if (isExpanded) {
+                let c2Baseline = (tc2 && tc2 !== '-') ? cat2Baselines[tc2] : null;
+                let seasonKey = tc2 + ' - ' + t1;
+                let sBaseline = (tc2 && tc2 !== '-' && t1 && t1 !== '-') ? seasonBaselines[seasonKey] : null;
+                
+                if (c2Baseline) {
+                    c2BaseHtml = {
+                        sales: getBaselineHtml(c2Baseline.avgSales, '类目均线'),
+                        marginPct: getBaselineHtml(c2Baseline.marginPct, '类目均线'),
+                        adRatio: getBaselineHtml(c2Baseline.adRatio, '类目均线'),
+                        asp: getBaselineHtml(c2Baseline.asp, '类目均线'),
+                        cps: getBaselineHtml(c2Baseline.cps, '类目均线'),
+                        tacos: getBaselineHtml(c2Baseline.tacos, '类目均线'),
+                        cpc: getBaselineHtml(c2Baseline.cpc, '类目均线'),
+                        ctr: getBaselineHtml(c2Baseline.ctr, '类目均线'),
+                        cvr: getBaselineHtml(c2Baseline.cvr, '类目均线')
+                    };
+                }
+                if (sBaseline) {
+                    sBaseHtml = {
+                        sales: getBaselineHtml(sBaseline.avgSales, '季节均线'),
+                        marginPct: getBaselineHtml(sBaseline.marginPct, '季节均线'),
+                        adRatio: getBaselineHtml(sBaseline.adRatio, '季节均线'),
+                        asp: getBaselineHtml(sBaseline.asp, '季节均线'),
+                        cps: getBaselineHtml(sBaseline.cps, '季节均线'),
+                        tacos: getBaselineHtml(sBaseline.tacos, '季节均线'),
+                        cpc: getBaselineHtml(sBaseline.cpc, '季节均线'),
+                        ctr: getBaselineHtml(sBaseline.ctr, '季节均线'),
+                        cvr: getBaselineHtml(sBaseline.cvr, '季节均线')
+                    };
+                }
+            }
+
+            let appendBase = (metric) => {
+                let str = '';
+                if(c2BaseHtml && c2BaseHtml[metric]) str += `<br>${c2BaseHtml[metric]}`;
+                if(sBaseHtml && sBaseHtml[metric]) str += `<br>${sBaseHtml[metric]}`;
+                return str;
+            };
+
+            let salesHtml = `<div class="main-val">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, '') + appendBase('sales');
             let spendHtml = `<div class="main-val">$${row['近一周日均花费($)']}</div>` + getSubtextHtml(row['上周日均花费($)'], row['日均花费差额($)'], row['花费环比'], true, false, 'USD');
-            
             let marginHtml = `<div class="main-val">¥${Math.round(row['近一周边际利润额(¥)']).toLocaleString()}</div>` + getSubtextHtml(row['上周边际利润额(¥)'], row['利润额差额(¥)'], row['利润额环比'], false, false, 'RMB');
-            
-            let marginPctHtml = `<div class="main-val">${(row['近一周边际利润率']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周边际利润率'], row['利润率差额'], row['利润率环比'], false, true, '');
-            let adRatioHtml = `<div class="main-val">${(row['近一周广告单占比']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周广告单占比'], row['广告单占比差额'], row['广告单占比环比'], true, true, '');
-            let aspHtml = `<div class="main-val">$${row['近一周ASP($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周ASP($)'], row['ASP差额($)'], row['ASP环比'], false, false, 'USD');
-            let cpsHtml = `<div class="main-val">$${row['近一周CPS($)']}</div>` + getSubtextHtml(row['上周CPS($)'], row['CPS差额($)'], row['CPS环比'], true, false, 'USD');
-            let tacosHtml = `<div class="main-val">${(row['近一周TACOS']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, '');
-            let cpcHtml = `<div class="main-val">$${row['近一周CPC($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周CPC($)'], row['CPC差额($)'], row['CPC环比'], true, false, 'USD');
-            let ctrHtml = `<div class="main-val">${(row['近一周CTR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CTR'], row['CTR差额'], row['CTR环比'], false, true, '');
-            let cvrHtml = `<div class="main-val">${(row['近一周CVR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CVR'], row['CVR差额'], row['CVR环比'], false, true, '');
+            let marginPctHtml = `<div class="main-val">${(row['近一周边际利润率']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周边际利润率'], row['利润率差额'], row['利润率环比'], false, true, '') + appendBase('marginPct');
+            let adRatioHtml = `<div class="main-val">${(row['近一周广告单占比']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周广告单占比'], row['广告单占比差额'], row['广告单占比环比'], true, true, '') + appendBase('adRatio');
+            let aspHtml = `<div class="main-val">$${row['近一周ASP($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周ASP($)'], row['ASP差额($)'], row['ASP环比'], false, false, 'USD') + appendBase('asp');
+            let cpsHtml = `<div class="main-val">$${row['近一周CPS($)']}</div>` + getSubtextHtml(row['上周CPS($)'], row['CPS差额($)'], row['CPS环比'], true, false, 'USD') + appendBase('cps');
+            let tacosHtml = `<div class="main-val">${(row['近一周TACOS']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, '') + appendBase('tacos');
+            let cpcHtml = `<div class="main-val">$${row['近一周CPC($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周CPC($)'], row['CPC差额($)'], row['CPC环比'], true, false, 'USD') + appendBase('cpc');
+            let ctrHtml = `<div class="main-val">${(row['近一周CTR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CTR'], row['CTR差额'], row['CTR环比'], false, true, '') + appendBase('ctr');
+            let cvrHtml = `<div class="main-val">${(row['近一周CVR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CVR'], row['CVR差额'], row['CVR环比'], false, true, '') + appendBase('cvr');
 
             if(isExpanded && details) {
+                const rowSpan = details.length;
                 details.forEach((dayRow, idx) => {
                     html += `<tr>`;
                     html += `<td class="daily-cell">${dayRow['广告日期']}</td>`;
@@ -2529,7 +2608,7 @@
                     html += `</tr>`;
                 });
             } else {
-                html += `<tr style="cursor: pointer;" title="点击当前行可直接下钻查看 14 日流水" onclick="drillDown('${row['父asin']}')">
+                html += `<tr style="cursor: pointer;" title="点击当前行可直接下钻查看 14 日流水及横向比较均线" onclick="drillDown('${row['父asin']}')">
                     <td class="product-cell">
                         <div style="display:flex; align-items:center; gap:8px; text-align:left; justify-content:left;">
                             ${imgHtml}
@@ -2569,15 +2648,15 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_53() {
-        if(globalProcessedData.length === 0) return alert('没有可导出的数据');
+    async function exportToExcelV7_56() {
+        if(globalAllAnalyticalResults.length === 0) return alert('没有可导出的数据');
         
         try {
             const wb = new ExcelJS.Workbook();
             const ws = wb.addWorksheet('全矩阵洞察报表');
 
             const newCols = [
-                '主图', '季节标签', '企划Q季', '策略标签',
+                '主图', '二级类目', '四级类目', '季节标签', '企划Q季', '策略标签',
                 '上周日均销量', '近一周日均销量', '日均销量差额', '销量环比',
                 '上周边际利润额(¥)', '近一周边际利润额(¥)', '利润额差额(¥)', '利润额环比',
                 '上周边际利润率', '近一周边际利润率', '利润率差额', '利润率环比',
@@ -2604,8 +2683,10 @@
             });
 
             ws.views = [{ state: 'frozen', xSplit: 3, ySplit: 1 }];
+            
+            const exportData = globalAllAnalyticalResults;
 
-            globalProcessedData.forEach((rowData, index) => {
+            exportData.forEach((rowData, index) => {
                 const rowValues = allCols.map(colName => {
                     if (colName === '诊断结论') return rowData['导出诊断结论'] || '';
                     return rowData[colName] !== undefined ? rowData[colName] : '';
@@ -2683,7 +2764,7 @@
 
             ws.autoFilter = {
                 from: { row: 1, column: 1 },
-                to: { row: globalProcessedData.length + 1, column: allCols.length }
+                to: { row: exportData.length + 1, column: allCols.length }
             };
 
             ws.columns.forEach((col, i) => {
@@ -2709,7 +2790,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.53_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.56_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
@@ -2760,25 +2841,33 @@
             const workbook = XLSX.read(data, {type: 'array'});
             
             const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            rawData1 = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});
+            let rawData1 = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});
             
             if(rawData1.length > 0) {
                 globalOriginalColumns = Object.keys(rawData1[0]);
                 
-                rawData2 = [];
+                let rawData2 = [];
                 if (workbook.SheetNames.length > 1) {
                     const secondSheet = workbook.Sheets[workbook.SheetNames[1]];
                     rawData2 = XLSX.utils.sheet_to_json(secondSheet, {defval: ""});
                 }
                 
-                rawData3 = [];
+                let rawData3 = [];
                 if (workbook.SheetNames.length > 2) {
                     const thirdSheet = workbook.Sheets[workbook.SheetNames[2]];
                     rawData3 = XLSX.utils.sheet_to_json(thirdSheet, {defval: ""});
                 }
                 
-                buildGlobalTags(rawData3);
+                let rawData4 = [];
+                if (workbook.SheetNames.length > 3) {
+                    const fourthSheet = workbook.Sheets[workbook.SheetNames[3]];
+                    rawData4 = XLSX.utils.sheet_to_json(fourthSheet, {defval: ""});
+                }
+                
+                buildGlobalTags(rawData3, rawData1, rawData4);
                 populateGlobalFilters();
+                
+                processAllDataOnce(rawData1, rawData2);
                 applyGlobalFilters();
                 
                 document.getElementById('global-filters-bar').style.display = 'flex';
