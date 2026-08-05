@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.56</title>
+    <title>父ASIN粒度广告分析看板 V7.59</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -63,17 +63,17 @@
         #loading { display: none; color: var(--accent); font-weight: 600; text-align: center; margin: 40px 0; font-size: 16px; letter-spacing: 0.02em; }
 
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.3); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: opacity 0.3s; }
-        .modal-content { background-color: var(--card-bg); margin: 1.5% auto; padding: 0; border-radius: 24px; width: 98%; max-width: 1760px; height: 95vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.2); }
-        .modal-header { padding: 20px 32px; border-bottom: 1px solid #E5E5EA; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.92); z-index: 10; flex-wrap: wrap; gap: 12px; }
-        .modal-title-group { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; width: 100%; }
-        .modal-title { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+        .modal-content { background-color: var(--card-bg); margin: 1.5% auto; padding: 0; border-radius: 24px; width: 99%; max-width: 1800px; height: 95vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.2); }
+        .modal-header { padding: 16px 24px; border-bottom: 1px solid #E5E5EA; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.92); z-index: 10; flex-wrap: wrap; gap: 12px; }
+        .modal-title-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%; }
+        .modal-title { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
         
-        .filter-select { border: 1px solid #E5E5EA; border-radius: 12px; padding: 6px 28px 6px 12px; font-size: 13px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 600; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2210%22%20viewBox%3D%220%200%2014%2010%22%3E%3Cpath%20fill%3D%22%2386868B%22%20d%3D%22M7%2010L0%203l1.4-1.4L7%207.2l5.6-5.6L14%203z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 10px center; background-size: 10px auto; cursor: pointer; }
+        .filter-select { border: 1px solid #E5E5EA; border-radius: 12px; padding: 6px 24px 6px 10px; font-size: 12px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 600; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2210%22%20viewBox%3D%220%200%2014%2010%22%3E%3Cpath%20fill%3D%22%2386868B%22%20d%3D%22M7%2010L0%203l1.4-1.4L7%207.2l5.6-5.6L14%203z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 8px center; background-size: 10px auto; cursor: pointer; }
         .filter-select:focus { border-color: var(--accent); background: #FFFFFF; box-shadow: 0 0 0 4px rgba(0,102,204,0.15); }
         .filter-select:hover { border-color: #D1D1D6; }
         
         .multi-select-container { position: relative; display: inline-block; vertical-align: middle; }
-        .multi-select-header { border: 1px solid #E5E5EA; border-radius: 12px; padding: 6px 28px 6px 12px; font-size: 13px; background: #F5F5F7; color: var(--text-main); font-weight: 600; cursor: pointer; display:flex; justify-content: space-between; align-items: center; white-space: nowrap; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2210%22%20viewBox%3D%220%200%2014%2010%22%3E%3Cpath%20fill%3D%22%2386868B%22%20d%3D%22M7%2010L0%203l1.4-1.4L7%207.2l5.6-5.6L14%203z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 10px center; background-size: 10px auto; min-width: 100px; max-width: 140px; user-select: none; }
+        .multi-select-header { border: 1px solid #E5E5EA; border-radius: 12px; padding: 6px 24px 6px 10px; font-size: 12px; background: #F5F5F7; color: var(--text-main); font-weight: 600; cursor: pointer; display:flex; justify-content: space-between; align-items: center; white-space: nowrap; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2210%22%20viewBox%3D%220%200%2014%2010%22%3E%3Cpath%20fill%3D%22%2386868B%22%20d%3D%22M7%2010L0%203l1.4-1.4L7%207.2l5.6-5.6L14%203z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 8px center; background-size: 10px auto; min-width: 90px; max-width: 130px; user-select: none; }
         .multi-select-header:hover { border-color: #D1D1D6; }
         .multi-select-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .multi-select-dropdown { display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 2000; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid #E5E5EA; border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.15); max-height: 300px; overflow-y: auto; min-width: 160px; padding: 6px 0; }
@@ -84,48 +84,48 @@
         .multi-select-item input { cursor: pointer; margin: 0; width: 14px; height: 14px; accent-color: var(--accent); }
 
         .search-box { position: relative; }
-        .search-input { border: 1px solid #E5E5EA; border-radius: 14px; padding: 8px 16px 8px 36px; font-size: 13px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); width: 180px; font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 500; }
-        .search-input:focus { border-color: var(--accent); background: #FFFFFF; box-shadow: 0 0 0 4px rgba(0,102,204,0.15); width: 240px; }
+        .search-input { border: 1px solid #E5E5EA; border-radius: 14px; padding: 6px 16px 6px 32px; font-size: 12px; outline: none; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); width: 160px; font-family: var(--font-family); background: #F5F5F7; color: var(--text-main); font-weight: 500; }
+        .search-input:focus { border-color: var(--accent); background: #FFFFFF; box-shadow: 0 0 0 4px rgba(0,102,204,0.15); width: 220px; }
         .search-input::placeholder { color: #A1A1A6; font-weight: 400; }
-        .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #A1A1A6; font-size: 14px; }
-        .clear-search { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #A1A1A6; font-size: 18px; cursor: pointer; display: none; line-height: 1; }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #A1A1A6; font-size: 13px; }
+        .clear-search { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #A1A1A6; font-size: 16px; cursor: pointer; display: none; line-height: 1; }
         .clear-search:hover { color: var(--text-main); }
         
         .close-btn { color: #A1A1A6; font-size: 32px; font-weight: 300; cursor: pointer; line-height: 1; padding: 0 8px; border-radius: 50%; transition: all 0.2s; }
         .close-btn:hover { color: var(--text-main); background: #F2F2F7; }
         
-        .adv-filters-panel { display: none; padding: 12px 32px; background: #F9FAFB; border-bottom: 1px solid #E5E5EA; gap: 12px; align-items: center; flex-wrap: wrap; width: 100%; box-sizing: border-box; }
-        .btn-adv-toggle { background: #FFFFFF; border: 1px solid #D1D1D6; color: var(--text-main); padding: 8px 16px; border-radius: 14px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .adv-filters-panel { display: none; padding: 12px 24px; background: #F9FAFB; border-bottom: 1px solid #E5E5EA; gap: 12px; align-items: center; flex-wrap: wrap; width: 100%; box-sizing: border-box; }
+        .btn-adv-toggle { background: #FFFFFF; border: 1px solid #D1D1D6; color: var(--text-main); padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
         .btn-adv-toggle:hover { border-color: var(--accent); color: var(--accent); background: #F0F8FF; }
 
         .table-wrapper { flex: 1; overflow-y: auto; overflow-x: auto; padding: 0; background: #FFFFFF; }
         .data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; margin: 0; table-layout: auto; }
-        .data-table th, .data-table td { padding: 8px 3px; text-align: center; border-bottom: 1px solid #F2F2F7; white-space: nowrap; vertical-align: middle; transition: background 0.2s; } 
-        .data-table th { color: var(--text-muted); font-weight: 600; font-size: 11px; padding: 10px 3px; position: sticky; top: 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 5; box-shadow: 0 1px 0 #E5E5EA; letter-spacing: 0.01em; }
+        .data-table th, .data-table td { padding: 6px 2px; text-align: center; border-bottom: 1px solid #F2F2F7; white-space: nowrap; vertical-align: middle; transition: background 0.2s; } 
+        .data-table th { color: var(--text-muted); font-weight: 600; font-size: 11px; padding: 8px 2px; position: sticky; top: 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 5; box-shadow: 0 1px 0 #E5E5EA; letter-spacing: -0.02em; }
         .data-table tr:hover td { background-color: #F9FAFB; }
         
         .sortable-th { cursor: pointer; user-select: none; transition: background 0.2s, color 0.2s; }
         .sortable-th:hover { background-color: #F2F2F7 !important; color: var(--text-main) !important; }
 
-        .main-val { font-weight: 700; font-size: 14px; color: var(--text-main); line-height: 1.1; }
+        .main-val { font-weight: 700; font-size: 13px; color: var(--text-main); line-height: 1.1; }
         
         .product-cell {
             white-space: normal !important; 
-            min-width: 150px; 
-            max-width: 180px; 
+            min-width: 140px; 
+            max-width: 170px; 
             text-align: left !important; 
-            padding-left: 10px !important;
+            padding-left: 8px !important;
         }
 
         .wrap-cell { 
             white-space: normal !important; 
-            min-width: 160px; 
-            max-width: 240px; 
+            min-width: 120px; 
+            max-width: 160px; 
             text-align: left !important; 
-            line-height: 1.6; 
+            line-height: 1.4; 
             color: var(--text-main); 
-            font-size: 13px; 
-            padding: 16px 14px !important; 
+            font-size: 11px; 
+            padding: 8px 8px !important; 
             word-wrap: break-word; 
             
             position: sticky;
@@ -139,8 +139,8 @@
             position: absolute;
             top: 0;
             bottom: 0;
-            left: -8px;
-            width: 8px;
+            left: -6px;
+            width: 6px;
             background: linear-gradient(to left, rgba(0,0,0,0.05), transparent);
             pointer-events: none;
         }
@@ -159,14 +159,14 @@
         .daily-cell { font-size: 11px; color: #86868B; font-variant-numeric: tabular-nums; }
         
         .priority-cell { white-space: nowrap; padding: 0 2px !important; }
-        .tag { padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; display: inline-block; letter-spacing: 0.02em; border: 1px solid transparent; }
+        .tag { padding: 4px 6px; border-radius: 6px; font-weight: 600; font-size: 10px; display: inline-block; letter-spacing: 0.02em; border: 1px solid transparent; }
         .tag-p0 { background-color: #FFECEB; color: #FF3B30; border-color: #FFD1CF; }
         .tag-p1 { background-color: #FFF4E5; color: #FF9500; border-color: #FFE0B2; }
         .tag-p2 { background-color: #E5F1FF; color: #007AFF; border-color: #B2D7FF; }
         .tag-p3 { background-color: #EBF9EE; color: #34C759; border-color: #C3EBCF; }
         .tag-p4 { background-color: #F2F2F7; color: #8E8E93; border-color: #E5E5EA; }
         
-        .sub-metric { font-size:11px; color:var(--text-muted); margin-top:2px; white-space:nowrap; line-height:1.3; font-weight: 500; font-variant-numeric: tabular-nums; }
+        .sub-metric { font-size:10px; color:var(--text-muted); margin-top:2px; white-space:nowrap; line-height:1.2; font-weight: 500; font-variant-numeric: tabular-nums; }
         
         .back-btn { background: #F2F2F7; border: none; padding: 6px 16px; border-radius: 14px; cursor: pointer; font-size: 13px; color: var(--text-main); font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px; }
         .back-btn:hover { background: #E5E5EA; }
@@ -176,7 +176,7 @@
         .img-close-btn { position: absolute; top: 30px; right: 40px; color: #FFFFFF; font-size: 40px; font-weight: 300; cursor: pointer; transition: all 0.2s; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
         .img-close-btn:hover { color: #E5E5EA; transform: scale(1.1); }
         
-        .missing-data { color: #D1D1D6; font-weight: normal; font-size: 12px; }
+        .missing-data { color: #D1D1D6; font-weight: normal; font-size: 11px; }
     </style>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -254,7 +254,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_56()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_59()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -280,7 +280,7 @@
         <div class="chart-container">
             <div class="chart-header">
                 <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">日均销量骤降 TOP 10 (已剔除淘汰款)</span></div>
-                <div><select id="ownerFilterSales" class="filter-select" style="padding: 6px 28px 6px 12px; font-size: 12px;" onchange="updateSalesChart()"><option value="ALL">全员</option></select></div>
+                <div><select id="ownerFilterSales" class="filter-select" style="padding: 6px 24px 6px 10px; font-size: 12px;" onchange="updateSalesChart()"><option value="ALL">全员</option></select></div>
             </div>
             <div class="chart-wrapper"><div id="chart-sales" class="absolute-chart"></div></div>
         </div>
@@ -290,7 +290,7 @@
         <div class="chart-container">
             <div class="chart-header">
                 <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">成本恶化 TOP 10 (单均获客成本抬升 - 已剔除淘汰款)</span></div>
-                <div><select id="ownerFilterCps" class="filter-select" style="padding: 6px 28px 6px 12px; font-size: 12px;" onchange="updateCpsChart()"><option value="ALL">全员</option></select></div>
+                <div><select id="ownerFilterCps" class="filter-select" style="padding: 6px 24px 6px 10px; font-size: 12px;" onchange="updateCpsChart()"><option value="ALL">全员</option></select></div>
             </div>
             <div class="chart-wrapper"><div id="chart-cps" class="absolute-chart"></div></div>
         </div>
@@ -300,7 +300,7 @@
         <div class="chart-container">
             <div class="chart-header">
                 <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">点击率 (CTR) 骤降 TOP 10 (已剔除淘汰款)</span></div>
-                <div><select id="ownerFilterCtr" class="filter-select" style="padding: 6px 28px 6px 12px; font-size: 12px;" onchange="updateCtrChart()"><option value="ALL">全员</option></select></div>
+                <div><select id="ownerFilterCtr" class="filter-select" style="padding: 6px 24px 6px 10px; font-size: 12px;" onchange="updateCtrChart()"><option value="ALL">全员</option></select></div>
             </div>
             <div class="chart-wrapper"><div id="chart-ctr" class="absolute-chart"></div></div>
         </div>
@@ -310,7 +310,7 @@
         <div class="chart-container">
             <div class="chart-header">
                 <div><span style="font-weight: 700; font-size: 16px; color: var(--text-main);">转化率 (CVR) 骤降 TOP 10 (已剔除淘汰款)</span></div>
-                <div><select id="ownerFilterCvr" class="filter-select" style="padding: 6px 28px 6px 12px; font-size: 12px;" onchange="updateCvrChart()"><option value="ALL">全员</option></select></div>
+                <div><select id="ownerFilterCvr" class="filter-select" style="padding: 6px 24px 6px 10px; font-size: 12px;" onchange="updateCvrChart()"><option value="ALL">全员</option></select></div>
             </div>
             <div class="chart-wrapper"><div id="chart-cvr" class="absolute-chart"></div></div>
         </div>
@@ -321,8 +321,8 @@
     <div class="modal-content">
         <div class="modal-header">
             <div class="modal-title-group">
-                <div style="display:flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%;">
-                    <h2 id="modal-title" class="modal-title" style="margin-right: 8px;">深度洞察中心 <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">(独立跨品类查询视图)</span></h2>
+                <div style="display:flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%;">
+                    <h2 id="modal-title" class="modal-title" style="margin-right: 4px;">深度洞察中心</h2>
                     <select id="priorityFilter" class="filter-select" onchange="changeModalFilters()">
                         <option value="ALL">全部判定级别</option>
                         <option value="P0">P0 级 (紧急止损)</option>
@@ -335,7 +335,7 @@
                         <option value="ALL">全部负责人</option>
                     </select>
                     
-                    <div style="width: 1px; height: 20px; background: #D1D1D6; margin: 0 4px;"></div>
+                    <div style="width: 1px; height: 20px; background: #D1D1D6; margin: 0 2px;"></div>
                     
                     <div id="modalCat2Filter"></div>
                     <div id="modalCat4Filter"></div>
@@ -343,7 +343,7 @@
                     <div id="modalQuarterFilter"></div>
                     <div id="modalStrategyFilter"></div>
 
-                    <div style="width: 1px; height: 20px; background: #D1D1D6; margin: 0 4px;"></div>
+                    <div style="width: 1px; height: 20px; background: #D1D1D6; margin: 0 2px;"></div>
 
                     <div class="search-box">
                         <span class="search-icon">🔍</span>
@@ -359,11 +359,11 @@
                     </button>
                 </div>
             </div>
-            <span class="close-btn" style="position: absolute; right: 24px; top: 18px;" onclick="closeModal()">&times;</span>
+            <span class="close-btn" style="position: absolute; right: 20px; top: 14px;" onclick="closeModal()">&times;</span>
         </div>
         
         <div id="adv-filters-panel" class="adv-filters-panel">
-            <select id="adv-col" class="filter-select" style="padding: 6px 24px 6px 12px; font-size:13px; background-color: #FFFFFF;">
+            <select id="adv-col" class="filter-select" style="padding: 6px 24px 6px 10px; font-size:12px; background-color: #FFFFFF;">
                 <optgroup label="—— 绝对数值指标 ——">
                     <option value="近一周日均销量">日均销</option>
                     <option value="近一周边际利润额(¥)">利润额 (¥)</option>
@@ -390,13 +390,13 @@
                     <option value="ASP环比">ASP环比 (%)</option>
                 </optgroup>
             </select>
-            <select id="adv-op" class="filter-select" style="padding: 6px 24px 6px 12px; font-size:13px; background-color: #FFFFFF;">
+            <select id="adv-op" class="filter-select" style="padding: 6px 24px 6px 10px; font-size:12px; background-color: #FFFFFF;">
                 <option value=">">大于</option>
                 <option value="<">小于</option>
                 <option value="=">等于</option>
             </select>
             <input type="text" id="adv-val" class="search-input" placeholder="输入比较数值..." style="width: 140px; padding: 6px 12px; background-color: #FFFFFF;" onkeypress="if(event.key === 'Enter') addAdvFilter()">
-            <button class="btn-export" style="padding: 6px 16px; font-size: 13px;" onclick="addAdvFilter()">添加/更新条件</button>
+            <button class="btn-export" style="padding: 6px 16px; font-size: 12px;" onclick="addAdvFilter()">添加/更新条件</button>
             <div style="width: 1px; height: 24px; background: #D1D1D6; margin: 0 8px;"></div>
             <div id="active-filters-container" style="display:flex; gap: 8px; flex-wrap: wrap; flex: 1;"></div>
         </div>
@@ -438,8 +438,8 @@
     
     let globalOriginalColumns = [];
     
-    let cat2Baselines = {};
-    let seasonBaselines = {};
+    let catBaselines = {};
+    let quarterBaselines = {}; // Changed from season to quarter
 
     let currentModalPriority = 'ALL';
     let currentModalOwner = 'ALL';
@@ -914,7 +914,6 @@
             });
         }
 
-        // 统一贯通类目信息
         for (let asin in asinToSku) {
             if (!globalAsinTags[asin]) {
                 globalAsinTags[asin] = { season: new Set(), quarter: new Set(), cat2: new Set(), cat4: new Set(), strategyWeight: -1, strategy: '-' };
@@ -1371,13 +1370,17 @@
     
     function buildBaselines(allResults) {
         let catStats = {};
-        let seasonStats = {};
+        let quarterStats = {};
         
         allResults.forEach(r => {
             if (r['策略标签'] === '淘汰款') return;
             
             let c2 = r['二级类目'];
-            let s = r['季节标签'];
+            let c4 = r['四级类目'];
+            let q = r['企划Q季'];
+            
+            let catKey = (c2 && c2 !== '-' && c4 && c4 !== '-') ? (c2 + ' - ' + c4) : null;
+            let quarterKey = (catKey && q && q !== '-') ? (catKey + ' - ' + q) : null;
             
             let addStats = (statObj) => {
                 statObj.sales += r.w2_sales_total || 0;
@@ -1392,20 +1395,21 @@
                 statObj.asinCount += 1;
             };
             
-            if (c2 && c2 !== '-') {
-                if(!catStats[c2]) catStats[c2] = { sales:0, spend:0, rev:0, adSales:0, clicks:0, imps:0, margin:0, rawRev:0, days:0, asinCount:0 };
-                addStats(catStats[c2]);
+            if (catKey) {
+                if(!catStats[catKey]) catStats[catKey] = { sales:0, spend:0, rev:0, adSales:0, clicks:0, imps:0, margin:0, rawRev:0, days:0, asinCount:0 };
+                addStats(catStats[catKey]);
             }
             
-            if (c2 && c2 !== '-' && s && s !== '-') {
-                let key = c2 + ' - ' + s;
-                if(!seasonStats[key]) seasonStats[key] = { sales:0, spend:0, rev:0, adSales:0, clicks:0, imps:0, margin:0, rawRev:0, days:0, asinCount:0 };
-                addStats(seasonStats[key]);
+            if (quarterKey) {
+                if(!quarterStats[quarterKey]) quarterStats[quarterKey] = { sales:0, spend:0, rev:0, adSales:0, clicks:0, imps:0, margin:0, rawRev:0, days:0, asinCount:0 };
+                addStats(quarterStats[quarterKey]);
             }
         });
         
         const calcAvg = (stat) => ({
             avgSales: stat.asinCount > 0 ? (stat.sales / stat.asinCount / 7).toFixed(2) : '0',
+            avgSpend: stat.asinCount > 0 ? '$' + (stat.spend / stat.asinCount / 7).toFixed(2) : '$0.00',
+            avgMargin: stat.asinCount > 0 ? '¥' + Math.round(stat.margin / stat.asinCount).toLocaleString() : '¥0',
             tacos: stat.rev > 0 ? ((stat.spend / stat.rev)*100).toFixed(1) + '%' : '0.0%',
             cps: stat.sales > 0 ? '$' + (stat.spend / stat.sales).toFixed(2) : '$0.00',
             cpc: stat.clicks > 0 ? '$' + (stat.spend / stat.clicks).toFixed(2) : '$0.00',
@@ -1416,11 +1420,11 @@
             asp: stat.sales > 0 ? '$' + (stat.rev / stat.sales).toFixed(2) : '$0.00'
         });
         
-        cat2Baselines = {};
-        for(let c in catStats) cat2Baselines[c] = calcAvg(catStats[c]);
+        catBaselines = {};
+        for(let c in catStats) catBaselines[c] = calcAvg(catStats[c]);
         
-        seasonBaselines = {};
-        for(let k in seasonStats) seasonBaselines[k] = calcAvg(seasonStats[k]);
+        quarterBaselines = {};
+        for(let k in quarterStats) quarterBaselines[k] = calcAvg(quarterStats[k]);
     }
 
     function renderDashboard(dashResults, dashMetrics) {
@@ -2317,10 +2321,6 @@
             <div style="color:${colorHex}; font-weight:600; font-size:11px;">${diffValStr} <span style="font-size:10px; font-weight:500;">(${rateValStr})</span></div>
         </div>`;
     }
-    
-    function getBaselineHtml(valStr, label) {
-        return `<div style="font-size:10px; color:#0066CC; font-weight:600; margin-top:6px; background:#E5F1FF; padding:3px 6px; border-radius:6px; display:inline-block; line-height:1; white-space:nowrap; border:1px solid #B2D7FF;">${label}: ${valStr}</div>`;
-    }
 
     function openModal(priority) {
         openModalWithSearch(priority, '');
@@ -2425,7 +2425,7 @@
         }
 
         if(isExpanded) {
-            html += `<div style="padding: 16px 14px 6px 14px; display:flex; justify-content:space-between; align-items:center;">
+            html += `<div style="padding: 12px 14px 6px 14px; display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-size:15px; font-weight:600; color: var(--text-main);">🔍 下钻详情视图: <span style="color:var(--accent);">${searchVal.toUpperCase()}</span></span>
                         <button class="back-btn" onclick="goBack()">&larr; 返回上一层</button>
                      </div>`;
@@ -2440,7 +2440,7 @@
             '日均花费($)': '近一周日均花费($)',
             '利润额(¥)': '近一周边际利润额(¥)',
             '利润率': '近一周边际利润率',
-            '广告单占比': '近一周广告单占比',
+            '广告单%': '近一周广告单占比',
             'ASP($)': '近一周ASP($)',
             'CPS($)': '近一周CPS($)',
             'TACOS': '近一周TACOS',
@@ -2450,8 +2450,8 @@
         };
 
         const cols = isExpanded ? 
-            ['日期', '产品信息', '判定', '当日销', '当日花费($)', '当日利润(¥)', '当日利润率', '当日TACOS', '首页占比', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'] : 
-            ['产品信息', '判定', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单占比', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'];
+            ['日期', '产品信息', '判定', '当日销', '花费($)', '利润(¥)', '利润率', 'TACOS', '首页%', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单%', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'] : 
+            ['产品信息', '判定', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单%', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'];
 
         cols.forEach(col => {
             if(colMap[col]) {
@@ -2463,7 +2463,7 @@
                 if(col === '产品信息') thClass += " product-cell";
                 
                 html += `<th class="${thClass}" onclick="sortTable('${colMap[col]}')" title="点击按此列排序">
-                    <div style="display:flex; align-items:center; justify-content:center; gap:4px;">
+                    <div style="display:flex; align-items:center; justify-content:center; gap:2px;">
                         ${col} <span style="font-size:10px; color:${iconColor}; font-weight:${iconWeight};">${sortIcon}</span>
                     </div>
                 </th>`;
@@ -2485,71 +2485,67 @@
                 : `<div style="width: 44px; height: 44px; border-radius: 6px; background: #F2F2F7; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#A1A1A6; font-size:10px; border: 1px solid #E5E5EA;">暂无</div>`;
 
             let tagHtmlStr = '';
-            const t1 = row['季节标签']; const t2 = row['企划Q季']; const t3 = row['策略标签']; const tc2 = row['二级类目'];
-            if(tc2 && tc2 !== '-') tagHtmlStr += `<span style="background:#F2F2F7; color:#6E6E73; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap;">${tc2}</span>`;
-            if(t1 && t1 !== '-') tagHtmlStr += `<span style="background:#F2F2F7; color:#6E6E73; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap;">${t1}</span>`;
-            if(t2 && t2 !== '-') tagHtmlStr += `<span style="background:#F2F2F7; color:#6E6E73; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap;">${t2}</span>`;
+            const t1 = row['季节标签']; const t2 = row['企划Q季']; const t3 = row['策略标签']; const tc2 = row['二级类目']; const tc4 = row['四级类目'];
+            if(tc2 && tc2 !== '-') tagHtmlStr += `<span style="background:#F2F2F7; color:#6E6E73; padding: 2px 4px; border-radius: 4px; font-size: 10px; white-space: nowrap;">${tc2}</span>`;
+            if(t1 && t1 !== '-') tagHtmlStr += `<span style="background:#F2F2F7; color:#6E6E73; padding: 2px 4px; border-radius: 4px; font-size: 10px; white-space: nowrap;">${t1}</span>`;
+            if(t2 && t2 !== '-') tagHtmlStr += `<span style="background:#F2F2F7; color:#6E6E73; padding: 2px 4px; border-radius: 4px; font-size: 10px; white-space: nowrap;">${t2}</span>`;
             if(t3 && t3 !== '-') {
                 let sBg = '#F2F2F7', sCol = '#6E6E73', sBrd = 'transparent';
                 if(t3.includes('稳定')) { sBg = '#EBF9EE'; sCol = '#34C759'; sBrd = '#C3EBCF'; }
                 else if(t3.includes('趋势')) { sBg = '#FFF4E5'; sCol = '#FF9500'; sBrd = '#FFE0B2'; }
                 else if(t3.includes('淘汰')) { sBg = '#FFECEB'; sCol = '#FF3B30'; sBrd = '#FFD1CF'; }
                 else if(t3.includes('新款')) { sBg = '#E5F1FF'; sCol = '#007AFF'; sBrd = '#B2D7FF'; }
-                tagHtmlStr += `<span style="background:${sBg}; color:${sCol}; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap; border: 1px solid ${sBrd};">${t3}</span>`;
+                tagHtmlStr += `<span style="background:${sBg}; color:${sCol}; padding: 2px 4px; border-radius: 4px; font-size: 10px; white-space: nowrap; border: 1px solid ${sBrd};">${t3}</span>`;
             }
 
-            let c2BaseHtml = ''; let sBaseHtml = '';
+            let catKey = (tc2 && tc2 !== '-' && tc4 && tc4 !== '-') ? (tc2 + ' - ' + tc4) : null;
+            let quarterKey = (catKey && t2 && t2 !== '-') ? (catKey + ' - ' + t2) : null;
+
+            let cBaseline = null; let qBaseline = null; let baselineLegendHtml = '';
             if (isExpanded) {
-                let c2Baseline = (tc2 && tc2 !== '-') ? cat2Baselines[tc2] : null;
-                let seasonKey = tc2 + ' - ' + t1;
-                let sBaseline = (tc2 && tc2 !== '-' && t1 && t1 !== '-') ? seasonBaselines[seasonKey] : null;
+                cBaseline = catKey ? catBaselines[catKey] : null;
+                qBaseline = quarterKey ? quarterBaselines[quarterKey] : null;
                 
-                if (c2Baseline) {
-                    c2BaseHtml = {
-                        sales: getBaselineHtml(c2Baseline.avgSales, '类目均线'),
-                        marginPct: getBaselineHtml(c2Baseline.marginPct, '类目均线'),
-                        adRatio: getBaselineHtml(c2Baseline.adRatio, '类目均线'),
-                        asp: getBaselineHtml(c2Baseline.asp, '类目均线'),
-                        cps: getBaselineHtml(c2Baseline.cps, '类目均线'),
-                        tacos: getBaselineHtml(c2Baseline.tacos, '类目均线'),
-                        cpc: getBaselineHtml(c2Baseline.cpc, '类目均线'),
-                        ctr: getBaselineHtml(c2Baseline.ctr, '类目均线'),
-                        cvr: getBaselineHtml(c2Baseline.cvr, '类目均线')
-                    };
-                }
-                if (sBaseline) {
-                    sBaseHtml = {
-                        sales: getBaselineHtml(sBaseline.avgSales, '季节均线'),
-                        marginPct: getBaselineHtml(sBaseline.marginPct, '季节均线'),
-                        adRatio: getBaselineHtml(sBaseline.adRatio, '季节均线'),
-                        asp: getBaselineHtml(sBaseline.asp, '季节均线'),
-                        cps: getBaselineHtml(sBaseline.cps, '季节均线'),
-                        tacos: getBaselineHtml(sBaseline.tacos, '季节均线'),
-                        cpc: getBaselineHtml(sBaseline.cpc, '季节均线'),
-                        ctr: getBaselineHtml(sBaseline.ctr, '季节均线'),
-                        cvr: getBaselineHtml(sBaseline.cvr, '季节均线')
-                    };
+                if(cBaseline || qBaseline) {
+                    baselineLegendHtml += `<div style="margin-top: 10px; padding: 8px; background: #F9FAFB; border: 1px solid #E5E5EA; border-radius: 8px; text-align:left;">`;
+                    baselineLegendHtml += `<div style="font-size:10px; color:#86868B; font-weight:600; margin-bottom:6px;">🎯 基准对比锚点</div>`;
+                    if(cBaseline) baselineLegendHtml += `<div style="font-size:10px; color:#0066CC; margin-bottom:4px; display:flex; align-items:center; line-height:1.2;"><span style="background:#E5F1FF; padding:2px 4px; border-radius:4px; font-weight:700; margin-right:6px;">品</span> ${catKey} (品类均线)</div>`;
+                    if(qBaseline) baselineLegendHtml += `<div style="font-size:10px; color:#AF52DE; display:flex; align-items:center; line-height:1.2;"><span style="background:#F2E6FF; padding:2px 4px; border-radius:4px; font-weight:700; margin-right:6px;">企</span> ${quarterKey} (企划均线)</div>`;
+                    baselineLegendHtml += `</div>`;
                 }
             }
 
             let appendBase = (metric) => {
-                let str = '';
-                if(c2BaseHtml && c2BaseHtml[metric]) str += `<br>${c2BaseHtml[metric]}`;
-                if(sBaseHtml && sBaseHtml[metric]) str += `<br>${sBaseHtml[metric]}`;
-                return str;
+                let str = `<div style="margin-top:6px; font-size:10px; line-height:1.3; font-variant-numeric: tabular-nums; display:flex; flex-direction:column; gap:2px; align-items:center; padding-top:4px; border-top:1px dashed #F2F2F7;">`;
+                if(cBaseline && cBaseline[metric]) str += `<div style="color:#0066CC;" title="品类均线"><span style="font-weight:700; opacity:0.8; margin-right:2px;">品</span>${cBaseline[metric]}</div>`;
+                if(qBaseline && qBaseline[metric]) str += `<div style="color:#AF52DE;" title="企划均线"><span style="font-weight:700; opacity:0.8; margin-right:2px;">企</span>${qBaseline[metric]}</div>`;
+                str += `</div>`;
+                return (cBaseline || qBaseline) ? str : '';
             };
 
-            let salesHtml = `<div class="main-val">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, '') + appendBase('sales');
-            let spendHtml = `<div class="main-val">$${row['近一周日均花费($)']}</div>` + getSubtextHtml(row['上周日均花费($)'], row['日均花费差额($)'], row['花费环比'], true, false, 'USD');
-            let marginHtml = `<div class="main-val">¥${Math.round(row['近一周边际利润额(¥)']).toLocaleString()}</div>` + getSubtextHtml(row['上周边际利润额(¥)'], row['利润额差额(¥)'], row['利润额环比'], false, false, 'RMB');
-            let marginPctHtml = `<div class="main-val">${(row['近一周边际利润率']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周边际利润率'], row['利润率差额'], row['利润率环比'], false, true, '') + appendBase('marginPct');
-            let adRatioHtml = `<div class="main-val">${(row['近一周广告单占比']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周广告单占比'], row['广告单占比差额'], row['广告单占比环比'], true, true, '') + appendBase('adRatio');
-            let aspHtml = `<div class="main-val">$${row['近一周ASP($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周ASP($)'], row['ASP差额($)'], row['ASP环比'], false, false, 'USD') + appendBase('asp');
-            let cpsHtml = `<div class="main-val">$${row['近一周CPS($)']}</div>` + getSubtextHtml(row['上周CPS($)'], row['CPS差额($)'], row['CPS环比'], true, false, 'USD') + appendBase('cps');
-            let tacosHtml = `<div class="main-val">${(row['近一周TACOS']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, '') + appendBase('tacos');
-            let cpcHtml = `<div class="main-val">$${row['近一周CPC($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周CPC($)'], row['CPC差额($)'], row['CPC环比'], true, false, 'USD') + appendBase('cpc');
-            let ctrHtml = `<div class="main-val">${(row['近一周CTR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CTR'], row['CTR差额'], row['CTR环比'], false, true, '') + appendBase('ctr');
-            let cvrHtml = `<div class="main-val">${(row['近一周CVR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CVR'], row['CVR差额'], row['CVR环比'], false, true, '') + appendBase('cvr');
+            let salesHtml = `<div class="main-val">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, '') + (isExpanded ? appendBase('avgSales') : '');
+            let spendHtml = `<div class="main-val">$${row['近一周日均花费($)']}</div>` + getSubtextHtml(row['上周日均花费($)'], row['日均花费差额($)'], row['花费环比'], true, false, 'USD') + (isExpanded ? appendBase('avgSpend') : '');
+            let marginHtml = `<div class="main-val">¥${Math.round(row['近一周边际利润额(¥)']).toLocaleString()}</div>` + getSubtextHtml(row['上周边际利润额(¥)'], row['利润额差额(¥)'], row['利润额环比'], false, false, 'RMB') + (isExpanded ? appendBase('avgMargin') : '');
+            let marginPctHtml = `<div class="main-val">${(row['近一周边际利润率']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周边际利润率'], row['利润率差额'], row['利润率环比'], false, true, '') + (isExpanded ? appendBase('marginPct') : '');
+            let adRatioHtml = `<div class="main-val">${(row['近一周广告单占比']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周广告单占比'], row['广告单占比差额'], row['广告单占比环比'], true, true, '') + (isExpanded ? appendBase('adRatio') : '');
+            let aspHtml = `<div class="main-val">$${row['近一周ASP($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周ASP($)'], row['ASP差额($)'], row['ASP环比'], false, false, 'USD') + (isExpanded ? appendBase('asp') : '');
+            let cpsHtml = `<div class="main-val">$${row['近一周CPS($)']}</div>` + getSubtextHtml(row['上周CPS($)'], row['CPS差额($)'], row['CPS环比'], true, false, 'USD') + (isExpanded ? appendBase('cps') : '');
+            let tacosHtml = `<div class="main-val">${(row['近一周TACOS']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, '') + (isExpanded ? appendBase('tacos') : '');
+            let cpcHtml = `<div class="main-val">$${row['近一周CPC($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周CPC($)'], row['CPC差额($)'], row['CPC环比'], true, false, 'USD') + (isExpanded ? appendBase('cpc') : '');
+            let ctrHtml = `<div class="main-val">${(row['近一周CTR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CTR'], row['CTR差额'], row['CTR环比'], false, true, '') + (isExpanded ? appendBase('ctr') : '');
+            let cvrHtml = `<div class="main-val">${(row['近一周CVR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CVR'], row['CVR差额'], row['CVR环比'], false, true, '') + (isExpanded ? appendBase('cvr') : '');
+
+            let productInfoContent = `
+                <div style="display:flex; align-items:flex-start; gap:8px; text-align:left;">
+                    ${imgHtml}
+                    <div>
+                        <strong style="font-size:14px;color:var(--text-main);">${row['父asin'] || '-'}</strong><br>
+                        <span style="color:var(--text-muted);font-size:11px;font-weight:500;">${row['货号'] || '-'} / ${row['营销负责人'] || '-'}</span>
+                        ${tagHtmlStr ? `<div style="margin-top: 4px; display:flex; flex-wrap:wrap; gap:4px;">${tagHtmlStr}</div>` : ''}
+                        ${isExpanded ? baselineLegendHtml : ''}
+                    </div>
+                </div>
+            `;
 
             if(isExpanded && details) {
                 const rowSpan = details.length;
@@ -2558,16 +2554,7 @@
                     html += `<td class="daily-cell">${dayRow['广告日期']}</td>`;
                     
                     if (idx === 0) {
-                        html += `<td class="merged-cell product-cell" rowspan="${rowSpan}">
-                            <div style="display:flex; align-items:center; gap:8px; text-align:left;">
-                                ${imgHtml}
-                                <div>
-                                    <strong style="font-size:14px;color:var(--text-main);">${row['父asin']}</strong><br>
-                                    <span style="color:var(--text-muted);font-size:12px;font-weight:500;">${row['货号'] || '-'} / ${row['营销负责人'] || '-'}</span>
-                                    ${tagHtmlStr ? `<div style="margin-top: 4px; display:flex; flex-wrap:wrap; gap:4px;">${tagHtmlStr}</div>` : ''}
-                                </div>
-                            </div>
-                        </td>`;
+                        html += `<td class="merged-cell product-cell" rowspan="${rowSpan}">${productInfoContent}</td>`;
                         html += `<td class="merged-cell priority-cell" rowspan="${rowSpan}">${priorityTag}</td>`;
                     }
                     
@@ -2578,8 +2565,8 @@
                         html += `<td style="color:var(--text-muted); font-variant-numeric: tabular-nums;">¥${Number(dayRow['边际利润额'] || 0).toFixed(0)}</td>`;
                         html += `<td style="color:var(--text-muted); font-variant-numeric: tabular-nums;">${(Number(dayRow['退前边际利润率'] || 0)*100).toFixed(1)}%</td>`;
                     } else {
-                        html += `<td class="missing-data">- 未匹配 -</td>`;
-                        html += `<td class="missing-data">- 未匹配 -</td>`;
+                        html += `<td class="missing-data">-</td>`;
+                        html += `<td class="missing-data">-</td>`;
                     }
 
                     let dSpend = parseNumber(dayRow['广告花费']);
@@ -2609,16 +2596,7 @@
                 });
             } else {
                 html += `<tr style="cursor: pointer;" title="点击当前行可直接下钻查看 14 日流水及横向比较均线" onclick="drillDown('${row['父asin']}')">
-                    <td class="product-cell">
-                        <div style="display:flex; align-items:center; gap:8px; text-align:left; justify-content:left;">
-                            ${imgHtml}
-                            <div style="text-align:left;">
-                                <strong style="font-size:14px;color:var(--text-main);">${row['父asin'] || '-'}</strong><br>
-                                <span style="color:var(--text-muted);font-size:12px;font-weight:500;">${row['货号'] || '-'} / ${row['营销负责人'] || '-'}</span>
-                                ${tagHtmlStr ? `<div style="margin-top: 4px; display:flex; flex-wrap:wrap; gap:4px;">${tagHtmlStr}</div>` : ''}
-                            </div>
-                        </div>
-                    </td>
+                    <td class="product-cell">${productInfoContent}</td>
                     <td class="priority-cell">${priorityTag}</td>
                     <td>${salesHtml}</td>
                     <td>${spendHtml}</td>
@@ -2648,7 +2626,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_56() {
+    async function exportToExcelV7_59() {
         if(globalAllAnalyticalResults.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -2790,7 +2768,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.56_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.59_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
