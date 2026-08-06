@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.59</title>
+    <title>父ASIN粒度广告分析看板 V7.67</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -210,7 +210,7 @@
     </div>
 
     <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
-        <h3>导入《广告数据报表》 (支持包含 Sheet2利润、Sheet3标签 及 Sheet4类目)</h3>
+        <h3>导入《广告数据报表》 (支持包含多工作表的最新格式)</h3>
         <input type="file" id="file-input" class="hidden-input" accept=".xlsx, .xls">
     </div>
 
@@ -254,7 +254,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_59()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_67()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -365,6 +365,8 @@
         <div id="adv-filters-panel" class="adv-filters-panel">
             <select id="adv-col" class="filter-select" style="padding: 6px 24px 6px 10px; font-size:12px; background-color: #FFFFFF;">
                 <optgroup label="—— 绝对数值指标 ——">
+                    <option value="FBA在库库存">FBA在库</option>
+                    <option value="预期总库存">预期总库存</option>
                     <option value="近一周日均销量">日均销</option>
                     <option value="近一周边际利润额(¥)">利润额 (¥)</option>
                     <option value="近一周边际利润率">利润率 (%)</option>
@@ -439,7 +441,7 @@
     let globalOriginalColumns = [];
     
     let catBaselines = {};
-    let quarterBaselines = {}; // Changed from season to quarter
+    let quarterBaselines = {};
 
     let currentModalPriority = 'ALL';
     let currentModalOwner = 'ALL';
@@ -736,6 +738,8 @@
         });
     }
 
+    // ========== 核心工具函数优化 ==========
+    
     function parseNumber(val) {
         if (val === undefined || val === null) return 0;
         if (typeof val === 'string') {
@@ -754,10 +758,22 @@
         return Number(val) || 0;
     }
     
-    function getColRaw(row, names) {
+    // 强制清洗掉 "总计", "父ASIN", "营销负责人" 等幽灵行
+    function isValidDataRow(a) {
+        if (!a) return false;
+        const v = String(a).trim().toLowerCase();
+        return v !== '父asin' && v !== 'asin' && v !== '货号' && v !== 'sku' && v !== '总计' && v !== 'undefined' && v !== '-';
+    }
+
+    // 双模态匹配：广告指标走模糊匹配(兼容后缀)，库存等指标走绝对匹配
+    function getColRaw(row, names, exact = false) {
         const keys = Object.keys(row);
         for (let n of names) {
-            const foundKey = keys.find(k => k.toLowerCase().includes(n.toLowerCase()));
+            const foundKey = keys.find(k => {
+                const kl = k.trim().toLowerCase();
+                const nl = n.trim().toLowerCase();
+                return exact ? kl === nl : kl.includes(nl);
+            });
             if (foundKey && row[foundKey] !== undefined && row[foundKey] !== '') return row[foundKey];
         }
         return '';
@@ -801,23 +817,27 @@
                 
                 let rawData2 = [];
                 if (workbook.SheetNames.length > 1) {
-                    const secondSheet = workbook.Sheets[workbook.SheetNames[1]];
-                    rawData2 = XLSX.utils.sheet_to_json(secondSheet, {defval: ""});
+                    rawData2 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[1]], {defval: ""});
                 }
                 
                 let rawData3 = [];
                 if (workbook.SheetNames.length > 2) {
-                    const thirdSheet = workbook.Sheets[workbook.SheetNames[2]];
-                    rawData3 = XLSX.utils.sheet_to_json(thirdSheet, {defval: ""});
+                    rawData3 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[2]], {defval: ""});
                 }
                 
                 let rawData4 = [];
                 if (workbook.SheetNames.length > 3) {
-                    const fourthSheet = workbook.Sheets[workbook.SheetNames[3]];
-                    rawData4 = XLSX.utils.sheet_to_json(fourthSheet, {defval: ""});
+                    rawData4 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[3]], {defval: ""});
+                }
+
+                let rawData5 = [];
+                if (workbook.SheetNames.length > 4) {
+                    rawData5 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[4]], {defval: ""});
                 }
                 
-                buildGlobalTags(rawData3, rawData1, rawData4);
+                // 去除 data2 (利润表通常无库存) 避免未定义错误
+                let allSheets = [rawData5, rawData4, rawData3, rawData1];
+                buildGlobalTags(rawData3, rawData1, rawData4, allSheets);
                 populateGlobalFilters();
                 
                 processAllDataOnce(rawData1, rawData2);
@@ -842,16 +862,16 @@
         reader.readAsArrayBuffer(file);
     }
 
-    function buildGlobalTags(data3, data1, data4) {
+    function buildGlobalTags(data3, data1, data4, allSheets) {
         globalAsinTags = {};
         
         let skuToCat = {};
         if (data4 && data4.length > 0) {
             data4.forEach(row => {
-                let sku = String(getColRaw(row, ['货号', 'SKU', 'sku']) || '').trim().toUpperCase();
+                let sku = String(getColRaw(row, ['货号', 'SKU', 'sku'], true) || '').trim().toUpperCase();
                 let cat2 = String(getColRaw(row, ['二级类目', '二级', 'Category 2']) || '').trim();
                 let cat4 = String(getColRaw(row, ['四级类目', '四级', 'Category 4']) || '').trim();
-                if (sku) {
+                if (isValidDataRow(sku)) {
                     skuToCat[sku] = { cat2: cat2, cat4: cat4 };
                 }
             });
@@ -862,8 +882,49 @@
             data1.forEach(row => {
                 let a = String(getColRaw(row, ['父asin', 'asin']) || '').trim();
                 let s = String(getColRaw(row, ['货号', 'SKU', 'sku']) || '').trim();
-                if (a && s && s !== 'undefined' && s !== '-') {
+                if (isValidDataRow(a) && isValidDataRow(s)) {
                     asinToSku[a] = s;
+                }
+            });
+        }
+
+        let skuInventory = {};
+        let asinInventory = {};
+        
+        // 使用精确匹配锁定包含库存的表格，防止被其他相似表头污染
+        let invData = allSheets.find(d => {
+            if(!d || d.length === 0) return false;
+            let keys = Object.keys(d[0]).map(k => k.trim().toLowerCase());
+            return keys.includes('fba在库') || keys.includes('预期总库存数量') || keys.includes('预期总库存');
+        });
+
+        if (invData) {
+            let keys = Object.keys(invData[0]);
+            let expKey = keys.find(k => k.trim().toLowerCase() === '预期总库存数量' || k.trim().toLowerCase() === '预期总库存');
+            let fbaKey = keys.find(k => k.trim().toLowerCase() === 'fba在库' || k.trim().toLowerCase() === 'fba在库库存');
+            let skuKey = keys.find(k => k.trim().toLowerCase() === '货号' || k.trim().toLowerCase() === 'sku');
+            let asinKey = keys.find(k => k.trim().toLowerCase() === '父asin' || k.trim().toLowerCase() === 'asin');
+
+            invData.forEach(row => {
+                let exp = expKey && row[expKey] !== undefined ? parseNumber(row[expKey]) : 0;
+                let fba = fbaKey && row[fbaKey] !== undefined ? parseNumber(row[fbaKey]) : 0;
+                
+                if (skuKey && row[skuKey]) {
+                    let skuStr = String(row[skuKey]).trim().toUpperCase();
+                    if (isValidDataRow(skuStr)) {
+                        if (!skuInventory[skuStr]) skuInventory[skuStr] = { exp: 0, fba: 0 };
+                        skuInventory[skuStr].exp += exp;
+                        skuInventory[skuStr].fba += fba;
+                    }
+                }
+                
+                if (asinKey && row[asinKey]) {
+                    let asinStr = String(row[asinKey]).trim();
+                    if (isValidDataRow(asinStr)) {
+                        if (!asinInventory[asinStr]) asinInventory[asinStr] = { exp: 0, fba: 0 };
+                        asinInventory[asinStr].exp += exp;
+                        asinInventory[asinStr].fba += fba;
+                    }
                 }
             });
         }
@@ -894,13 +955,13 @@
                 let quarter = String(getColRaw(row, ['企划Q季', '企划']) || '').trim();
                 let rawStrategy = String(getColRaw(row, ['策略标签', '策略']) || '').trim();
 
-                if (rawAsin) {
-                    if (rawSku && rawSku !== '-') {
+                if (isValidDataRow(rawAsin)) {
+                    if (isValidDataRow(rawSku)) {
                         asinToSku[rawAsin] = rawSku;
                     }
                     
                     if (!globalAsinTags[rawAsin]) {
-                        globalAsinTags[rawAsin] = { season: new Set(), quarter: new Set(), cat2: new Set(), cat4: new Set(), strategyWeight: -1, strategy: '-' };
+                        globalAsinTags[rawAsin] = { season: new Set(), quarter: new Set(), cat2: new Set(), cat4: new Set(), strategyWeight: -1, strategy: '-', expectedInventory: 0, fbaInventory: 0 };
                     }
                     if (season && season !== '-') globalAsinTags[rawAsin].season.add(season);
                     if (quarter && quarter !== '-') globalAsinTags[rawAsin].quarter.add(quarter);
@@ -916,21 +977,30 @@
 
         for (let asin in asinToSku) {
             if (!globalAsinTags[asin]) {
-                globalAsinTags[asin] = { season: new Set(), quarter: new Set(), cat2: new Set(), cat4: new Set(), strategyWeight: -1, strategy: '-' };
+                globalAsinTags[asin] = { season: new Set(), quarter: new Set(), cat2: new Set(), cat4: new Set(), strategyWeight: -1, strategy: '-', expectedInventory: 0, fbaInventory: 0 };
             }
             let rawSku = asinToSku[asin];
+            let totalExp = 0;
+            let totalFba = 0;
+            
             if (rawSku) {
-                let skus = rawSku.split(/[/,;，；\\]+/);
+                let skus = Array.from(new Set(rawSku.split(/[/,;，；\\]+/).map(s => s.trim().toUpperCase()).filter(s => s)));
                 skus.forEach(sku => {
-                    sku = sku.trim().toUpperCase();
                     if (skuToCat[sku]) {
                         let c2 = skuToCat[sku].cat2;
                         let c4 = skuToCat[sku].cat4;
                         if (c2 && c2 !== '-') globalAsinTags[asin].cat2.add(c2);
                         if (c4 && c4 !== '-') globalAsinTags[asin].cat4.add(c4);
                     }
+                    if (skuInventory[sku]) {
+                        totalExp += skuInventory[sku].exp;
+                        totalFba += skuInventory[sku].fba;
+                    }
                 });
             }
+            
+            globalAsinTags[asin].expectedInventory = totalExp > 0 ? totalExp : (asinInventory[asin] ? asinInventory[asin].exp : 0);
+            globalAsinTags[asin].fbaInventory = totalFba > 0 ? totalFba : (asinInventory[asin] ? asinInventory[asin].fba : 0);
         }
         
         for(let asin in globalAsinTags) {
@@ -994,7 +1064,12 @@
         window.multiSelects['modalCat2Filter'].setState(filters.cat2s);
         window.multiSelects['modalCat4Filter'].setState(filters.cat4s);
 
-        let filteredDashboardResults = globalAllAnalyticalResults.filter(row => isAsinMatchTags(row['父asin'], filters));
+        let filteredDashboardResults = globalAllAnalyticalResults.filter(row => {
+            let cat4 = String(row['四级类目'] || '').toLowerCase();
+            if (['nurse', 'sport', 'leather', '护士', '运动', '真皮'].some(w => cat4.includes(w))) return false;
+            return isAsinMatchTags(row['父asin'], filters);
+        });
+
         let filteredAsinMetrics = {};
         for(let asin in globalAsinMetrics) {
             if (isAsinMatchTags(asin, filters)) {
@@ -1017,8 +1092,9 @@
         
         const extractOwner = (r) => {
             let a = String(getColRaw(r, ['父asin', 'asin']) || '').trim();
+            if (!isValidDataRow(a)) return;
             let o = getColRaw(r, ['营销负责人', '负责人', 'owner']);
-            if (a && o && o !== 'undefined') asinToOwner[a] = String(o).trim();
+            if (o && o !== 'undefined') asinToOwner[a] = String(o).trim();
         };
         data1.forEach(extractOwner);
         data2.forEach(extractOwner);
@@ -1026,7 +1102,7 @@
         data2.forEach(row => {
             const dateStr = String(getColRaw(row, ['统计日期', '日期'])).trim();
             const asinStr = String(getColRaw(row, ['父asin', 'asin'])).trim();
-            if (dateStr && asinStr) {
+            if (dateStr && isValidDataRow(asinStr)) {
                 if (/\d/.test(dateStr) && !allDates2.includes(dateStr)) allDates2.push(dateStr);
                 if (!globalProfitMap[asinStr]) globalProfitMap[asinStr] = {};
                 globalProfitMap[asinStr][dateStr] = {
@@ -1086,12 +1162,10 @@
 
         data1.forEach(row => {
             const rowDateStr = String(row['广告日期']).trim();
-            const asinStr = String(row['父asin']).trim();
+            const asinStr = String(getColRaw(row, ['父asin', 'asin'])).trim();
             
-            if (!rowDateStr || rowDateStr === '总计' || rowDateStr.includes('广告') || 
-                !asinStr || asinStr === '父asin' || asinStr === 'undefined') {
-                return;
-            }
+            if (!isValidDataRow(asinStr)) return;
+            if (!rowDateStr || rowDateStr === '总计' || rowDateStr.includes('广告')) return;
 
             if (/\d/.test(rowDateStr)) {
                 if (maxDate === '' || rowDateStr > maxDate) maxDate = rowDateStr;
@@ -1129,9 +1203,9 @@
             let w2_sales = 0, w2_spend = 0, w2_ad_sales = 0, w2_revenue = 0, w2_ctr_sum = 0, w2_cvr_sum = 0, w2_clicks = 0, w2_impressions = 0, w2_margin_sum = 0, w2_margin_rev_sum = 0;
             week2Data.forEach(r => {
                 const d = String(r['广告日期']).trim();
-                w2_sales += parseNumber(r['总销量']);
-                w2_spend += parseNumber(r['广告花费']);
-                w2_ad_sales += parseNumber(r['广告销售量']);
+                w2_sales += parseNumber(getColRaw(r, ['总销量', '销量']));
+                w2_spend += parseNumber(getColRaw(r, ['广告花费', '花费']));
+                w2_ad_sales += parseNumber(getColRaw(r, ['广告销售量', '销售量']));
                 w2_revenue += parseNumber(getColRaw(r, ['总销售额', '销售额']));
                 w2_clicks += parseNumber(getColRaw(r, ['点击', 'click']));
                 w2_impressions += parseNumber(getColRaw(r, ['曝光', '展现', 'impression']));
@@ -1152,9 +1226,9 @@
             let w1_sales = 0, w1_spend = 0, w1_ad_sales = 0, w1_revenue = 0, w1_ctr_sum = 0, w1_cvr_sum = 0, w1_clicks = 0, w1_impressions = 0, w1_margin_sum = 0, w1_margin_rev_sum = 0;
             week1Data.forEach(r => {
                 const d = String(r['广告日期']).trim();
-                w1_sales += parseNumber(r['总销量']);
-                w1_spend += parseNumber(r['广告花费']);
-                w1_ad_sales += parseNumber(r['广告销售量']);
+                w1_sales += parseNumber(getColRaw(r, ['总销量', '销量']));
+                w1_spend += parseNumber(getColRaw(r, ['广告花费', '花费']));
+                w1_ad_sales += parseNumber(getColRaw(r, ['广告销售量', '销售量']));
                 w1_revenue += parseNumber(getColRaw(r, ['总销售额', '销售额']));
                 w1_clicks += parseNumber(getColRaw(r, ['点击', 'click']));
                 w1_impressions += parseNumber(getColRaw(r, ['曝光', '展现', 'impression']));
@@ -1262,12 +1336,14 @@
             resultRow['主图'] = getColRaw(lastRow, ['主图', '图片', '商品图片', 'image', 'img', '主图链接']);
             resultRow['营销负责人'] = owner;
             
-            let tags = globalAsinTags[asin] || { season: '-', quarter: '-', cat2: '-', cat4: '-', strategy: '-' };
+            let tags = globalAsinTags[asin] || { season: '-', quarter: '-', cat2: '-', cat4: '-', strategy: '-', expectedInventory: 0, fbaInventory: 0 };
             resultRow['季节标签'] = tags.season;
             resultRow['企划Q季'] = tags.quarter;
             resultRow['二级类目'] = tags.cat2;
             resultRow['四级类目'] = tags.cat4;
             resultRow['策略标签'] = tags.strategy;
+            resultRow['预期总库存'] = tags.expectedInventory || 0;
+            resultRow['FBA在库库存'] = tags.fbaInventory || 0;
             
             resultRow['上周日均销量'] = Number(w1_sales_avg.toFixed(2));
             resultRow['近一周日均销量'] = Number(w2_sales_avg.toFixed(2));
@@ -1364,7 +1440,6 @@
             globalAllAnalyticalResults.push(resultRow);
         }
 
-        // 构建均线基座
         buildBaselines(globalAllAnalyticalResults);
     }
     
@@ -1407,6 +1482,18 @@
         });
         
         const calcAvg = (stat) => ({
+            raw_avgSales: stat.asinCount > 0 ? (stat.sales / stat.asinCount / 7) : 0,
+            raw_avgSpend: stat.asinCount > 0 ? (stat.spend / stat.asinCount / 7) : 0,
+            raw_avgMargin: stat.asinCount > 0 ? (stat.margin / stat.asinCount) : 0,
+            raw_tacos: stat.rev > 0 ? (stat.spend / stat.rev) : 0,
+            raw_cps: stat.sales > 0 ? (stat.spend / stat.sales) : 0,
+            raw_cpc: stat.clicks > 0 ? (stat.spend / stat.clicks) : 0,
+            raw_ctr: stat.imps > 0 ? (stat.clicks / stat.imps) : 0,
+            raw_cvr: stat.clicks > 0 ? (stat.adSales / stat.clicks) : 0,
+            raw_marginPct: stat.rawRev > 0 ? (stat.margin / stat.rawRev) : 0,
+            raw_adRatio: stat.sales > 0 ? (stat.adSales / stat.sales) : 0,
+            raw_asp: stat.sales > 0 ? (stat.rev / stat.sales) : 0,
+
             avgSales: stat.asinCount > 0 ? (stat.sales / stat.asinCount / 7).toFixed(2) : '0',
             avgSpend: stat.asinCount > 0 ? '$' + (stat.spend / stat.asinCount / 7).toFixed(2) : '$0.00',
             avgMargin: stat.asinCount > 0 ? '¥' + Math.round(stat.margin / stat.asinCount).toLocaleString() : '¥0',
@@ -2322,6 +2409,27 @@
         </div>`;
     }
 
+    function getBaseDiffHtml(baseRaw, mainRaw, isCost, isPercent, currency) {
+        let diff = mainRaw - baseRaw;
+        let diffAbs = Math.abs(diff);
+        if (diffAbs < 0.0001) return `<span style="color:#A1A1A6; font-size:9px; margin-left:3px; transform: scale(0.95); display:inline-block; font-weight:500;">(-)</span>`;
+        
+        let sign = diff > 0 ? '+' : '-';
+        let color = '#86868b';
+        if (diff > 0) color = isCost ? 'var(--red)' : 'var(--green)';
+        else if (diff < 0) color = isCost ? 'var(--green)' : 'var(--red)';
+        
+        let diffStr = '';
+        if (isPercent) {
+            diffStr = sign + (diffAbs * 100).toFixed(1) + '%';
+        } else {
+            let prefix = currency === 'RMB' ? '¥' : (currency === 'USD' ? '$' : '');
+            let formatted = currency === 'RMB' ? Math.round(diffAbs).toLocaleString() : diffAbs.toFixed(2);
+            diffStr = sign + prefix + formatted;
+        }
+        return `<span style="color:${color}; font-size:9px; margin-left:3px; font-weight:600; font-family: var(--font-family);">(${diffStr})</span>`;
+    }
+
     function openModal(priority) {
         openModalWithSearch(priority, '');
     }
@@ -2436,6 +2544,8 @@
         const colMap = {
             '产品信息': '父asin',
             '判定': '优化调整优先级',
+            'FBA在库': 'FBA在库库存',
+            '预期总库存': '预期总库存',
             '日均销': '近一周日均销量',
             '日均花费($)': '近一周日均花费($)',
             '利润额(¥)': '近一周边际利润额(¥)',
@@ -2450,8 +2560,8 @@
         };
 
         const cols = isExpanded ? 
-            ['日期', '产品信息', '判定', '当日销', '花费($)', '利润(¥)', '利润率', 'TACOS', '首页%', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单%', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'] : 
-            ['产品信息', '判定', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单%', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'];
+            ['日期', '产品信息', '判定', '当日销', '花费($)', '利润(¥)', '利润率', 'TACOS', '首页%', 'FBA在库', '预期总库存', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单%', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'] : 
+            ['产品信息', '判定', 'FBA在库', '预期总库存', '日均销', '日均花费($)', '利润额(¥)', '利润率', '广告单%', 'ASP($)', 'CPS($)', 'TACOS', 'CPC($)', 'CTR', 'CVR', '诊断结论'];
 
         cols.forEach(col => {
             if(colMap[col]) {
@@ -2515,25 +2625,34 @@
                 }
             }
 
-            let appendBase = (metric) => {
-                let str = `<div style="margin-top:6px; font-size:10px; line-height:1.3; font-variant-numeric: tabular-nums; display:flex; flex-direction:column; gap:2px; align-items:center; padding-top:4px; border-top:1px dashed #F2F2F7;">`;
-                if(cBaseline && cBaseline[metric]) str += `<div style="color:#0066CC;" title="品类均线"><span style="font-weight:700; opacity:0.8; margin-right:2px;">品</span>${cBaseline[metric]}</div>`;
-                if(qBaseline && qBaseline[metric]) str += `<div style="color:#AF52DE;" title="企划均线"><span style="font-weight:700; opacity:0.8; margin-right:2px;">企</span>${qBaseline[metric]}</div>`;
+            let appendBase = (metricName, mainRaw, isCost, isPercent, currency) => {
+                let str = `<div style="margin-top:5px; padding-top:4px; border-top:1px dashed #E5E5EA; display:flex; flex-direction:column; gap:3px; align-items:center;">`;
+                if(cBaseline && cBaseline[metricName]) {
+                    let diffHtml = getBaseDiffHtml(cBaseline['raw_' + metricName], mainRaw, isCost, isPercent, currency);
+                    str += `<div style="color:#0066CC; display:flex; align-items:baseline; line-height:1; white-space:nowrap;" title="品类均线差值：当前值减去均线基准"><span style="font-weight:700; opacity:0.8; margin-right:3px; font-size:10px;">品</span><span style="font-size:10px; font-variant-numeric: tabular-nums;">${cBaseline[metricName]}</span>${diffHtml}</div>`;
+                }
+                if(qBaseline && qBaseline[metricName]) {
+                    let diffHtml = getBaseDiffHtml(qBaseline['raw_' + metricName], mainRaw, isCost, isPercent, currency);
+                    str += `<div style="color:#AF52DE; display:flex; align-items:baseline; line-height:1; white-space:nowrap;" title="企划均线差值：当前值减去均线基准"><span style="font-weight:700; opacity:0.8; margin-right:3px; font-size:10px;">企</span><span style="font-size:10px; font-variant-numeric: tabular-nums;">${qBaseline[metricName]}</span>${diffHtml}</div>`;
+                }
                 str += `</div>`;
                 return (cBaseline || qBaseline) ? str : '';
             };
 
-            let salesHtml = `<div class="main-val">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, '') + (isExpanded ? appendBase('avgSales') : '');
-            let spendHtml = `<div class="main-val">$${row['近一周日均花费($)']}</div>` + getSubtextHtml(row['上周日均花费($)'], row['日均花费差额($)'], row['花费环比'], true, false, 'USD') + (isExpanded ? appendBase('avgSpend') : '');
-            let marginHtml = `<div class="main-val">¥${Math.round(row['近一周边际利润额(¥)']).toLocaleString()}</div>` + getSubtextHtml(row['上周边际利润额(¥)'], row['利润额差额(¥)'], row['利润额环比'], false, false, 'RMB') + (isExpanded ? appendBase('avgMargin') : '');
-            let marginPctHtml = `<div class="main-val">${(row['近一周边际利润率']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周边际利润率'], row['利润率差额'], row['利润率环比'], false, true, '') + (isExpanded ? appendBase('marginPct') : '');
-            let adRatioHtml = `<div class="main-val">${(row['近一周广告单占比']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周广告单占比'], row['广告单占比差额'], row['广告单占比环比'], true, true, '') + (isExpanded ? appendBase('adRatio') : '');
-            let aspHtml = `<div class="main-val">$${row['近一周ASP($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周ASP($)'], row['ASP差额($)'], row['ASP环比'], false, false, 'USD') + (isExpanded ? appendBase('asp') : '');
-            let cpsHtml = `<div class="main-val">$${row['近一周CPS($)']}</div>` + getSubtextHtml(row['上周CPS($)'], row['CPS差额($)'], row['CPS环比'], true, false, 'USD') + (isExpanded ? appendBase('cps') : '');
-            let tacosHtml = `<div class="main-val">${(row['近一周TACOS']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, '') + (isExpanded ? appendBase('tacos') : '');
-            let cpcHtml = `<div class="main-val">$${row['近一周CPC($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周CPC($)'], row['CPC差额($)'], row['CPC环比'], true, false, 'USD') + (isExpanded ? appendBase('cpc') : '');
-            let ctrHtml = `<div class="main-val">${(row['近一周CTR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CTR'], row['CTR差额'], row['CTR环比'], false, true, '') + (isExpanded ? appendBase('ctr') : '');
-            let cvrHtml = `<div class="main-val">${(row['近一周CVR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CVR'], row['CVR差额'], row['CVR环比'], false, true, '') + (isExpanded ? appendBase('cvr') : '');
+            let fbaInvHtml = `<div class="main-val" style="color:var(--accent); font-size:14px;">${row['FBA在库库存'].toLocaleString()}</div>`;
+            let expInvHtml = `<div class="main-val" style="color:#86868B; font-size:13px; font-weight:600;">${row['预期总库存'].toLocaleString()}</div>`;
+
+            let salesHtml = `<div class="main-val">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, '') + (isExpanded ? appendBase('avgSales', row['近一周日均销量'], false, false, '') : '');
+            let spendHtml = `<div class="main-val">$${row['近一周日均花费($)']}</div>` + getSubtextHtml(row['上周日均花费($)'], row['日均花费差额($)'], row['花费环比'], true, false, 'USD') + (isExpanded ? appendBase('avgSpend', row['近一周日均花费($)'], true, false, 'USD') : '');
+            let marginHtml = `<div class="main-val">¥${Math.round(row['近一周边际利润额(¥)']).toLocaleString()}</div>` + getSubtextHtml(row['上周边际利润额(¥)'], row['利润额差额(¥)'], row['利润额环比'], false, false, 'RMB') + (isExpanded ? appendBase('avgMargin', row['近一周边际利润额(¥)'], false, false, 'RMB') : '');
+            let marginPctHtml = `<div class="main-val">${(row['近一周边际利润率']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周边际利润率'], row['利润率差额'], row['利润率环比'], false, true, '') + (isExpanded ? appendBase('marginPct', row['近一周边际利润率'], false, true, '') : '');
+            let adRatioHtml = `<div class="main-val">${(row['近一周广告单占比']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周广告单占比'], row['广告单占比差额'], row['广告单占比环比'], true, true, '') + (isExpanded ? appendBase('adRatio', row['近一周广告单占比'], true, true, '') : '');
+            let aspHtml = `<div class="main-val">$${row['近一周ASP($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周ASP($)'], row['ASP差额($)'], row['ASP环比'], false, false, 'USD') + (isExpanded ? appendBase('asp', row['近一周ASP($)'], false, false, 'USD') : '');
+            let cpsHtml = `<div class="main-val">$${row['近一周CPS($)']}</div>` + getSubtextHtml(row['上周CPS($)'], row['CPS差额($)'], row['CPS环比'], true, false, 'USD') + (isExpanded ? appendBase('cps', row['近一周CPS($)'], true, false, 'USD') : '');
+            let tacosHtml = `<div class="main-val">${(row['近一周TACOS']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周TACOS'], row['TACOS差额'], row['TACOS环比'], true, true, '') + (isExpanded ? appendBase('tacos', row['近一周TACOS'], true, true, '') : '');
+            let cpcHtml = `<div class="main-val">$${row['近一周CPC($)'].toFixed(2)}</div>` + getSubtextHtml(row['上周CPC($)'], row['CPC差额($)'], row['CPC环比'], true, false, 'USD') + (isExpanded ? appendBase('cpc', row['近一周CPC($)'], true, false, 'USD') : '');
+            let ctrHtml = `<div class="main-val">${(row['近一周CTR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CTR'], row['CTR差额'], row['CTR环比'], false, true, '') + (isExpanded ? appendBase('ctr', row['近一周CTR'], false, true, '') : '');
+            let cvrHtml = `<div class="main-val">${(row['近一周CVR']*100).toFixed(1)}%</div>` + getSubtextHtml(row['上周CVR'], row['CVR差额'], row['CVR环比'], false, true, '') + (isExpanded ? appendBase('cvr', row['近一周CVR'], false, true, '') : '');
 
             let productInfoContent = `
                 <div style="display:flex; align-items:flex-start; gap:8px; text-align:left;">
@@ -2579,6 +2698,8 @@
                     html += `<td style="color:var(--text-muted); font-variant-numeric: tabular-nums;">${tosStr}</td>`;
                     
                     if (idx === 0) {
+                        html += `<td class="merged-cell" rowspan="${rowSpan}">${fbaInvHtml}</td>`;
+                        html += `<td class="merged-cell" rowspan="${rowSpan}">${expInvHtml}</td>`;
                         html += `<td class="merged-cell" rowspan="${rowSpan}">${salesHtml}</td>`;
                         html += `<td class="merged-cell" rowspan="${rowSpan}">${spendHtml}</td>`;
                         html += `<td class="merged-cell" rowspan="${rowSpan}">${marginHtml}</td>`;
@@ -2598,6 +2719,8 @@
                 html += `<tr style="cursor: pointer;" title="点击当前行可直接下钻查看 14 日流水及横向比较均线" onclick="drillDown('${row['父asin']}')">
                     <td class="product-cell">${productInfoContent}</td>
                     <td class="priority-cell">${priorityTag}</td>
+                    <td>${fbaInvHtml}</td>
+                    <td>${expInvHtml}</td>
                     <td>${salesHtml}</td>
                     <td>${spendHtml}</td>
                     <td>${marginHtml}</td>
@@ -2626,7 +2749,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_59() {
+    async function exportToExcelV7_67() {
         if(globalAllAnalyticalResults.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -2634,7 +2757,7 @@
             const ws = wb.addWorksheet('全矩阵洞察报表');
 
             const newCols = [
-                '主图', '二级类目', '四级类目', '季节标签', '企划Q季', '策略标签',
+                '主图', '二级类目', '四级类目', '季节标签', '企划Q季', '策略标签', 'FBA在库库存', '预期总库存',
                 '上周日均销量', '近一周日均销量', '日均销量差额', '销量环比',
                 '上周边际利润额(¥)', '近一周边际利润额(¥)', '利润额差额(¥)', '利润额环比',
                 '上周边际利润率', '近一周边际利润率', '利润率差额', '利润率环比',
@@ -2768,7 +2891,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.59_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.67_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
@@ -2808,7 +2931,7 @@
             uploadArea.style.display = 'none';
 
             const timestamp = new Date().getTime();
-            const response = await fetch(`./广告数据.xlsx?t=${timestamp}`, { cache: 'no-store' });
+            const response = await fetch(`./广告数据_2.xlsx?t=${timestamp}`, { cache: 'no-store' });
             
             if (!response.ok) {
                 throw new Error(`云端文件未找到或网络异常 (HTTP ${response.status})`);
@@ -2826,23 +2949,26 @@
                 
                 let rawData2 = [];
                 if (workbook.SheetNames.length > 1) {
-                    const secondSheet = workbook.Sheets[workbook.SheetNames[1]];
-                    rawData2 = XLSX.utils.sheet_to_json(secondSheet, {defval: ""});
+                    rawData2 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[1]], {defval: ""});
                 }
                 
                 let rawData3 = [];
                 if (workbook.SheetNames.length > 2) {
-                    const thirdSheet = workbook.Sheets[workbook.SheetNames[2]];
-                    rawData3 = XLSX.utils.sheet_to_json(thirdSheet, {defval: ""});
+                    rawData3 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[2]], {defval: ""});
                 }
                 
                 let rawData4 = [];
                 if (workbook.SheetNames.length > 3) {
-                    const fourthSheet = workbook.Sheets[workbook.SheetNames[3]];
-                    rawData4 = XLSX.utils.sheet_to_json(fourthSheet, {defval: ""});
+                    rawData4 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[3]], {defval: ""});
+                }
+
+                let rawData5 = [];
+                if (workbook.SheetNames.length > 4) {
+                    rawData5 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[4]], {defval: ""});
                 }
                 
-                buildGlobalTags(rawData3, rawData1, rawData4);
+                let allSheets = [rawData5, rawData4, rawData3, rawData1];
+                buildGlobalTags(rawData3, rawData1, rawData4, allSheets);
                 populateGlobalFilters();
                 
                 processAllDataOnce(rawData1, rawData2);
@@ -2857,7 +2983,7 @@
             console.warn('云端自动拉取中止，转为手动模式：', err);
             loadingEl.style.display = 'none';
             uploadArea.style.display = 'block';
-            uploadArea.querySelector('h3').innerText = '未检测到云端更新，请手动导入《广告数据报表》';
+            uploadArea.querySelector('h3').innerText = '未检测到云端更新，请手动导入《广告数据_2.xlsx》';
         }
     }
 </script>
