@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>父ASIN粒度广告分析看板 V7.67</title>
+    <title>父ASIN粒度广告分析看板 V7.69</title>
     <style>
         :root { 
             --bg-color: #F8F9FA; 
@@ -209,9 +209,10 @@
         </div>
     </div>
 
+    <!-- Fix: Moved input outside of the div to prevent bubbling loop issues in WebKit/Blink -->
+    <input type="file" id="file-input" class="hidden-input" accept=".xlsx, .xls">
     <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
         <h3>导入《广告数据报表》 (支持包含多工作表的最新格式)</h3>
-        <input type="file" id="file-input" class="hidden-input" accept=".xlsx, .xls">
     </div>
 
     <div id="loading">正在提取特征矩阵并构建底层跨表桥接池... (请保持页面打开)</div>
@@ -254,7 +255,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export" style="background-color: #6E6E73; margin-right: 12px;" onclick="document.getElementById('file-input').click()">本地手动上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_67()">导出精研分析报告 (Excel)</button>
+        <button class="btn-export" onclick="exportToExcelV7_69()">导出精研分析报告 (Excel)</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -738,8 +739,6 @@
         });
     }
 
-    // ========== 核心工具函数优化 ==========
-    
     function parseNumber(val) {
         if (val === undefined || val === null) return 0;
         if (typeof val === 'string') {
@@ -758,30 +757,31 @@
         return Number(val) || 0;
     }
     
-    // 强制清洗掉 "总计", "父ASIN", "营销负责人" 等幽灵行
     function isValidDataRow(a) {
         if (!a) return false;
         const v = String(a).trim().toLowerCase();
         return v !== '父asin' && v !== 'asin' && v !== '货号' && v !== 'sku' && v !== '总计' && v !== 'undefined' && v !== '-';
     }
 
-    // 双模态匹配：广告指标走模糊匹配(兼容后缀)，库存等指标走绝对匹配
     function getColRaw(row, names, exact = false) {
+        if (!row || !names) return '';
         const keys = Object.keys(row);
         for (let n of names) {
-            const foundKey = keys.find(k => {
-                const kl = k.trim().toLowerCase();
-                const nl = n.trim().toLowerCase();
-                return exact ? kl === nl : kl.includes(nl);
-            });
+            const foundKey = keys.find(k => String(k).trim().toLowerCase() === String(n).trim().toLowerCase());
             if (foundKey && row[foundKey] !== undefined && row[foundKey] !== '') return row[foundKey];
+        }
+        if (!exact) {
+            for (let n of names) {
+                const foundKey = keys.find(k => String(k).trim().toLowerCase().includes(String(n).trim().toLowerCase()));
+                if (foundKey && row[foundKey] !== undefined && row[foundKey] !== '') return row[foundKey];
+            }
         }
         return '';
     }
 
     function getSearchTokens(val) {
         if (!val) return [];
-        return String(val).split(/[\s,;\t\n]+/).map(t => t.trim().toLowerCase()).filter(t => t.length > 0);
+        return String(val).split(/[\s,;\t\n]+/).map(t => String(t).trim().toLowerCase()).filter(t => t.length > 0);
     }
 
     const fileInput = document.getElementById('file-input');
@@ -835,8 +835,7 @@
                     rawData5 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[4]], {defval: ""});
                 }
                 
-                // 去除 data2 (利润表通常无库存) 避免未定义错误
-                let allSheets = [rawData5, rawData4, rawData3, rawData1];
+                let allSheets = [rawData5, rawData4, rawData3, rawData1]; // Reverted array without rawData2 to avoid ReferenceError
                 buildGlobalTags(rawData3, rawData1, rawData4, allSheets);
                 populateGlobalFilters();
                 
@@ -891,25 +890,28 @@
         let skuInventory = {};
         let asinInventory = {};
         
-        // 使用精确匹配锁定包含库存的表格，防止被其他相似表头污染
-        let invData = allSheets.find(d => {
-            if(!d || d.length === 0) return false;
-            let keys = Object.keys(d[0]).map(k => k.trim().toLowerCase());
-            return keys.includes('fba在库') || keys.includes('预期总库存数量') || keys.includes('预期总库存');
-        });
+        let invData = null;
+        for (let sheet of allSheets) {
+            if (!sheet || sheet.length === 0) continue;
+            let keys = Object.keys(sheet[0]).map(k => String(k).trim().toLowerCase());
+            if (keys.includes('fba在库') || keys.includes('预期总库存数量') || keys.includes('预期总库存')) {
+                invData = sheet;
+                break;
+            }
+        }
 
         if (invData) {
             let keys = Object.keys(invData[0]);
-            let expKey = keys.find(k => k.trim().toLowerCase() === '预期总库存数量' || k.trim().toLowerCase() === '预期总库存');
-            let fbaKey = keys.find(k => k.trim().toLowerCase() === 'fba在库' || k.trim().toLowerCase() === 'fba在库库存');
-            let skuKey = keys.find(k => k.trim().toLowerCase() === '货号' || k.trim().toLowerCase() === 'sku');
-            let asinKey = keys.find(k => k.trim().toLowerCase() === '父asin' || k.trim().toLowerCase() === 'asin');
+            let expKey = keys.find(k => String(k).trim() === '预期总库存数量' || String(k).trim() === '预期总库存');
+            let fbaKey = keys.find(k => String(k).trim() === 'fba在库' || String(k).trim() === 'FBA在库库存');
+            let skuKey = keys.find(k => String(k).trim() === '货号' || String(k).trim().toUpperCase() === 'SKU');
+            let asinKey = keys.find(k => String(k).trim() === '父asin' || String(k).trim().toLowerCase() === 'asin');
 
             invData.forEach(row => {
                 let exp = expKey && row[expKey] !== undefined ? parseNumber(row[expKey]) : 0;
                 let fba = fbaKey && row[fbaKey] !== undefined ? parseNumber(row[fbaKey]) : 0;
                 
-                if (skuKey && row[skuKey]) {
+                if (skuKey && row[skuKey] !== undefined) {
                     let skuStr = String(row[skuKey]).trim().toUpperCase();
                     if (isValidDataRow(skuStr)) {
                         if (!skuInventory[skuStr]) skuInventory[skuStr] = { exp: 0, fba: 0 };
@@ -918,7 +920,7 @@
                     }
                 }
                 
-                if (asinKey && row[asinKey]) {
+                if (asinKey && row[asinKey] !== undefined) {
                     let asinStr = String(row[asinKey]).trim();
                     if (isValidDataRow(asinStr)) {
                         if (!asinInventory[asinStr]) asinInventory[asinStr] = { exp: 0, fba: 0 };
@@ -931,6 +933,7 @@
         
         const getWeight = (tag) => {
             if(!tag) return 0;
+            tag = String(tag);
             if(tag.includes('稳定')) return 4;
             if(tag.includes('趋势')) return 3;
             if(tag.includes('淘汰') || tag.includes('弃置')) return 2;
@@ -940,6 +943,7 @@
         
         const getStandardStrategy = (tag) => {
             if(!tag) return '-';
+            tag = String(tag);
             if(tag.includes('稳定')) return '稳定款';
             if(tag.includes('趋势')) return '趋势款';
             if(tag.includes('淘汰') || tag.includes('弃置')) return '淘汰款';
@@ -957,7 +961,8 @@
 
                 if (isValidDataRow(rawAsin)) {
                     if (isValidDataRow(rawSku)) {
-                        asinToSku[rawAsin] = rawSku;
+                        if (!asinToSku[rawAsin]) asinToSku[rawAsin] = rawSku;
+                        else asinToSku[rawAsin] = asinToSku[rawAsin] + '/' + rawSku;
                     }
                     
                     if (!globalAsinTags[rawAsin]) {
@@ -979,12 +984,13 @@
             if (!globalAsinTags[asin]) {
                 globalAsinTags[asin] = { season: new Set(), quarter: new Set(), cat2: new Set(), cat4: new Set(), strategyWeight: -1, strategy: '-', expectedInventory: 0, fbaInventory: 0 };
             }
-            let rawSku = asinToSku[asin];
+            let rawSku = String(asinToSku[asin]);
             let totalExp = 0;
             let totalFba = 0;
+            let foundInSku = false;
             
             if (rawSku) {
-                let skus = Array.from(new Set(rawSku.split(/[/,;，；\\]+/).map(s => s.trim().toUpperCase()).filter(s => s)));
+                let skus = Array.from(new Set(rawSku.split(/[/,;，；\\]+/).map(s => String(s).trim().toUpperCase()).filter(s => s)));
                 skus.forEach(sku => {
                     if (skuToCat[sku]) {
                         let c2 = skuToCat[sku].cat2;
@@ -995,12 +1001,13 @@
                     if (skuInventory[sku]) {
                         totalExp += skuInventory[sku].exp;
                         totalFba += skuInventory[sku].fba;
+                        foundInSku = true;
                     }
                 });
             }
             
-            globalAsinTags[asin].expectedInventory = totalExp > 0 ? totalExp : (asinInventory[asin] ? asinInventory[asin].exp : 0);
-            globalAsinTags[asin].fbaInventory = totalFba > 0 ? totalFba : (asinInventory[asin] ? asinInventory[asin].fba : 0);
+            globalAsinTags[asin].expectedInventory = foundInSku ? totalExp : (asinInventory[asin] ? asinInventory[asin].exp : 0);
+            globalAsinTags[asin].fbaInventory = foundInSku ? totalFba : (asinInventory[asin] ? asinInventory[asin].fba : 0);
         }
         
         for(let asin in globalAsinTags) {
@@ -1161,16 +1168,17 @@
         let maxDate = '';
 
         data1.forEach(row => {
-            const rowDateStr = String(row['广告日期']).trim();
+            const rowDateStr = String(getColRaw(row, ['广告日期', '日期', 'date'])).trim();
             const asinStr = String(getColRaw(row, ['父asin', 'asin'])).trim();
             
             if (!isValidDataRow(asinStr)) return;
-            if (!rowDateStr || rowDateStr === '总计' || rowDateStr.includes('广告')) return;
+            if (!rowDateStr || rowDateStr === '总计' || String(rowDateStr).includes('广告') || rowDateStr === 'undefined') return;
 
             if (/\d/.test(rowDateStr)) {
                 if (maxDate === '' || rowDateStr > maxDate) maxDate = rowDateStr;
             }
             if (!grouped[asinStr]) grouped[asinStr] = [];
+            row['_normalized_date'] = rowDateStr;
             grouped[asinStr].push(row);
         });
 
@@ -1190,9 +1198,9 @@
         
         for (const asin in grouped) {
             let group = grouped[asin];
-            group.sort((a, b) => String(a['广告日期']).localeCompare(String(b['广告日期'])));
+            group.sort((a, b) => String(a['_normalized_date']).localeCompare(String(b['_normalized_date'])));
             
-            if (String(group[group.length - 1]['广告日期']).trim() !== maxDate) continue;
+            if (String(group[group.length - 1]['_normalized_date']).trim() !== maxDate) continue;
 
             const week2Data = group.slice(-7);
             const week1Data = group.slice(0, -7).slice(-7); 
@@ -1202,7 +1210,7 @@
 
             let w2_sales = 0, w2_spend = 0, w2_ad_sales = 0, w2_revenue = 0, w2_ctr_sum = 0, w2_cvr_sum = 0, w2_clicks = 0, w2_impressions = 0, w2_margin_sum = 0, w2_margin_rev_sum = 0;
             week2Data.forEach(r => {
-                const d = String(r['广告日期']).trim();
+                const d = String(r['_normalized_date']).trim();
                 w2_sales += parseNumber(getColRaw(r, ['总销量', '销量']));
                 w2_spend += parseNumber(getColRaw(r, ['广告花费', '花费']));
                 w2_ad_sales += parseNumber(getColRaw(r, ['广告销售量', '销售量']));
@@ -1225,7 +1233,7 @@
 
             let w1_sales = 0, w1_spend = 0, w1_ad_sales = 0, w1_revenue = 0, w1_ctr_sum = 0, w1_cvr_sum = 0, w1_clicks = 0, w1_impressions = 0, w1_margin_sum = 0, w1_margin_rev_sum = 0;
             week1Data.forEach(r => {
-                const d = String(r['广告日期']).trim();
+                const d = String(r['_normalized_date']).trim();
                 w1_sales += parseNumber(getColRaw(r, ['总销量', '销量']));
                 w1_spend += parseNumber(getColRaw(r, ['广告花费', '花费']));
                 w1_ad_sales += parseNumber(getColRaw(r, ['广告销售量', '销售量']));
@@ -1435,6 +1443,10 @@
             resultRow['w2_clicks'] = w2_clicks;
             resultRow['w2_impressions'] = w2_impressions;
             resultRow['w2_margin_sum_raw'] = w2_margin_sum; 
+            
+            // 补丁：处理当周有花费无销量，导致CPS无穷大的情况
+            if (!isFinite(resultRow['近一周CPS($)'])) resultRow['近一周CPS($)'] = resultRow['近一周日均花费($)'] * 7;
+            if (!isFinite(resultRow['上周CPS($)'])) resultRow['上周CPS($)'] = resultRow['上周日均花费($)'] * 7;
 
             resultRow['_drilldown_details'] = drilldownData;
             globalAllAnalyticalResults.push(resultRow);
@@ -2749,7 +2761,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_67() {
+    async function exportToExcelV7_69() {
         if(globalAllAnalyticalResults.length === 0) return alert('没有可导出的数据');
         
         try {
@@ -2891,7 +2903,7 @@
             const dd = String(today.getDate()).padStart(2, '0');
             const dateSuffix = `${yyyy}${mm}${dd}`;
             
-            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.67_${dateSuffix}.xlsx`);
+            saveAs(blob, `广告数据报表_全矩阵深度分析_V7.69_${dateSuffix}.xlsx`);
 
         } catch (error) {
             alert("导出异常: " + error.message);
@@ -2931,10 +2943,15 @@
             uploadArea.style.display = 'none';
 
             const timestamp = new Date().getTime();
-            const response = await fetch(`./广告数据_2.xlsx?t=${timestamp}`, { cache: 'no-store' });
             
-            if (!response.ok) {
-                throw new Error(`云端文件未找到或网络异常 (HTTP ${response.status})`);
+            // 双重嗅探机制：优先尝试标准名称，若失败则尝试带 _2 的测试名称
+            let response;
+            try {
+                response = await fetch(`./广告数据.xlsx?t=${timestamp}`, { cache: 'no-store' });
+                if (!response.ok) throw new Error('Not found');
+            } catch (err) {
+                response = await fetch(`./广告数据_2.xlsx?t=${timestamp}`, { cache: 'no-store' });
+                if (!response.ok) throw new Error('Both fetch attempts failed');
             }
 
             const arrayBuffer = await response.arrayBuffer();
@@ -2983,7 +3000,7 @@
             console.warn('云端自动拉取中止，转为手动模式：', err);
             loadingEl.style.display = 'none';
             uploadArea.style.display = 'block';
-            uploadArea.querySelector('h3').innerText = '未检测到云端更新，请手动导入《广告数据_2.xlsx》';
+            uploadArea.querySelector('h3').innerText = '未检测到云端更新，请手动导入《广告数据.xlsx》或《广告数据_2.xlsx》';
         }
     }
 </script>
