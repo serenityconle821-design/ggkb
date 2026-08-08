@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>全维度链路诊断中枢 V8.01</title>
+    <title>全维度链路诊断中枢 V8.03</title>
     <style>
         :root { 
             --bg-color: #FFFFFF;     
@@ -79,6 +79,84 @@
         
         .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid rgba(0,113,227,0.2); border-radius: 50%; border-top-color: var(--accent); animation: spin 1s ease-in-out infinite; vertical-align: middle; margin-right: 8px; }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* 侧边时间轴导航视觉规范 - V8.03 极简紧凑比例 */
+        .side-nav {
+            position: fixed;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 100px;
+            padding: 16px 8px; /* 极致收紧内边距 */
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.03); /* 弱化阴影更显轻薄 */
+            display: flex;
+            flex-direction: column;
+            gap: 12px; /* 缩减点间距 */
+            z-index: 4000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1px solid rgba(0,0,0,0.06);
+        }
+        .side-nav.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .nav-dot-wrapper {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 24px; /* 缩窄交互区 */
+            height: 14px; /* 降低交互区 */
+            cursor: pointer;
+            border-radius: 100px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .nav-dot {
+            width: 8px; /* 缩小常规横线宽度 */
+            height: 3px; /* 缩小横线厚度 */
+            background-color: #D2D2D7;
+            border-radius: 3px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .nav-dot-wrapper:hover .nav-dot {
+            background-color: #86868B;
+        }
+        .nav-dot-wrapper.active {
+            background-color: #E8F0FE; 
+        }
+        .nav-dot-wrapper.active .nav-dot {
+            width: 12px; /* 缩小激活态宽度 */
+            height: 3px;
+            background-color: var(--accent);
+        }
+        .nav-dot-wrapper::after {
+            content: attr(data-label);
+            position: absolute;
+            right: 32px; /* 拉近 Hover 提示框距离 */
+            top: 50%;
+            transform: translateY(-50%) translateX(6px);
+            background: rgba(29, 29, 31, 0.85);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .nav-dot-wrapper:hover::after {
+            opacity: 1;
+            transform: translateY(-50%) translateX(0);
+        }
 
         .modal { display: none; position: fixed; z-index: 5000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(255,255,255,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); transition: opacity 0.3s; }
         .modal-content { background-color: transparent; margin: 2% auto; padding: 0 40px; width: 100%; max-width: 1800px; height: 96vh; display: flex; flex-direction: column; overflow: hidden; border: none; box-shadow: none; }
@@ -212,8 +290,27 @@
     </div>
 </div>
 
+<!-- 侧边平滑时间轴导航 -->
+<div class="side-nav" id="side-nav">
+    <div class="nav-dot-wrapper active" data-target="header-section" data-label="顶部操作" onclick="scrollToSec('header-section')">
+        <div class="nav-dot"></div>
+    </div>
+    <div class="nav-dot-wrapper" data-target="kpi-grid" data-label="核心指标" onclick="scrollToSec('kpi-grid')">
+        <div class="nav-dot"></div>
+    </div>
+    <div class="nav-dot-wrapper" data-target="charts-grid-1" data-label="大盘分布" onclick="scrollToSec('charts-grid-1')">
+        <div class="nav-dot"></div>
+    </div>
+    <div class="nav-dot-wrapper" data-target="owner-summary-grid" data-label="营收全景" onclick="scrollToSec('owner-summary-grid')">
+        <div class="nav-dot"></div>
+    </div>
+    <div class="nav-dot-wrapper" data-target="charts-grid-sales" data-label="异动分析" onclick="scrollToSec('charts-grid-sales')">
+        <div class="nav-dot"></div>
+    </div>
+</div>
+
 <div class="container">
-    <div class="header">
+    <div class="header" id="header-section">
         <div class="title">全维度链路诊断中枢</div>
         <div class="subtitle">深度链接广告效能、进销存水位与历史规律，实现全矩阵精细化运营诊断。</div>
         
@@ -286,7 +383,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export btn-secondary" style="margin-right: 16px;" onclick="document.getElementById('file-input').click()">手动覆盖数据</button>
-        <button class="btn-export" onclick="exportToExcelV8_01()">导出精研分析报告</button>
+        <button class="btn-export" onclick="exportToExcelV8_03()">导出精研分析报告</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -311,14 +408,14 @@
     <div class="charts-grid full-grid" id="charts-grid-sales">
         <div class="chart-container">
             <div class="chart-header">
-                <div><span style="font-weight: 700; font-size: 24px; color: var(--text-main); letter-spacing:-0.01em;">日均销量骤降 TOP 10</span></div>
+                <div><span style="font-weight: 700; font-size: 24px; color: var(--text-main); letter-spacing:-0.01em;">单品异动榜单 (销量骤降 / 获客恶化)</span></div>
                 <div><select id="ownerFilterSales" class="filter-select" onchange="updateSalesChart()"><option value="ALL">全员</option></select></div>
             </div>
             <div class="chart-wrapper"><div id="chart-sales" class="absolute-chart"></div></div>
         </div>
     </div>
     
-    <div class="charts-grid full-grid" id="charts-grid-cps">
+    <div class="charts-grid full-grid" id="charts-grid-cps" style="display: none;">
         <div class="chart-container">
             <div class="chart-header">
                 <div><span style="font-weight: 700; font-size: 24px; color: var(--text-main); letter-spacing:-0.01em;">成本恶化 TOP 10</span></div>
@@ -457,6 +554,39 @@
     let currentSortCol = '近一周日均销量';
     let currentSortDir = 'desc';
     let activeFilters = []; 
+
+    function scrollToSec(id) {
+        const target = document.getElementById(id);
+        if (target) {
+            const topOffset = target.getBoundingClientRect().top + window.scrollY - 80;
+            window.scrollTo({ top: topOffset, behavior: 'smooth' });
+        }
+    }
+
+    function initScrollSpy() {
+        const sections = ['header-section', 'kpi-grid', 'charts-grid-1', 'owner-summary-grid', 'charts-grid-sales'];
+        window.addEventListener('scroll', () => {
+            let current = '';
+            const scrollPos = window.scrollY + window.innerHeight / 3;
+
+            sections.forEach(sec => {
+                const el = document.getElementById(sec);
+                if (el && el.style.display !== 'none' && el.offsetParent !== null) {
+                    const elTop = el.getBoundingClientRect().top + window.scrollY;
+                    if (scrollPos >= elTop - 50) current = sec;
+                }
+            });
+
+            if (!current && sections.length > 0) current = sections[0];
+
+            document.querySelectorAll('.nav-dot-wrapper').forEach(dot => {
+                dot.classList.remove('active');
+                if (dot.getAttribute('data-target') === current) {
+                    dot.classList.add('active');
+                }
+            });
+        });
+    }
 
     async function autoFetchGitHubData() {
         const fetchStatus = document.getElementById('fetch-status-text');
@@ -1461,6 +1591,9 @@
         }
 
         buildBaselines(globalAllAnalyticalResults);
+        
+        // 数据加载完毕，显示侧边导航
+        document.getElementById('side-nav').classList.add('visible');
     }
     
     function buildBaselines(allResults) {
@@ -1944,7 +2077,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV8_01() {
+    async function exportToExcelV8_03() {
         if(globalAllAnalyticalResults.length === 0) return alert('没有可导出的数据');
         try {
             const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('全链路多维诊断分析报表');
@@ -1990,12 +2123,13 @@
             ws.columns.forEach((col, i) => { let cn = allCols[i]; if (cn.includes('结论')) col.width = 45; else if (cn.includes('主图')) col.width = 25; else if (cn.includes('优先级')) col.width = 16; else if (cn.includes('天数')) col.width = 14; else if (cn.includes('asin') || cn.includes('货号') || cn.includes('日期')) col.width = 14; else col.width = 13; });
 
             const buffer = await wb.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-            const today = new Date(); saveAs(blob, `全维度链路诊断数据报表_V8.01_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}.xlsx`);
+            const today = new Date(); saveAs(blob, `全维度链路诊断数据报表_V8.03_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}.xlsx`);
         } catch (error) { alert("导出异常: " + error.message); }
     }
 
     document.addEventListener('DOMContentLoaded', () => { 
         initMultiSelects(); 
+        initScrollSpy();
         autoFetchGitHubData(); 
     });
 </script>
