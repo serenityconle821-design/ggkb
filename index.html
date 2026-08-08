@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>全维度链路诊断中枢 V7.91</title>
+    <title>全维度链路诊断中枢 V7.95</title>
     <style>
         :root { 
             /* Apple Store 营销页纯白高对比视觉规范 */
@@ -162,7 +162,6 @@
         .missing-data { color: #D2D2D7; font-weight: normal; font-size: 12px; }
     </style>
     
-    <!-- 全局防崩溃自动检测器脚本 -->
     <script>
         window.onerror = function(msg, url, lineNo, columnNo, error) {
             const logger = document.getElementById('sys-error-logger');
@@ -187,7 +186,7 @@
         });
     </script>
 
-    <!-- 使用全球 CDN 确保免 VPN 加载 -->
+    <!-- CDN 库 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>if(typeof XLSX === 'undefined') document.write('<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');</script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
@@ -199,7 +198,6 @@
 </head>
 <body>
 
-<!-- 自动检测与报错捕捉 UI -->
 <div id="sys-error-logger" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 99999; background: #FFF0F3; border: 2px solid #FF375F; border-radius: 20px; padding: 24px; box-shadow: 0 20px 40px rgba(255, 55, 95, 0.15); max-width: 480px;">
     <h3 style="color: #FF375F; margin: 0 0 12px 0; font-size: 18px; display: flex; align-items: center; font-family: var(--font-family);"><span style="font-size:24px; margin-right:10px;">🚨</span> 系统运行异常拦截</h3>
     <p style="font-size: 14px; color: #1D1D1F; margin: 0 0 16px 0; font-weight: 500; font-family: var(--font-family); line-height:1.5;">系统探测到致命渲染断点或数据解析异常。请将下方<strong style="color:#FF375F;">红色区域</strong>的错误代码截图，反馈给开发人员进行快速修复：</p>
@@ -275,7 +273,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export btn-secondary" style="margin-right: 16px;" onclick="document.getElementById('file-input').click()">重新上传</button>
-        <button class="btn-export" onclick="exportToExcelV7_91()">导出精研分析报告</button>
+        <button class="btn-export" onclick="exportToExcelV7_95()">导出精研分析报告</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -433,7 +431,7 @@
 
 <script>
     // ============================================================================
-    // V7.91 增加 [FBA可售天数/总库可售天数] 至底层过滤体系及导出体系
+    // V7.95 彻底重构：分离数据运算与UI渲染层，修复局部作用域泄露引发的解析崩溃
     // ============================================================================
     let globalAsinTags = {};
     let globalAllAnalyticalResults = []; 
@@ -457,7 +455,10 @@
         let absVal = Math.abs(num);
         let sign = num < 0 ? '-' : '';
         let prefix = isCurrency ? '¥' : '';
-        if (absVal >= 10000) {
+        if (absVal >= 1000000) {
+            let mVal = (absVal / 1000000).toFixed(2).replace(/\.?0+$/, '');
+            return sign + prefix + mVal + 'M';
+        } else if (absVal >= 10000) {
             let wVal = (absVal / 10000).toFixed(2).replace(/\.?0+$/, '');
             return sign + prefix + wVal + 'W';
         } else {
@@ -600,8 +601,8 @@
     function renderAdvFilters() {
         const container = document.getElementById('active-filters-container'); container.innerHTML = '';
         activeFilters.forEach((f, i) => {
-            const tag = document.createElement('span'); tag.className = 'tag tag-p2'; tag.style.display = 'inline-flex'; tag.style.alignItems = 'center'; tag.style.gap = '8px'; tag.style.background = 'var(--accent-light)'; tag.style.color = 'var(--accent)'; tag.style.border = '1px solid rgba(0, 113, 227, 0.2)'; tag.style.padding = '4px 8px';
-            tag.innerHTML = `<span style="cursor:pointer; display:inline-block; height:100%;" onclick="editAdvFilter(${i})" title="点击编辑">${f.colName} ${f.op} ${f.rawVal}</span> <span style="cursor:pointer; color: #FF3B30; font-weight:bold; font-size:16px; line-height:1; padding-left:4px; border-left: 1px solid rgba(0, 113, 227, 0.15);" onclick="removeAdvFilter(${i})" title="移除条件">×</span>`;
+            const tag = document.createElement('span'); tag.className = 'tag tag-p2'; tag.style.display = 'inline-flex'; tag.style.alignItems = 'center'; tag.style.gap = '8px'; tag.style.background = 'var(--accent-light)'; tag.style.color = 'var(--accent)';
+            tag.innerHTML = `<span style="cursor:pointer; display:inline-block; height:100%;" onclick="editAdvFilter(${i})" title="点击重新编辑">${f.colName} ${f.op} ${f.rawVal}</span> <span style="cursor:pointer; color: #FF3B30; font-weight:bold; font-size:16px; line-height:1; padding-left:4px; border-left: 1px solid rgba(0, 113, 227, 0.15);" onclick="removeAdvFilter(${i})" title="移除条件">×</span>`;
             container.appendChild(tag);
         });
     }
@@ -1041,15 +1042,17 @@
         if (maxDate === '') { alert("错误: 无法在表1提取到有效【广告日期】。"); return; }
 
         const dateEl = document.getElementById('data-cutoff-date');
-        let currentMonthStr = "";
+        let currentMonthStr = ""; let nextMonthStr = "";
         if (/^\d{8}$/.test(maxDate)) {
             let yNum = parseInt(maxDate.substring(0, 4), 10); let mNum = parseInt(maxDate.substring(4, 6), 10);
-            currentMonthStr = `${yNum}-${String(mNum).padStart(2, '0')}`;
+            let nextM = mNum + 1 > 12 ? 1 : mNum + 1; let nextY = mNum + 1 > 12 ? yNum : yNum - 1; 
+            nextMonthStr = `${nextY}-${String(nextM).padStart(2, '0')}`; currentMonthStr = `${yNum-1}-${String(mNum).padStart(2, '0')}`;
         } else if (maxDate.includes('-') || maxDate.includes('.')) {
             let parts = maxDate.split(/[-.]/);
             if (parts.length >= 2) {
                 let yNum = parseInt(parts[0], 10); let mNum = parseInt(parts[1], 10);
-                currentMonthStr = `${yNum}-${String(mNum).padStart(2, '0')}`;
+                let nextM = mNum + 1 > 12 ? 1 : mNum + 1; let nextY = mNum + 1 > 12 ? yNum : yNum - 1; 
+                nextMonthStr = `${nextY}-${String(nextM).padStart(2, '0')}`; currentMonthStr = `${yNum-1}-${String(mNum).padStart(2, '0')}`;
             }
         }
         let currentMonth = parseInt(currentMonthStr.split('-')[1], 10) || (new Date()).getMonth() + 1;
@@ -1138,9 +1141,21 @@
             
             let currentRunRate = w2_sales_avg * 30; 
             let expected_future_run_rate = currentRunRate;
+            let is_season_ending = false; 
             
             let season_tag = tags.season !== '-' ? tags.season : '四季款';
             let strat_tag = tags.strategy !== '-' ? tags.strategy : '常规款';
+
+            if (season_tag !== '四季款' && nextMonthStr && tags.monthly_sales && tags.monthly_sales.length > 0) {
+                let nextMonthRecords = tags.monthly_sales.filter(x => x.month.endsWith('-' + nextMonthStr));
+                let currentMonthRecords = tags.monthly_sales.filter(x => x.month.endsWith('-' + currentMonthStr));
+                if (nextMonthRecords.length > 0) {
+                    let histNextMonthSales = nextMonthRecords.reduce((s,x)=>s+x.sales,0) / nextMonthRecords.length;
+                    let histCurrentMonthSales = currentMonthRecords.length > 0 ? currentMonthRecords.reduce((s,x)=>s+x.sales,0)/currentMonthRecords.length : 0;
+                    let compareBase = Math.max(currentRunRate, histCurrentMonthSales);
+                    if (compareBase > 10 && histNextMonthSales < compareBase * 0.6) { is_season_ending = true; expected_future_run_rate = histNextMonthSales; }
+                }
+            }
             
             let monthAvgs = new Array(13).fill(0);
             let monthCounts = new Array(13).fill(0);
@@ -1156,10 +1171,6 @@
             let daily_future_rate = expected_future_run_rate > 0 ? (expected_future_run_rate / 30) : 0;
             let fbaDays = daily_future_rate > 0 ? Math.floor(fbaInv / daily_future_rate) : 999;
             let totalDays = daily_future_rate > 0 ? Math.floor(expInv / daily_future_rate) : 999;
-
-            let is_stock_out_risk = daily_future_rate > 0 && fbaDays <= 14 && fbaInv > 0;
-            let is_completely_out = daily_future_rate > 0 && fbaDays === 0 && fbaInv === 0;
-            let is_overstock_risk = daily_future_rate > 0 && (totalDays > 120 || fbaDays > 90);
 
             let isSummer = season_tag.includes('夏');
             let isWinter = season_tag.includes('冬');
@@ -1181,6 +1192,10 @@
                 clearance_adv_html += `<div class="diag-item">需尽快降价测试弹性，或开启大额折扣促销，密切监控消耗进度。</div>`;
                 clearance_adv_text += `需尽快降价测试或开启大额折扣促销。`;
             }
+
+            let is_stock_out_risk = daily_future_rate > 0 && fbaDays <= 14 && fbaInv > 0;
+            let is_completely_out = daily_future_rate > 0 && fbaDays === 0 && fbaInv === 0;
+            let is_overstock_risk = daily_future_rate > 0 && (totalDays > 120 || fbaDays > 90);
 
             if (strat_tag.includes('淘汰') || strat_tag.includes('弃置')) {
                  if (is_stock_out_risk || is_completely_out) {
@@ -1296,6 +1311,38 @@
                 price_fb_html = `<div class="diag-item" style="color:#FF3B30;"><b>降价反馈：</b>需求可能遇刚性天花板，单量不增反跌，必须立即停止降价战略。</div>`; price_fb_text = `【降价反馈】需求见顶，必须立即停止降价。`;
             }
 
+            let restock_adv_html = "";
+            let restock_adv_text = "";
+            if (!strat_tag.includes('淘汰') && !strat_tag.includes('弃置') && totalDays > 0 && totalDays < 120 && daily_future_rate > 0) {
+                let is_late_season = is_season_ending || (isSummer && currentMonth >= 7 && currentMonth <= 9) || (isWinter && (currentMonth === 1 || currentMonth === 2 || currentMonth === 12));
+                if (isAllSeason) {
+                    restock_adv_html = `<div class="diag-item" style="color:var(--accent);"><b>返单预警：</b>当前总库余 ${totalDays} 天 (< 120天)，未来销量趋势持续，请结合供应链交期立即启动返单计划。</div>`;
+                    restock_adv_text = `【返单预警】总库低于120天，需启动返单；`;
+                    if (priority.includes('P4')) priority = "P2 - 扩量/调控";
+                } else if (is_late_season) {
+                    restock_adv_html = `<div class="diag-item" style="color:var(--text-main);"><b>返单预警：</b>总库仅余 ${totalDays} 天，但该款即将过季，<b>无需返单补货</b>，平稳消耗即可。</div>`;
+                    restock_adv_text = `即将过季，不建议返单补货；`;
+                } else {
+                    restock_adv_html = `<div class="diag-item" style="color:var(--accent);"><b>返单预警：</b>总库仅余 ${totalDays} 天，不足以维持至销售季末，请结合交期立即评估返单补货。</div>`;
+                    restock_adv_text = `【返单预警】无法支撑至季末，需评估返单；`;
+                    if (priority.includes('P4')) priority = "P2 - 扩量/调控";
+                }
+            }
+            html_adv += restock_adv_html;
+            text_adv += restock_adv_text;
+
+            let invDaysHtml = '';
+            if (daily_future_rate > 0) {
+                if (fbaDays <= 14 && fbaInv > 0) { invDaysHtml = `<div style="font-size:11px; color:var(--red); font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums; background: #FFECEB; padding:4px 8px; border-radius:var(--radius-pill);">预估断货 ${fbaDays} 天</div>`; } 
+                else if (fbaDays === 0 && fbaInv === 0) { invDaysHtml = `<div style="font-size:11px; color:var(--red); font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums; background: #FFECEB; padding:4px 8px; border-radius:var(--radius-pill);">已断货</div>`; } 
+                else if (totalDays > 120 || (is_season_ending && totalDays > 60)) { invDaysHtml = `<div style="font-size:11px; color:#FF9500; font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums; background: #FFF4E5; padding:4px 8px; border-radius:var(--radius-pill);">总库积压 ${totalDays} 天</div>`; } 
+                else if (fbaDays > 90) { invDaysHtml = `<div style="font-size:11px; color:#FF9500; font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums; background: #FFF4E5; padding:4px 8px; border-radius:var(--radius-pill);">FBA积压 ${fbaDays} 天</div>`; } 
+                else { invDaysHtml = `<div style="font-size:11px; color:var(--green); font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums; background: #EBF9EE; padding:4px 8px; border-radius:var(--radius-pill);">周转健康 ${fbaDays} 天</div>`; }
+            } else if (fbaInv > 0) { invDaysHtml = `<div style="font-size:11px; color:#FF9500; font-weight:600; margin-top:6px; background: #FFF4E5; padding:4px 8px; border-radius:var(--radius-pill);">滞销风险</div>`; } 
+            else { invDaysHtml = `<div style="font-size:11px; color:var(--red); font-weight:600; margin-top:6px; background: #FFECEB; padding:4px 8px; border-radius:var(--radius-pill);">已断货</div>`; }
+
+            let combinedInvHtml = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2;"><div class="main-val" style="color:var(--text-main); font-size:16px;" title="FBA在库库存">${fbaInv.toLocaleString()}</div><div style="color:#86868B; font-size:11px; font-weight:500; margin-top:4px;" title="预期总库存">总计 ${expInv.toLocaleString()}</div>${invDaysHtml}</div>`;
+
             const w2_ctr_avg = w2_impressions > 0 ? w2_clicks / w2_impressions : (week2Data.length ? w2_ctr_sum / week2Data.length : 0);
             const w1_ctr_avg = w1_impressions > 0 ? w1_clicks / w1_impressions : (week1Data.length ? w1_ctr_sum / week1Data.length : 0);
             const ctr_diff = w2_ctr_avg - w1_ctr_avg; const ctr_rate = w1_ctr_avg > 0 ? ctr_diff / w1_ctr_avg : 0;
@@ -1310,7 +1357,6 @@
             resultRow['季节标签'] = tags.season; resultRow['企划Q季'] = tags.quarter; resultRow['二级类目'] = tags.cat2; resultRow['四级类目'] = tags.cat4;
             resultRow['策略标签'] = tags.strategy; resultRow['预期总库存'] = tags.expectedInventory || 0; resultRow['FBA在库库存'] = tags.fbaInventory || 0;
             
-            // 全新附加入底层矩阵，供多维筛选与导出使用
             resultRow['FBA可售天数'] = fbaDays;
             resultRow['总库可售天数'] = totalDays;
             
@@ -1328,6 +1374,7 @@
             
             resultRow['_html_诊断结论'] = `<div style="font-family: var(--font-family);"><div class="diag-title">🏷️ [${season_tag}] ${strat_tag}诊断</div><div class="diag-text" style="font-size:11px; opacity:0.85;">大盘基底：${base_insight}</div><div style="margin: 6px 0; border-top: 1px dashed #D2D2D7;"></div><div style="margin-bottom:6px;">${html_inv}</div>${html_adv}${price_fb_html}</div>`;
             resultRow['诊断结论'] = `【诊断定位】[${season_tag}] ${strat_tag} | ${base_insight}\n${text_inv}\n【执行策略】\n${text_adv}\n${price_fb_text}`;
+            resultRow['_html_库存状态'] = combinedInvHtml;
             
             function getSignStr(val) { return val > 0 ? '+' : (val < 0 ? '-' : ''); }
             let dataStr = `【大盘波动】销 ${w2_sales_avg.toFixed(1)} (${getSignStr(sales_avg_diff)}${Math.abs(sales_avg_diff).toFixed(1)}) | 利润率 ${(w2_margin_pct*100).toFixed(1)}% (${getSignStr(margin_pct_diff)}${(Math.abs(margin_pct_diff)*100).toFixed(1)}%) | CPS $${w2_cps.toFixed(2)} (${getSignStr(cps_diff)}${Math.abs(cps_diff).toFixed(2)}) | TACOS ${(w2_tacos*100).toFixed(1)}% (${getSignStr(tacos_diff)}${(Math.abs(tacos_diff)*100).toFixed(1)}%)`;
@@ -1380,7 +1427,7 @@
     }
 
     function renderDashboard(dashResults, dashMetrics) {
-        let p0Count = 0; let priorityCounts = {'P0 - 紧急止损': 0, 'P1 - 降本增效': 0, 'P1 - 乘胜追击': 0, 'P2 - 尝试扩量': 0, 'P2 - 预算调控': 0, 'P3 - 观察防守': 0, 'P4 - 维持现状': 0};
+        let p0Count = 0; let priorityCounts = {'P0 - 紧急止损': 0, 'P1 - 降本增效': 0, 'P1 - 乘胜追击': 0, 'P2 - 扩量/调控': 0, 'P3 - 观察防守': 0, 'P4 - 维持现状': 0};
         let totalW2Sales = 0, totalW2AdSales = 0, totalW2Spend = 0, totalW2Revenue = 0;
         let totalW1Sales = 0, totalW1AdSales = 0, totalW1Spend = 0, totalW1Revenue = 0;
         
@@ -1612,7 +1659,7 @@
         
         const option = {
             tooltip: { 
-                trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#D2D2D7', padding: 16, borderRadius: 16, extraCssText: 'box-shadow: 0 10px 40px rgba(0,0,0,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);',
+                trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.98)', borderColor: '#D2D2D7', padding: 16, borderRadius: 16, extraCssText: 'box-shadow: 0 10px 40px rgba(0,0,0,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);',
                 formatter: function(params) {
                     const item = badAsins[params[0].dataIndex];
                     return `<b>父ASIN:</b> ${item['父asin']}<br/><b>货号:</b> ${item['货号'] || '-'}<br/><b>营销负责人:</b> ${item['营销负责人'] || '-'}<br/><br/><span style="color:#0071E3; font-weight:bold;">近一周日均销量:</span> ${item['近一周日均销量'].toFixed(2)}<br/><span style="color:#86868B; font-weight:bold;">上周日均销量:</span> ${item['上周日均销量'].toFixed(2)}<br/><span style="color:#FF3B30;">日均销量跌幅: -${Math.abs(item['日均销量差额']).toFixed(2)}</span>`;
@@ -1634,7 +1681,7 @@
         
         const option = {
             tooltip: { 
-                trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#D2D2D7', padding: 16, borderRadius: 16, extraCssText: 'box-shadow: 0 10px 40px rgba(0,0,0,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);',
+                trigger: 'axis', backgroundColor: 'rgba(255,255,255,0.98)', borderColor: '#D2D2D7', padding: 16, borderRadius: 16, extraCssText: 'box-shadow: 0 10px 40px rgba(0,0,0,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);',
                 formatter: function(params) {
                     const item = badAsins[params[0].dataIndex];
                     return `<b>父ASIN:</b> ${item['父asin']}<br/><b>货号:</b> ${item['货号'] || '-'}<br/><b>营销负责人:</b> ${item['营销负责人'] || '-'}<br/><br/><span style="color:#FF3B30; font-weight:bold;">CPS抬升:</span> +$${item['CPS差额($)'].toFixed(2)}<br/><span style="color:#0071E3; font-weight:bold;">近一周 TACOS:</span> ${(item['近一周TACOS'] * 100).toFixed(2)}%<br/><span style="color:#86868B; font-weight:bold;">上周 TACOS:</span> ${(item['上周TACOS'] * 100).toFixed(2)}%`;
@@ -1777,51 +1824,7 @@
                 str += `</div>`; return (cBaseline || qBaseline) ? str : '';
             };
 
-            let fbaInv = row['FBA在库库存'] || 0; let expInv = row['预期总库存'] || 0; let avgSales = row['近一周日均销量'] || 0; let invDaysHtml = '';
-            
-            let currentMonthStr = ""; let nextMonthStr = "";
-            let maxDate = String(globalAllAnalyticalResults[0] ? globalAllAnalyticalResults[0]['_normalized_date'] : '');
-            if (/^\d{8}$/.test(maxDate)) {
-                let yNum = parseInt(maxDate.substring(0, 4), 10); let mNum = parseInt(maxDate.substring(4, 6), 10);
-                let nextM = mNum + 1 > 12 ? 1 : mNum + 1; let nextY = mNum + 1 > 12 ? yNum : yNum - 1; 
-                nextMonthStr = `${nextY}-${String(nextM).padStart(2, '0')}`; currentMonthStr = `${yNum-1}-${String(mNum).padStart(2, '0')}`;
-            } else if (maxDate.includes('-') || maxDate.includes('.')) {
-                let parts = maxDate.split(/[-.]/);
-                if (parts.length >= 2) {
-                    let yNum = parseInt(parts[0], 10); let mNum = parseInt(parts[1], 10);
-                    let nextM = mNum + 1 > 12 ? 1 : mNum + 1; let nextY = mNum + 1 > 12 ? yNum : yNum - 1; 
-                    nextMonthStr = `${nextY}-${String(nextM).padStart(2, '0')}`; currentMonthStr = `${yNum-1}-${String(mNum).padStart(2, '0')}`;
-                }
-            }
-            
-            let tagsInner = globalAsinTags[row['父asin']] || { monthly_sales: [] };
-            let currentRunRate = avgSales * 30; let expected_future_run_rate = currentRunRate; let is_season_ending = false;
-            
-            if (row['季节标签'] !== '四季款' && nextMonthStr && tagsInner.monthly_sales.length > 0) {
-                let nextMonthRecords = tagsInner.monthly_sales.filter(x => x.month.endsWith('-' + nextMonthStr));
-                let currentMonthRecords = tagsInner.monthly_sales.filter(x => x.month.endsWith('-' + currentMonthStr));
-                if (nextMonthRecords.length > 0) {
-                    let histNextMonthSales = nextMonthRecords.reduce((s,x)=>s+x.sales,0) / nextMonthRecords.length;
-                    let histCurrentMonthSales = currentMonthRecords.length > 0 ? currentMonthRecords.reduce((s,x)=>s+x.sales,0)/currentMonthRecords.length : 0;
-                    let compareBase = Math.max(currentRunRate, histCurrentMonthSales);
-                    if (compareBase > 10 && histNextMonthSales < compareBase * 0.6) { is_season_ending = true; expected_future_run_rate = histNextMonthSales; }
-                }
-            }
-
-            let daily_future_rate = expected_future_run_rate > 0 ? (expected_future_run_rate / 30) : 0;
-            let fbaDays = daily_future_rate > 0 ? Math.floor(fbaInv / daily_future_rate) : 999;
-            let totalDays = daily_future_rate > 0 ? Math.floor(expInv / daily_future_rate) : 999;
-
-            if (daily_future_rate > 0) {
-                if (fbaDays <= 14 && fbaInv > 0) { invDaysHtml = `<div style="font-size:10px; color:var(--red); font-weight:600; margin-top:4px; font-variant-numeric:tabular-nums; background: #FFECEB; padding:2px 4px; border-radius:4px; border: 1px solid rgba(255,59,48,0.2);">预估断货 ${fbaDays} 天</div>`; } 
-                else if (fbaDays === 0 && fbaInv === 0) { invDaysHtml = `<div style="font-size:10px; color:var(--red); font-weight:600; margin-top:4px; font-variant-numeric:tabular-nums; background: #FFECEB; padding:2px 4px; border-radius:4px; border: 1px solid rgba(255,59,48,0.2);">已断货</div>`; } 
-                else if (totalDays > 120 || (is_season_ending && totalDays > 60)) { invDaysHtml = `<div style="font-size:10px; color:#FF9500; font-weight:600; margin-top:4px; font-variant-numeric:tabular-nums; background: #FFF4E5; padding:2px 4px; border-radius:4px; border: 1px solid rgba(255,149,0,0.2);">总库积压 ${totalDays} 天</div>`; } 
-                else if (fbaDays > 90) { invDaysHtml = `<div style="font-size:10px; color:#FF9500; font-weight:600; margin-top:4px; font-variant-numeric:tabular-nums; background: #FFF4E5; padding:2px 4px; border-radius:4px; border: 1px solid rgba(255,149,0,0.2);">FBA积压 ${fbaDays} 天</div>`; } 
-                else { invDaysHtml = `<div style="font-size:10px; color:var(--green); font-weight:600; margin-top:4px; font-variant-numeric:tabular-nums; background: #EBF9EE; padding:2px 4px; border-radius:4px; border: 1px solid rgba(52,199,89,0.2);">周转健康 ${fbaDays} 天</div>`; }
-            } else if (fbaInv > 0) { invDaysHtml = `<div style="font-size:10px; color:#FF9500; font-weight:600; margin-top:4px; background: #FFF4E5; padding:2px 4px; border-radius:4px;">滞销风险</div>`; } 
-            else { invDaysHtml = `<div style="font-size:10px; color:var(--red); font-weight:600; margin-top:4px; background: #FFECEB; padding:2px 4px; border-radius:4px;">已断货</div>`; }
-
-            let combinedInvHtml = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2;"><div class="main-val" style="color:var(--accent); font-size:14px;" title="FBA在库库存">${fbaInv.toLocaleString()}</div><div style="color:#86868B; font-size:10px; font-weight:500; border-top:1px dashed #E5E5EA; margin-top:4px; padding-top:4px; width:100%;" title="预期总库存">总: ${expInv.toLocaleString()}</div>${invDaysHtml}</div>`;
+            let combinedInvHtml = row['_html_库存状态'] || '-';
 
             let salesHtml = `<div class="main-val">${row['近一周日均销量']}</div>` + getSubtextHtml(row['上周日均销量'], row['日均销量差额'], row['销量环比'], false, false, '') + (isExpanded ? appendBase('avgSales', row['近一周日均销量'], false, false, '') : '');
             let spendHtml = `<div class="main-val">$${row['近一周日均花费($)']}</div>` + getSubtextHtml(row['上周日均花费($)'], row['日均花费差额($)'], row['花费环比'], true, false, 'USD') + (isExpanded ? appendBase('avgSpend', row['近一周日均花费($)'], true, false, 'USD') : '');
@@ -1875,7 +1878,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_90() {
+    async function exportToExcelV7_95() {
         if(globalAllAnalyticalResults.length === 0) return alert('没有可导出的数据');
         try {
             const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('全链路多维诊断分析报表');
@@ -1921,7 +1924,7 @@
             ws.columns.forEach((col, i) => { let cn = allCols[i]; if (cn.includes('结论')) col.width = 45; else if (cn.includes('主图')) col.width = 25; else if (cn.includes('优先级')) col.width = 16; else if (cn.includes('天数')) col.width = 14; else if (cn.includes('asin') || cn.includes('货号') || cn.includes('日期')) col.width = 14; else col.width = 13; });
 
             const buffer = await wb.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-            const today = new Date(); saveAs(blob, `全维度链路诊断数据报表_V7.91_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}.xlsx`);
+            const today = new Date(); saveAs(blob, `全维度链路诊断数据报表_V7.95_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}.xlsx`);
         } catch (error) { alert("导出异常: " + error.message); }
     }
 
