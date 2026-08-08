@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>全维度链路诊断中枢 V7.97</title>
+    <title>全维度链路诊断中枢 V8.01</title>
     <style>
         :root { 
             --bg-color: #FFFFFF;     
@@ -29,7 +29,7 @@
         body { font-family: var(--font-family); background-color: var(--bg-color); margin: 0; padding: 60px 20px; color: var(--text-main); -webkit-font-smoothing: antialiased; }
         .container { max-width: 1440px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; } 
         
-        .header { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-bottom: 40px; position: relative; z-index: 100; width: 100%; }
+        .header { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-bottom: 60px; position: relative; z-index: 100; width: 100%; }
         .title { font-size: 48px; font-weight: 700; letter-spacing: -0.015em; color: var(--text-main); line-height: 1.1; margin-bottom: 16px; }
         .subtitle { color: var(--text-muted); font-size: 20px; font-weight: 400; margin: 0; max-width: 760px; line-height: 1.4; }
         #data-cutoff-date { margin-top: 20px; font-size: 14px; background: #F5F5F7; padding: 6px 16px; border-radius: var(--radius-pill); color: var(--text-muted); }
@@ -220,7 +220,7 @@
         <!-- 自动加载面板及本地降级方案 -->
         <div class="data-source-panel" id="auto-fetch-panel">
             <div id="fetch-status-text" style="font-size: 16px; color: var(--accent); font-weight: 600; display: flex; align-items: center;">
-                等待云端同步指令...
+                <span class="spinner"></span> 正在建立多路并发探针同步云端数据...
             </div>
             <div id="manual-fallback" style="display:none; align-items:center; gap:12px; margin-top: 16px;">
                 <span style="font-size:13px; color:var(--text-muted);">网络波动或拉取失败，请使用</span>
@@ -246,7 +246,7 @@
 
     <input type="file" id="file-input" class="hidden-input" accept=".xlsx, .xls">
 
-    <div id="loading">正在处理海量矩阵数据，请稍候...</div>
+    <div id="loading">正在解析底层矩阵特征，请稍候...</div>
 
     <div class="kpi-grid" id="kpi-grid">
         <div class="kpi-card" onclick="openModal('ALL')">
@@ -286,7 +286,7 @@
 
     <div class="actions" id="actions">
         <button class="btn-export btn-secondary" style="margin-right: 16px;" onclick="document.getElementById('file-input').click()">手动覆盖数据</button>
-        <button class="btn-export" onclick="exportToExcelV7_97()">导出精研分析报告</button>
+        <button class="btn-export" onclick="exportToExcelV8_01()">导出精研分析报告</button>
     </div>
 
     <div class="charts-grid top-grid" id="charts-grid-1">
@@ -443,9 +443,6 @@
 </div>
 
 <script>
-    // ============================================================================
-    // V7.97 核心架构升级：底层全解耦设计 + GitHub 仓库全自动无感直连
-    // ============================================================================
     let globalAsinTags = {};
     let globalAllAnalyticalResults = []; 
     let globalAsinMetrics = {}; 
@@ -461,19 +458,27 @@
     let currentSortDir = 'desc';
     let activeFilters = []; 
 
-    // GitHub 自动直连核心逻辑
     async function autoFetchGitHubData() {
         const fetchStatus = document.getElementById('fetch-status-text');
         const fallbackPanel = document.getElementById('manual-fallback');
         
-        // 目标 GitHub 仓库地址转换至免 VPN 加速的 jsDelivr CDN
-        const targetUrl = 'https://cdn.jsdelivr.net/gh/serenityconle821-design/ggkb@main/' + encodeURIComponent('广告数据.xlsx');
+        const fileName = encodeURIComponent('广告数据.xlsx');
+        const proxyList = [
+            'https://mirror.ghproxy.com/https://raw.githubusercontent.com/serenityconle821-design/ggkb/main/' + fileName,
+            'https://ghp.ci/https://raw.githubusercontent.com/serenityconle821-design/ggkb/main/' + fileName,
+            'https://fastly.jsdelivr.net/gh/serenityconle821-design/ggkb@main/' + fileName
+        ];
         
-        fetchStatus.innerHTML = '<span class="spinner"></span> 正在自动同步云端数据舱...';
+        let response = null;
+        for (let url of proxyList) {
+            try {
+                let res = await fetch(url, { cache: 'no-cache' });
+                if (res.ok) { response = res; break; }
+            } catch(e) { console.warn('节点拉取失败，尝试下一节点:', url); }
+        }
 
         try {
-            const response = await fetch(targetUrl, { cache: 'no-cache' });
-            if (!response.ok) throw new Error(`云端数据舱响应异常 HTTP ${response.status}`);
+            if (!response) throw new Error("所有云端同步节点均被阻断 (HTTP 403/Timeout)");
             
             const arrayBuffer = await response.arrayBuffer();
             const workbook = XLSX.read(new Uint8Array(arrayBuffer), {type: 'array'});
@@ -503,7 +508,7 @@
         } catch(err) {
             console.error(err);
             fetchStatus.innerHTML = `<span style="color:var(--red);">云端同步中断: ${err.message}</span>`;
-            fallbackPanel.style.display = 'flex'; // 暴露出本地上传的备用方案
+            fallbackPanel.style.display = 'flex'; 
         }
     }
 
@@ -1268,10 +1273,10 @@
                  priority = "P1 - 降本增效";
             } else if (isSummer && currentMonth >= 7 && currentMonth <= 9) {
                  if (fbaInv > 0 && totalDays > 60) {
-                     html_inv = `<span style="color:#FF3B30; font-weight:600;">[高危积压]</span> 夏季接近尾声，按历史趋势下月销量骤降，需提前预警！9月底前必须清理至极低水位。`;
-                     text_inv = `[库存预警] 夏季尾声，目标9月底彻底清空。`;
-                     html_adv += `<div class="diag-item">避免跨年产生死库存，绝对以加速清空库存为第一优先级，放开TACOS红线。</div>` + clearance_adv_html;
-                     text_adv += `1. 避免跨年产生死库存，加速清理库存优先。2. ${clearance_adv_text} `;
+                     html_inv = `<span style="color:#FF3B30; font-weight:600;">[高危积压]</span> 夏季接近尾声，按历史趋势下月销量骤降，需提前预警！`;
+                     text_inv = `[库存预警] 夏季尾声，注意控制跨年库存。`;
+                     html_adv += `<div class="diag-item">避免跨年产生过高滞销成本，当前应以控制水位为核心目标。适度放宽TACOS限制加速动销，将库存压降至安全线。</div>` + clearance_adv_html;
+                     text_adv += `1. 适度放宽限制加速动销，压降库存至安全线。2. ${clearance_adv_text} `;
                      priority = "P1 - 降本增效";
                  } else if (is_stock_out_risk || is_completely_out) {
                      html_inv = `<span style="color:#FF9500; font-weight:600;">[自然收尾]</span> 面临断货，且夏季行将结束。`; text_inv = `[库存预警] 断货收尾。`;
@@ -1284,10 +1289,10 @@
                  }
             } else if (isWinter && (currentMonth === 1 || currentMonth === 2 || currentMonth === 12)) {
                  if (fbaInv > 0 && totalDays > 60 && currentMonth >= 1) {
-                     html_inv = `<span style="color:#FF3B30; font-weight:600;">[高危积压]</span> 冬季款收仓期！最晚2月底需将库存清至极低水位，当前消耗严重滞后。`;
-                     text_inv = `[库存预警] 冬季收仓期，2月底前需彻底清空，当前消耗滞后。`;
-                     html_adv += `<div class="diag-item">以彻底清空库存为绝对指标，切勿幻想保留利润。</div>` + clearance_adv_html;
-                     text_adv += `1. 坚决清空库存，切勿保留利润。2. ${clearance_adv_text} `;
+                     html_inv = `<span style="color:#FF3B30; font-weight:600;">[高危积压]</span> 冬季款收仓期！当前消耗严重滞后，需警惕春季滞销。`;
+                     text_inv = `[库存预警] 冬季收仓期，注意控制跨年库存。`;
+                     html_adv += `<div class="diag-item">避免跨年产生过高滞销成本，当前应以控制水位为核心目标。适度降价或增加折扣加速动销，将库存压降至安全线。</div>` + clearance_adv_html;
+                     text_adv += `1. 加速动销，压降库存至安全线。2. ${clearance_adv_text} `;
                      priority = "P1 - 降本增效";
                  } else if (is_stock_out_risk || is_completely_out) {
                      html_inv = `<span style="color:#FF9500; font-weight:600;">[自然收尾]</span> 面临断货，冬款即将过季。`; text_inv = `[库存预警] 断货收尾。`;
@@ -1320,9 +1325,9 @@
                          priority = "P0 - 紧急止损";
                      } else if (is_overstock_risk) {
                          html_inv = `<span style="color:#FF9500; font-weight:600;">[中度积压]</span> 四季款周转滞缓(约需 ${totalDays} 天才能消耗完毕)。`; text_inv = `[库存预警] 消耗极慢。`;
-                         html_adv += `<div class="diag-item">优先清仓套现，暂缓后续海运。</div>` + clearance_adv_html;
-                         text_adv += `1. 清仓套现，暂缓海运。2. ${clearance_adv_text} `;
-                         priority = "P2 - 预算调控";
+                         html_adv += `<div class="diag-item">暂缓后续海运，当前首要目标为加快动销，释放周转空间。</div>` + clearance_adv_html;
+                         text_adv += `1. 暂缓海运，加快动销。2. ${clearance_adv_text} `;
+                         priority = "P2 - 扩量/调控";
                      } else {
                          html_inv = `<span style="color:#34C759; font-weight:600;">[周转健康]</span> FBA预估可售 ${fbaDays} 天。`; text_inv = `[库存健康] FBA预估可售 ${fbaDays} 天。`;
                          if (profit_increased && tacos_improved) {
@@ -1345,9 +1350,9 @@
                     priority = "P0 - 紧急止损";
                 } else if (is_overstock_risk) {
                     html_inv = `<span style="color:#FF9500; font-weight:600;">[中度积压]</span> 总库存周转约需 ${totalDays} 天消耗完毕。`; text_inv = `[库存预警] 消耗缓慢。`;
-                    html_adv += `<div class="diag-item">启动清仓套现策略。</div>` + clearance_adv_html;
-                    text_adv += `1. 启动清仓套现。2. ${clearance_adv_text} `;
-                    priority = "P2 - 预算调控";
+                    html_adv += `<div class="diag-item">启动加快动销策略，提升流速。</div>` + clearance_adv_html;
+                    text_adv += `1. 启动加快动销策略。2. ${clearance_adv_text} `;
+                    priority = "P2 - 扩量/调控";
                 } else {
                     html_inv = `<span style="color:#34C759; font-weight:600;">[周转健康]</span> FBA预估可售 ${fbaDays} 天。`; text_inv = `[库存健康] FBA预估可售 ${fbaDays} 天。`;
                     if (profit_increased && tacos_improved) {
@@ -1390,6 +1395,18 @@
             html_adv += restock_adv_html;
             text_adv += restock_adv_text;
 
+            let invDaysHtml = '';
+            if (daily_future_rate > 0) {
+                if (fbaDays <= 14 && fbaInv > 0) { invDaysHtml = `<div style="font-size:11px; color:var(--red); font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums; background: #FFECEB; padding:4px 8px; border-radius:var(--radius-pill);">预估断货 ${fbaDays} 天</div>`; } 
+                else if (fbaDays === 0 && fbaInv === 0) { invDaysHtml = `<div style="font-size:11px; color:var(--red); font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums; background: #FFECEB; padding:4px 8px; border-radius:var(--radius-pill);">已断货</div>`; } 
+                else if (totalDays > 120 || (is_season_ending && totalDays > 60)) { invDaysHtml = `<div style="font-size:11px; color:#FF9500; font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums; background: #FFF4E5; padding:4px 8px; border-radius:var(--radius-pill);">总库积压 ${totalDays} 天</div>`; } 
+                else if (fbaDays > 90) { invDaysHtml = `<div style="font-size:11px; color:#FF9500; font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums; background: #FFF4E5; padding:4px 8px; border-radius:var(--radius-pill);">FBA积压 ${fbaDays} 天</div>`; } 
+                else { invDaysHtml = `<div style="font-size:11px; color:var(--green); font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums; background: #EBF9EE; padding:4px 8px; border-radius:var(--radius-pill);">周转健康 ${fbaDays} 天</div>`; }
+            } else if (fbaInv > 0) { invDaysHtml = `<div style="font-size:11px; color:#FF9500; font-weight:600; margin-top:6px; background: #FFF4E5; padding:4px 8px; border-radius:var(--radius-pill);">滞销风险</div>`; } 
+            else { invDaysHtml = `<div style="font-size:11px; color:var(--red); font-weight:600; margin-top:6px; background: #FFECEB; padding:4px 8px; border-radius:var(--radius-pill);">已断货</div>`; }
+
+            let combinedInvHtml = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2;"><div class="main-val" style="color:var(--text-main); font-size:16px;" title="FBA在库库存">${fbaInv.toLocaleString()}</div><div style="color:#86868B; font-size:11px; font-weight:500; margin-top:4px;" title="预期总库存">总计 ${expInv.toLocaleString()}</div>${invDaysHtml}</div>`;
+
             const w2_ctr_avg = w2_impressions > 0 ? w2_clicks / w2_impressions : (week2Data.length ? w2_ctr_sum / week2Data.length : 0);
             const w1_ctr_avg = w1_impressions > 0 ? w1_clicks / w1_impressions : (week1Data.length ? w1_ctr_sum / week1Data.length : 0);
             const ctr_diff = w2_ctr_avg - w1_ctr_avg; const ctr_rate = w1_ctr_avg > 0 ? ctr_diff / w1_ctr_avg : 0;
@@ -1423,6 +1440,7 @@
             
             resultRow['_html_诊断结论'] = `<div style="font-family: var(--font-family);"><div class="diag-title">🏷️ [${season_tag}] ${strat_tag}诊断</div><div class="diag-text" style="font-size:11px; opacity:0.85;">大盘基底：${base_insight}</div><div style="margin: 6px 0; border-top: 1px dashed #D2D2D7;"></div><div style="margin-bottom:6px;">${html_inv}</div>${html_adv}${price_fb_html}</div>`;
             resultRow['诊断结论'] = `【诊断定位】[${season_tag}] ${strat_tag} | ${base_insight}\n${text_inv}\n【执行策略】\n${text_adv}\n${price_fb_text}`;
+            resultRow['_html_库存状态'] = combinedInvHtml;
             
             function getSignStr(val) { return val > 0 ? '+' : (val < 0 ? '-' : ''); }
             let dataStr = `【大盘波动】销 ${w2_sales_avg.toFixed(1)} (${getSignStr(sales_avg_diff)}${Math.abs(sales_avg_diff).toFixed(1)}) | 利润率 ${(w2_margin_pct*100).toFixed(1)}% (${getSignStr(margin_pct_diff)}${(Math.abs(margin_pct_diff)*100).toFixed(1)}%) | CPS $${w2_cps.toFixed(2)} (${getSignStr(cps_diff)}${Math.abs(cps_diff).toFixed(2)}) | TACOS ${(w2_tacos*100).toFixed(1)}% (${getSignStr(tacos_diff)}${(Math.abs(tacos_diff)*100).toFixed(1)}%)`;
@@ -1439,19 +1457,6 @@
             if (!isFinite(resultRow['上周CPS($)'])) resultRow['上周CPS($)'] = resultRow['上周日均花费($)'] * 7;
 
             resultRow['_drilldown_details'] = drilldownData;
-            
-            // 构建库存 HTML 用于渲染
-            let invDaysHtml = '';
-            if (resultRow['_has_future_rate']) {
-                if (fbaDays <= 14 && fbaInv > 0) { invDaysHtml = `<div style="font-size:11px; color:var(--red); font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums; background: #FFECEB; padding:4px 8px; border-radius:var(--radius-pill);">预估断货 ${fbaDays} 天</div>`; } 
-                else if (fbaDays === 0 && fbaInv === 0) { invDaysHtml = `<div style="font-size:11px; color:var(--red); font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums; background: #FFECEB; padding:4px 8px; border-radius:var(--radius-pill);">已断货</div>`; } 
-                else if (totalDays > 120 || (resultRow['_is_season_ending'] && totalDays > 60)) { invDaysHtml = `<div style="font-size:11px; color:#FF9500; font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums; background: #FFF4E5; padding:4px 8px; border-radius:var(--radius-pill);">总库积压 ${totalDays} 天</div>`; } 
-                else if (fbaDays > 90) { invDaysHtml = `<div style="font-size:11px; color:#FF9500; font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums; background: #FFF4E5; padding:4px 8px; border-radius:var(--radius-pill);">FBA积压 ${fbaDays} 天</div>`; } 
-                else { invDaysHtml = `<div style="font-size:11px; color:var(--green); font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums; background: #EBF9EE; padding:4px 8px; border-radius:var(--radius-pill);">周转健康 ${fbaDays} 天</div>`; }
-            } else if (fbaInv > 0) { invDaysHtml = `<div style="font-size:11px; color:#FF9500; font-weight:600; margin-top:6px; background: #FFF4E5; padding:4px 8px; border-radius:var(--radius-pill);">滞销风险</div>`; } 
-            else { invDaysHtml = `<div style="font-size:11px; color:var(--red); font-weight:600; margin-top:6px; background: #FFECEB; padding:4px 8px; border-radius:var(--radius-pill);">已断货</div>`; }
-            resultRow['_html_库存状态'] = `<div style="display:flex; flex-direction:column; align-items:center; line-height:1.2;"><div class="main-val" style="color:var(--text-main); font-size:16px;" title="FBA在库库存">${fbaInv.toLocaleString()}</div><div style="color:#86868B; font-size:11px; font-weight:500; margin-top:4px;" title="预期总库存">总计 ${expInv.toLocaleString()}</div>${invDaysHtml}</div>`;
-
             globalAllAnalyticalResults.push(resultRow);
         }
 
@@ -1613,7 +1618,7 @@
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span style="color:#86868B; margin-right:24px;">营销占比</span><span style="font-weight:600; color:#FF9500;">本周 ${(d.w2_mktg_pct*100).toFixed(1)}% <span style="font-size:12px; color:#86868B; font-weight:400;">(上周 ${(d.w1_mktg_pct*100).toFixed(1)}%)</span> <span style="font-size:12px; color:${mkpC}; margin-left:4px;">变动: ${mkpS}${(Math.abs(d.mktg_pct_diff)*100).toFixed(1)}%</span></span></div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span style="color:#86868B; margin-right:24px;">商品占比</span><span style="font-weight:600; color:var(--accent);">本周 ${(d.w2_prod_pct*100).toFixed(1)}% <span style="font-size:12px; color:#86868B; font-weight:400;">(上周 ${(d.w1_prod_pct*100).toFixed(1)}%)</span> <span style="font-size:12px; color:${prC}; margin-left:4px;">变动: ${prS}${(Math.abs(d.prod_pct_diff)*100).toFixed(1)}%</span></span></div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span style="color:#86868B; margin-right:24px;">履约占比</span><span style="font-weight:600; color:#FF2D55;">本周 ${(d.w2_fulfill_pct*100).toFixed(1)}% <span style="font-size:12px; color:#86868B; font-weight:400;">(上周 ${(d.w1_fulfill_pct*100).toFixed(1)}%)</span> <span style="font-size:12px; color:${fC}; margin-left:4px;">变动: ${fS}${(Math.abs(d.fulfill_pct_diff)*100).toFixed(1)}%</span></span></div>
-                            <div style="display:flex; justify-content:space-between;"><span style="color:#86868B; margin-right:24px;">退款率</span><span style="font-weight:600; color:var(--purple);">本周 ${(d.w2_refund_pct*100).toFixed(1)}% <span style="font-size:12px; color:#86868B; font-weight:400;">(上周 ${(d.w1_refund_pct*100).toFixed(1)}%)</span> <span style="font-size:12px; color:${rfC}; margin-left:4px;">变动: ${rfS}${(Math.abs(d.refund_pct_diff)*100).toFixed(1)}%</span></span></div>
+                            <div style="display:flex; justify-content:space-between;"><span style="color:#86868B; margin-right:24px;">退款率</span><span style="font-weight:600; color:#AF52DE;">本周 ${(d.w2_refund_pct*100).toFixed(1)}% <span style="font-size:12px; color:#86868B; font-weight:400;">(上周 ${(d.w1_refund_pct*100).toFixed(1)}%)</span> <span style="font-size:12px; color:${rfC}; margin-left:4px;">变动: ${rfS}${(Math.abs(d.refund_pct_diff)*100).toFixed(1)}%</span></span></div>
                             <div style="margin-top: 10px; font-size:11px; color:#0071E3; text-align:right;">点击柱状图进入明细 ↗</div>`;
                 }
             },
@@ -1939,7 +1944,7 @@
         return `<span class="tag tag-p4">${priority}</span>`;
     }
 
-    async function exportToExcelV7_97() {
+    async function exportToExcelV8_01() {
         if(globalAllAnalyticalResults.length === 0) return alert('没有可导出的数据');
         try {
             const wb = new ExcelJS.Workbook(); const ws = wb.addWorksheet('全链路多维诊断分析报表');
@@ -1985,7 +1990,7 @@
             ws.columns.forEach((col, i) => { let cn = allCols[i]; if (cn.includes('结论')) col.width = 45; else if (cn.includes('主图')) col.width = 25; else if (cn.includes('优先级')) col.width = 16; else if (cn.includes('天数')) col.width = 14; else if (cn.includes('asin') || cn.includes('货号') || cn.includes('日期')) col.width = 14; else col.width = 13; });
 
             const buffer = await wb.xlsx.writeBuffer(); const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-            const today = new Date(); saveAs(blob, `全维度链路诊断数据报表_V7.97_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}.xlsx`);
+            const today = new Date(); saveAs(blob, `全维度链路诊断数据报表_V8.01_${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}.xlsx`);
         } catch (error) { alert("导出异常: " + error.message); }
     }
 
